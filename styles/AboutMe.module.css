@@ -1,0 +1,93 @@
+.AboutMe {
+  background-color: var(--gray);
+  width: 100vw;
+  padding: 20px 0;
+}
+.wrapper {
+  max-width: var(--wrapper);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.AboutMeContainer {
+  background-color: var(--white);
+  background-image: url("https://veveve-bucket-2.fra1.digitaloceanspaces.com/AboutMe/AboutMebackground.svg");
+  background-position: center;
+  border-radius: var(--rounded1);
+  padding: 20px;
+  margin: 0 20px;
+}
+
+.AboutMeContainer h2 {
+  margin: 0;
+}
+
+.AboutMeContent {
+  min-width: 100%;
+}
+
+.AboutMeText {
+  display: block;
+  width: 100%;
+}
+
+.AboutMeImg {
+  display: flex;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 250px;
+}
+
+@media screen and (min-width: 700px) {
+  .AboutMe {
+    padding: 30px 0;
+  }
+
+  .AboutMeContainer {
+    padding: 30px;
+    margin: 0 30px;
+  }
+
+  .AboutMeContent {
+    min-width: 100%;
+    display: flex;
+    padding-top: 20px;
+  }
+
+  .AboutMeImg {
+    width: 50%;
+    max-width: 300px;
+  }
+  .AboutMeText {
+    display: block;
+    width: 50%;
+  }
+}
+
+@media screen and (min-width: 1000px) {
+  .AboutMe {
+    padding: 50px 0;
+    justify-content: center;
+    display: flex;
+  }
+
+  .AboutMeContainer {
+    padding: 0px;
+    margin: 0 50px;
+  }
+
+  .AboutMeContent {
+    min-width: 100%;
+    display: flex;
+    padding-top: 20px;
+  }
+
+  .AboutMeImg {
+    width: 50%;
+    max-width: 300px;
+  }
+  .AboutMeText {
+    display: block;
+    width: 50%;
+  }
+}

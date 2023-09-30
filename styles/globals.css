@@ -1,0 +1,93 @@
+:root {
+  --orange: #ff9101;
+  --blue: #004658;
+  --overlay: rgba(0, 70, 88, 0.75);
+  --white: #ffffff;
+  --gray: #f2f2f2;
+  --black: #252525;
+  --wrapper: 1200px;
+  --rounded1: 16px;
+  overflow-x: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+.bg-color-change > :nth-child(even) {
+  background-color: var(--blue);
+  background-image: url("../public//images/backgroundpattern.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 125vw;
+}
+.bg-color-change > :last-child {
+  background-color: var(--blue);
+  background-image: url("../public//images/backgroundpattern.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 125vw;
+}
+
+.bg-color-change > :nth-child(even) h2 {
+  color: var(--white);
+  text-align: center;
+}
+
+.bg-color-change > :nth-child(odd) h2 {
+  text-align: center;
+  color: var(--blue);
+}
+
+.bg-color-change > :first-child h2 {
+  color: var(--white);
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  overflow-x: hidden;
+}
+/* Hide the default scrollbar */
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Segoe UI", sans-serif;
+  font-variant: small-caps;
+  text-transform: capitalize;
+}
+
+p {
+  font-family: Helvetica, sans-serif;
+  font-size: 1rem;
+}
+
+nav {
+  width: 100%;
+  z-index: 1000000;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Segoe UI", sans-serif;
+  font-variant: small-caps;
+  text-transform: none;
+}
+
+p {
+  font-family: Helvetica, sans-serif;
+  font-size: 1rem;
+}
+
+a {
+  text-decoration: none;
+  color: white;
+}

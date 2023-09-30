@@ -1,0 +1,88 @@
+.nav {
+  width: 100vw;
+  background: var(--blue);
+  display: flex;
+}
+.logo {
+  margin-left: 15px;
+  width: 60%;
+}
+
+.lastlink {
+  color: var(--orange);
+}
+.navFlex {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Default state of the links when menu is closed */
+.listWrapper {
+  overflow-x: hidden;
+}
+
+.links {
+  display: none;
+  z-index: 109999;
+  position: absolute;
+  background-color: var(--blue);
+  width: 100%;
+  overflow: hidden;
+  right: 0;
+  top: 45px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  list-style: none;
+}
+
+/* State of the links when menu is open */
+.links.open {
+  display: none;
+}
+
+.menuButton {
+  height: 62px;
+  display: block;
+  border: none;
+  background: none;
+  font-size: 45px;
+  color: var(--orange);
+}
+.link {
+  font-size: large;
+  color: var(--white);
+  line-height: 0;
+}
+.link:hover {
+  color: var(--orange);
+}
+
+.lastLink > .link {
+  color: var(--orange);
+}
+
+/* Media query for switching to burger menu */
+@media (min-width: 700px) {
+  .menuButton {
+    display: none;
+  }
+  .links.open {
+    background-color: transparent;
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    top: 0;
+    right: 0;
+  }
+
+  .logo {
+    margin-left: 15px;
+    width: 30%;
+  }
+  .LinkName {
+    padding: 0 20px 0 20px;
+  }
+}
