@@ -1,9 +1,9 @@
 import Style from "./Footer.module.css";
 import { ContactDetails } from "../../model/FooterModel";
 let contactDetails: ContactDetails = new ContactDetails(
-  "Christian D Xs Vej 173",
-  "8270 Højbjerg",
-  "61 66 39 30",
+  "Heibergsgade 1h, St",
+  "8000 Aarhus C",
+  "+45 61 66 39 30",
   "hello@veveve.dk"
 );
 

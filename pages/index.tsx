@@ -29,7 +29,7 @@ export default function Home() {
 
       <Nav links={Links} />
       <div className="bg-color-change">
-        <Hero title="Experienced Consultant in Digital Marketing" />
+        <Hero title="Nice Digital Marketing Agency" />
         <Services />
         <AboutMe />
         <CustomerCases />
