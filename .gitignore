@@ -45,26 +45,37 @@ jspm_packages/
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
 
-# TypeScript cache
-*.tsbuildinfo
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
 
-# Optional npm cache directory
-.npm
+# Thumbnails
+._*
 
-# Optional eslint cache
-.eslintcache
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes
 
-# Optional stylelint cache
-.stylelintcache
+# macOS directory attributes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
 
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
+# macOS metadata files
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
-# Optional REPL history
-.node_repl_history
+# VSCode settings
+.vscode/
+
+# dotenv environment variables file
+.env
+
+# Next.js build output
+.next/
 
 # Output of 'npm pack'
 *.tgz
@@ -72,59 +83,14 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+# Optional eslint cache
+.eslintcache
 
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
+# Optional REPL history
+.node_repl_history
 
-# Next.js build output
-.next
-out
+# TypeScript cache
+*.tsbuildinfo
 
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-# Comment in the public line in if your project uses Gatsby and not Next.js
-# https://nextjs.org/blog/next-9-1#public-directory-support
-# public
-
-# vuepress build output
-.vuepress/dist
-
-# vuepress v2.x temp and cache directory
-.temp
-.cache
-
-# Docusaurus cache and generated files
-.docusaurus
-
-# Serverless directories
-.serverless/
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# yarn v2
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnp.*
+# Next.js static files
+out/
