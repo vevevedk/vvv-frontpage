@@ -1,16 +1,16 @@
 .hero_section {
-  padding: 50px 20px; /* Add padding for space around the component */
-  background-color: var(--gray); /* Optional: Add background color for visibility */
+  padding: 50px 20px;
+  background-color: var(--gray);
 }
 
 .overlay {
-  position: relative;
-  height: 300px; /* Adjust as needed */
-  background-color: var(--overlay); /* Optional: Add background color for visibility */
+/*position: relative;*/
+  height: 300px;
+  background-color: var(--overlay);
 }
 
 .hero_text {
-  position: absolute;
+  /*position: absolute;*/
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

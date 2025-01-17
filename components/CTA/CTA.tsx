@@ -1,17 +1,5 @@
-import React, {
-  ReactElement,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-} from "react";
-import styles from "../../components/CTA/CTA.module.css";
-
-interface CTAProps {
-  stil: Stil;
-  tekst: Tekst;
-  popup: ReactElement;
-}
+import React, { useState, useRef, useEffect, useCallback, ReactElement } from "react";
+import styles from "./CTA.module.css";
 
 export enum Stil {
   blue = "blue",
@@ -21,6 +9,12 @@ export enum Stil {
 
 export enum Tekst {
   kontakt = "kontakt",
+}
+
+interface CTAProps {
+  stil: Stil;
+  tekst: Tekst;
+  popup: ReactElement;
 }
 
 const CTAButton: React.FC<CTAProps> = ({ stil, tekst, popup }) => {

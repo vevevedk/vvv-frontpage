@@ -1,11 +1,10 @@
-
-.cases_section {
+.prices_section {
     padding: 50px 20px;
-    background-color: var(--gray);
+    background-color: var(--white);
     color: var(--black);
   }
   
-  .cases_container {
+  .prices_container {
     max-width: var(--wrapper);
     margin: 0 auto;
     display: flex;
@@ -14,8 +13,8 @@
     justify-content: center;
   }
   
-  .case {
-    background-color: var(--white);
+  .price {
+    background-color: var(--gray);
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 20px;

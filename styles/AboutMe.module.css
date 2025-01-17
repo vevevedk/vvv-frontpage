@@ -1,58 +1,11 @@
-.nav {
-    width: 100%;
-    background: var(--blue);
-    display: flex;
-    position: sticky;
-    top: 0;
-    z-index: 1000; /* Ensure the navbar stays above other content */
-    padding: 10px 20px; /* Add padding for better spacing */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow for better visibility */
-  }
-  
-  .logo {
-    height: 50px; /* Adjust as needed */
-  }
-  
-  .navFlex {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .links {
-    display: none;
-    position: absolute;
-    background-color: var(--blue);
-    width: 100%;
-    right: 0;
-    top: 45px;
-    flex-direction: column;
-    list-style: none;
-    gap: 20px;
-  }
-  
-  .links.open {
-    display: flex;
-    position: static; /* Ensure the links are displayed inline when open */
-    flex-direction: row; /* Display links in a row */
-    justify-content: flex-end; /* Align links to the right */
-  }
-  
-  .menuButton {
-    font-size: 24px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--orange);
-  }
-  
-  .link {
-    text-decoration: none;
-    color: white; /* Adjust as needed */
-  }
-  
-  .listWrapper {
-    display: flex;
-    align-items: center;
-  }
+.about_section {
+  padding: 50px 20px;
+  background-color: var(--white);
+  color: var(--black);
+}
+
+.about_text {
+  max-width: var(--wrapper);
+  margin: 0 auto;
+  text-align: center;
+}

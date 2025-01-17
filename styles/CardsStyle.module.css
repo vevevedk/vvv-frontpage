@@ -1,7 +1,7 @@
 .BGblue {
   background-color: var(--blue);
   color: var(--white);
-  padding: 50px 20px; /* Add padding for space around the component */
+  padding: 50px 20px;
 }
 
 .wrapper {
