@@ -14,7 +14,7 @@ const MyComponent: React.FC = () => {
   return (
     <div id="about" className={`${styles.AboutMe} `}>
       <div className={`${styles.AboutMeContainer} ${styles.wrapper}`}>
-        <h2> Hvem er jeg? </h2>
+        <h2> Hvem vi er </h2>
         {cases.map((content) => (
           <div
             className={`${styles.AboutMeContent}`}
@@ -27,7 +27,7 @@ const MyComponent: React.FC = () => {
             </div>
             <img
               src={content.img}
-              alt="picture of Andreas"
+              alt="Picture of the team"
               className={styles.AboutMeImg}
             />
           </div>

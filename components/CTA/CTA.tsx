@@ -7,32 +7,32 @@ import React, {
 } from "react";
 import styles from "../../components/CTA/CTA.module.css";
 
-interface CTA {
-  stil: stil;
-  tekst: tekst;
+interface CTAProps {
+  stil: Stil;
+  tekst: Tekst;
   popup: ReactElement;
 }
 
-export enum stil {
+export enum Stil {
   blue = "blue",
   orange = "orange",
   white = "white",
 }
 
-export enum tekst {
+export enum Tekst {
   kontakt = "kontakt",
 }
 
-const CTAButton: React.FC<CTA> = ({ stil, tekst, popup }) => {
+const CTAButton: React.FC<CTAProps> = ({ stil, tekst, popup }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const buttonRef = useRef<any>(null);
-  const modalRef = useRef<any>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        !buttonRef?.current?.contains(event.target as Node) &&
-        !modalRef?.current?.contains(event.target as Node)
+        buttonRef.current && !buttonRef.current.contains(event.target as Node) &&
+        modalRef.current && !modalRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
       }
@@ -62,25 +62,21 @@ const CTAButton: React.FC<CTA> = ({ stil, tekst, popup }) => {
       document.documentElement.style.overflow = "auto";
       document.body.removeEventListener("touchmove", preventScrolling);
     }
-    return () => {
-      document.documentElement.style.overflow = "auto";
-      document.body.removeEventListener("touchmove", preventScrolling);
-    };
   }, [isOpen, preventScrolling]);
 
-  function ShowModal() {
+  const ShowModal = () => {
     if (isOpen) {
       return (
-        <div className={`${styles.ModalBody}`} ref={modalRef}>
+        <div className={styles.ModalBody} ref={modalRef}>
           <div className={styles.ModalContent}>{popup}</div>
         </div>
       );
     }
     return null;
-  }
+  };
 
   return (
-    <div>
+    <div className={styles.cta_section}>
       {ShowModal()}
       <button
         className={styles[stil]}
@@ -92,4 +88,5 @@ const CTAButton: React.FC<CTA> = ({ stil, tekst, popup }) => {
     </div>
   );
 };
+
 export default CTAButton;

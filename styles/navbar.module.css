@@ -1,88 +1,58 @@
 .nav {
-  width: 100vw;
+  width: 100%;
   background: var(--blue);
   display: flex;
-}
-.logo {
-  margin-left: 15px;
-  width: 60%;
+  position: sticky;
+  top: 0;
+  z-index: 1000; /* Ensure the navbar stays above other content */
+  padding: 10px 20px; /* Add padding for better spacing */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow for better visibility */
 }
 
-.lastlink {
-  color: var(--orange);
+.logo {
+  height: 50px; /* Adjust as needed */
 }
+
 .navFlex {
   width: 100%;
   display: flex;
   justify-content: space-between;
-}
-
-/* Default state of the links when menu is closed */
-.listWrapper {
-  overflow-x: hidden;
+  align-items: center;
 }
 
 .links {
   display: none;
-  z-index: 109999;
   position: absolute;
   background-color: var(--blue);
   width: 100%;
-  overflow: hidden;
   right: 0;
   top: 45px;
-  display: flex;
   flex-direction: column;
-  flex-wrap: wrap;
-  justify-content: flex-end;
   list-style: none;
+  gap: 20px;
 }
 
-/* State of the links when menu is open */
 .links.open {
-  display: none;
+  display: flex;
+  position: static; /* Ensure the links are displayed inline when open */
+  flex-direction: row; /* Display links in a row */
+  justify-content: flex-end; /* Align links to the right */
 }
 
 .menuButton {
-  height: 62px;
-  display: block;
-  border: none;
+  font-size: 24px;
   background: none;
-  font-size: 45px;
+  border: none;
+  cursor: pointer;
   color: var(--orange);
 }
+
 .link {
-  font-size: large;
-  color: var(--white);
-  line-height: 0;
-}
-.link:hover {
-  color: var(--orange);
+  text-decoration: none;
+  color: white; /* Adjust as needed */
 }
 
-.lastLink > .link {
-  color: var(--orange);
-}
-
-/* Media query for switching to burger menu */
-@media (min-width: 700px) {
-  .menuButton {
-    display: none;
-  }
-  .links.open {
-    background-color: transparent;
-    display: flex;
-    flex-direction: row;
-    position: relative;
-    top: 0;
-    right: 0;
-  }
-
-  .logo {
-    margin-left: 15px;
-    width: 30%;
-  }
-  .LinkName {
-    padding: 0 20px 0 20px;
-  }
+.listWrapper {
+  display: flex;
+  align-items: center;
 }

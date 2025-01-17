@@ -46,7 +46,7 @@ const Prices: React.FC = () => {
         (width >= 800 ? (
           <>
             <div id="prices" className={style.wrapper}>
-              <h2>Beskrivelse af priser</h2>
+              <h2>Priser</h2>
               <div className={style.content}>
                 {price.map((prices) => (
                   <div

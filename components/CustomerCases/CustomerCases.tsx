@@ -14,7 +14,7 @@ const MyComponent: React.FC = () => {
 
   return (
     <div id="cases" className={styles.CustomerCases}>
-      <h2> Kunde Cases </h2>
+      <h2> References </h2>
       <div className={`${styles.CasesContainer} ${styles.wrapper}`}>
         {cases.map((Services) => (
           <div

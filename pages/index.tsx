@@ -8,6 +8,7 @@ import Nav from "../components/Nav/Nav";
 import Prices from "../components/Prices/Prices";
 import CustomerCases from "../components/CustomerCases/CustomerCases";
 import AboutMe from "../components/AboutMe/AboutMe";
+import TestNavbar from "../components/TestNavbar/TestNavbar";
 
 const Links: LinkingModel[] = [
   new LinkingModel("1", "Beskrivelse af services", "#specs"),
@@ -19,6 +20,7 @@ const Links: LinkingModel[] = [
 
 export default function Home() {
   return (
+    
     <>
       <Head>
         <title>Veveve</title>
@@ -28,14 +30,11 @@ export default function Home() {
       </Head>
 
       <Nav links={Links} />
-      <div className="bg-color-change">
-        <Hero title="Nice Digital Marketing Agency" />
-        <Services />
-        <AboutMe />
-        <CustomerCases />
-        <Prices />
-        <Footer />
+      <div style={{ height: '2000px', padding: '20px' }}>
+        Scroll down to see the wtf
       </div>
+    
     </>
+      
   );
 }

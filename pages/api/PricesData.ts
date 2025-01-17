@@ -1,6 +1,7 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from "next";
 import { PriceData } from "../../components/model/PrisDataModel";
+import { useEffect } from 'react';
 //  id: number;
 //  title: string;
 //  price: number;
@@ -8,22 +9,74 @@ import { PriceData } from "../../components/model/PrisDataModel";
 
 export default function handler(
   req: NextApiRequest,
-  res: NextApiResponse<PriceData[]>
+  res: NextApiResponse
 ) {
-  let price: PriceData[] = [
-    new PriceData(1, "Lille pakke", 1050, [
-      "1x 30 minutters møde pr. måned",
-      "750 kr i drift pr. konto",
-    ]),
-    new PriceData(2, "Mellem pakke", 1350, [
-      "2x 30 minutters møde pr. måned",
-      "950 kr i drift pr. konto",
-    ]),
-    new PriceData(3, "Stor pakke", 1950, [
-      "Fast ugentlig møde",
-      "950 kr i drift pr. konto",
-    ]),
-  ];
-
-  res.status(200).json(price);
+  res.status(200).json({ data: 'Prices Data' });
 }
+
+useEffect(() => {
+  fetch('/api/AboutMeData')
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log('About Me Data:', data);
+    })
+    .catch((error) => {
+      console.error('Error fetching About Me Data:', error);
+    });
+}, []);
+
+useEffect(() => {
+  fetch('/api/CardData')
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log('Card Data:', data);
+    })
+    .catch((error) => {
+      console.error('Error fetching Card Data:', error);
+    });
+}, []);
+
+useEffect(() => {
+  fetch('/api/CustomerCasesData')
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log('Customer Cases Data:', data);
+    })
+    .catch((error) => {
+      console.error('Error fetching Customer Cases Data:', error);
+    });
+}, []);
+
+useEffect(() => {
+  fetch('/api/PricesData')
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log('Prices Data:', data);
+    })
+    .catch((error) => {
+      console.error('Error fetching Prices Data:', error);
+    });
+}, []);
+
+const videoUrl = process.env.NEXT_PUBLIC_VIDEO_URL || 'http://localhost:3000/videos/Untitled.mp4';
+console.log('Video URL:', videoUrl);

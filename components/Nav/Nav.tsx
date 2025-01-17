@@ -8,13 +8,13 @@ interface Props {
 
 const MobileNav: React.FC<Props> = ({ links }) => {
   const [isOpen, setIsOpen] = useState(true);
+  const logoUrl = process.env.NEXT_PUBLIC_LOGO_URL || '/icons/fallback-logo.svg';
 
   return (
     <nav className={styles.nav}>
       <div className={styles.navFlex}>
-        {" "}
         <img
-          src="https://veveve-bucket-2.fra1.digitaloceanspaces.com/Icons/logo.svg"
+          src={logoUrl}
           alt="Logo"
           className={styles.logo}
         />
@@ -26,17 +26,11 @@ const MobileNav: React.FC<Props> = ({ links }) => {
         </button>
         <ul className={`${styles.links} ${isOpen ? styles.open : ""}`}>
           {links.map((link, index) => (
-            <div key={link.name + link.id} className={styles.listWrapper}>
-              <li
-                className={
-                  index === links.length - 1 ? styles.lastLink : "link"
-                }
-              >
-                <a href={link.idtojump} className={styles.link}>
-                  <h3 className={styles.LinkName}>{link.name}</h3>
-                </a>
-              </li>
-            </div>
+            <li key={link.name + link.id} className={styles.listWrapper}>
+              <a href={link.idtojump} className={styles.link}>
+                <h3 className={styles.LinkName}>{link.name}</h3>
+              </a>
+            </li>
           ))}
         </ul>
       </div>

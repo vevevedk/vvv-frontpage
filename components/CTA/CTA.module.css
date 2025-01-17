@@ -1,3 +1,4 @@
+/*
 .blue,
 .orange,
 .white {
@@ -60,10 +61,30 @@
 @media screen and (min-width: 500px) {
   .blue h1,
   .orange h1,
+*/
   .white h1 {
     font-size: 20px;
     margin: 5px 20px 10px 20px;
   }
+
+.cta_section {
+  padding: 50px 20px; /* Add padding for space around the component */
+  background-color: var(--white); /* Optional: Add background color for visibility */
+}
+
+.cta_button {
+  background-color: var(--blue);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  text-align: center;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.cta_button h3 {
+  font-size: 18px;
+  margin: 0;
 }
 
 @media screen and (min-width: 750px) {
