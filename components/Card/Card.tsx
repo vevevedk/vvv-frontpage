@@ -1,22 +1,41 @@
 import React, { useState, useEffect } from "react";
 import style from "../../styles/CardsStyle.module.css";
 import CTA from "../CTA/CTA";
-import { stil, tekst } from "../CTA/CTA";
+import { Stil, Tekst } from "../CTA/CTA";
 import { ServicesData } from "../model/CardDataModel";
 
 const MyComponent: React.FC = () => {
   const [cards, setCards] = useState<ServicesData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch(process.env.NEXT_PUBLIC_BASEPATH + "api/CardData")
-      .then((res) => res.json())
-      .then((data) => setCards(data))
-      .catch((err) => console.error(err));
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/CardData");
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setCards(data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
+
+  if (isLoading) {
+    return <div>Loading services...</div>;
+  }
 
   return (
     <div id="specs" className={style.BGblue}>
-      <h2> Services </h2>
+      <h2>Services</h2>
       <div className={`${style.CardContainer} ${style.wrapper}`}>
         {cards.map((service) => (
           <div key={service.title + service.id} className={style.Card}>
@@ -35,11 +54,11 @@ const MyComponent: React.FC = () => {
             </p>
             <div className={style.cta}>
               <CTA
-                stil={stil.blue}
-                tekst={tekst.kontakt}
+                stil={Stil.blue}
+                tekst={Tekst.kontakt}
                 popup={
                   <div>
-                    <h3> {service.title}</h3>
+                    <h3>{service.title}</h3>
                     {service.description}
                   </div>
                 }
