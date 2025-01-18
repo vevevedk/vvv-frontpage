@@ -1,11 +1,5 @@
-export class AboutMeData {
+export interface AboutMeData {
   id: number;
-  img: string;
   breadtext: string[];
-
-  constructor(id: number, img: string, breadtext: string[]) {
-    this.id = id;
-    this.img = img;
-    this.breadtext = breadtext;
-  }
+  img: string;
 }
