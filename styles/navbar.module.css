@@ -1,86 +1,99 @@
-.nav {
+.navContainer {
+  display: none;
   width: 100%;
-  background: var(--blue);
-  top: 0;
-  z-index: 1000;
-  padding: 10px 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--primary-color);
+  justify-content: center;
+  position: relative;
 }
 
-.logo {
-  height: 50px;
+.nav {
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem 0;
+  position: relative;
+  background: var(--primary-color);
+}
+
+.mobileNav {
+  display: block;
+  width: 100%;
+  background: var(--primary-color);
+  position: relative;
 }
 
 .navFlex {
-  width: 95%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  width: calc(100% - 2rem);
+  max-width: calc(var(--wrapper) - 2rem);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.logo {
+  height: 3rem;
+}
+
+.logo img {
+  height: 100%;
+}
+
+.listWrapper {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
 }
 
 .links {
   display: none;
-  position: absolute;
-  background-color: var(--blue);
-  width: 100%;
+  position: fixed;
+  top: 5rem;
+  left: 0;
   right: 0;
-  top: 60px;
+  background-color: var(--primary-color);
   flex-direction: column;
   list-style: none;
-  gap: 20px;
+  padding: 0;
+  margin: 0;
+  z-index: 1000;
 }
 
 .links.open {
   display: flex;
 }
 
-.menuButton {
-  font-size: 24px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--white);
-}
-
 .link {
   text-decoration: none;
-  color: white;
+  color: var(--white);
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  text-align: left;
+  width: 100%;
+  padding: 1rem;
 }
 
-.listWrapper {
+.menuButton {
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #ffffff;
   display: flex;
   align-items: center;
-}
-
-.desktopNav {
-  display: none;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-.mobileNav {
-  display: block;
+  justify-content: center;
 }
 
 @media (min-width: 768px) {
-  .links {
-    display: flex;
-    position: static;
-    flex-direction: row;
-    justify-content: flex-end;
-    gap: 20px;
-  }
-
-  .menuButton {
-    display: none;
-  }
-
-  .desktopNav {
-    display: block;
-  }
-
   .mobileNav {
     display: none;
+  }
+
+  .navContainer {
+    display: flex;
   }
 }

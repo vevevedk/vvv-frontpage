@@ -1,24 +1,98 @@
-
 .cases_section {
-    padding: 50px 20px;
-    background-color: var(--gray);
-    color: var(--black);
-  }
-  
+  padding: 4rem 1.25rem;
+  background-color: var(--gray, #f4f4f4);
+  color: var(--black, #333);
+}
+
+.cases_container {
+  max-width: var(--wrapper, 1200px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.25rem;
+  justify-content: center;
+}
+
+.case {
+  background-color: var(--white, #ffffff);
+  border-radius: 0.625rem;
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 1.25rem;
+  transition: 
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.case:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 6px 12px rgba(0, 0, 0, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.case_image {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.case:hover .case_image {
+  transform: scale(1.05);
+}
+
+.case_title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--primary-color, #333);
+}
+
+.case_stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.case_stat {
+  background-color: var(--light-bg, #f9f9f9);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--secondary-color, #666);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
   .cases_container {
-    max-width: var(--wrapper);
-    margin: 0 auto;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
   }
-  
+
   .case {
-    background-color: var(--white);
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    width: 300px;
-    text-align: center;
+    padding: 1rem;
   }
+
+  .case_image {
+    height: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cases_section {
+    padding: 2rem 0.75rem;
+  }
+
+  .cases_container {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,46 +1,72 @@
 import React, { useState, useEffect } from "react";
 import { CustomerCasesData } from "../model/CustomerCasesModel";
 import styles from "../../styles/CustomerCasesStyle.module.css";
-import { url } from "inspector";
+
 const MyComponent: React.FC = () => {
-  const [cases, setCases] = useState<CustomerCasesData[]>([]);
+ const [cases, setCases] = useState<CustomerCasesData[]>([]);
+ const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetch(process.env.NEXT_PUBLIC_BASEPATH + "api/CustomerCasesData")
-      .then((res) => res.json())
-      .then((data) => setCases(data))
-      .catch((err) => console.error(err));
-  }, []);
+ useEffect(() => {
+   const fetchData = async () => {
+     try {
+       const response = await fetch("/api/CustomerCasesData");
+       
+       if (!response.ok) {
+         throw new Error(`HTTP error! status: ${response.status}`);
+       }
+       
+       const data = await response.json();
+       
+       // Log received data for debugging
+       console.log("Received data:", data);
+       
+       // More robust array extraction
+       const casesArray = Array.isArray(data) 
+         ? data 
+         : (data.data ?? data.cases ?? []);
+       
+       setCases(casesArray);
+       setIsLoading(false);
+     } catch (error) {
+       console.error("Fetch error:", error);
+       setIsLoading(false);
+     }
+   };
 
-  return (
-    <div id="cases" className={styles.CustomerCases}>
-      <h2> References </h2>
-      <div className={`${styles.CasesContainer} ${styles.wrapper}`}>
-        {cases.map((Services) => (
-          <div
-            key={Services.id}
-            style={{
-              backgroundImage: `linear-gradient(black, black), url(${Services.img})`,
-              backgroundSize: "cover",
-              backgroundRepeat: "no-repeat",
-              backgroundBlendMode: "saturation",
-            }}
-            className={styles.Cases}
-          >
-            <h3>{Services.title}</h3>
-            <div className={styles.overlay}>
-              <p>→</p>
-              <div className={styles.content}>
-                {Services.stats.map((stat) => (
-                  <h4 key={stat}>{stat}</h4>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+   fetchData();
+ }, []);
+
+ if (isLoading) {
+   return <div>Loading references...</div>;
+ }
+
+ if (cases.length === 0) {
+   return <div>No references found</div>;
+ }
+
+ return (
+   <div id="cases" className={styles.cases_section}>
+     <div className={styles.cases_container}>
+       {cases.map((service) => (
+         <div key={service.id} className={styles.case}>
+           <img 
+             src={service.img} 
+             alt={service.title} 
+             className={styles.case_image}
+           />
+           <h3 className={styles.case_title}>{service.title}</h3>
+           <div className={styles.case_stats}>
+             {service.stats.map((stat) => (
+               <div key={stat} className={styles.case_stat}>
+                 {stat}
+               </div>
+             ))}
+           </div>
+         </div>
+       ))}
+     </div>
+   </div>
+ );
 };
 
 export default MyComponent;

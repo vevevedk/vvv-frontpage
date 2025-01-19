@@ -1,10 +1,10 @@
 :root {
-  --orange: #ff9101;
-  --blue: #004658;
-  --overlay: rgba(0, 70, 88, 0.75);
+  --primary-color: #004658;
+  --secondary-color: #ff9101;
+  --text-color: #252525;
+  --background-color: #f2f2f2;
   --white: #ffffff;
-  --gray: #f2f2f2;
-  --black: #252525;
+  --gray: #e6e6e6;
   --wrapper: 1200px;
   --rounded1: 16px;
 }
@@ -12,7 +12,9 @@
 html, body {
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Roboto', sans-serif;
+  color: var(--text-color);
+  background-color: var(--background-color);
 }
 
 a {
@@ -21,12 +23,13 @@ a {
 }
 
 h1, h2, h3 {
-  font-family: "Segoe UI", sans-serif;
-  font-variant: small-caps;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
   text-transform: capitalize;
 }
 
 p {
-  font-family: Helvetica, sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 1rem;
+  line-height: 1.6;
 }
