@@ -14,6 +14,10 @@ const Nav: React.FC<Props> = ({ links }) => {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const handleLinkClick = () => {
+    setIsMenuOpen(false);
+  };
+
   return (
     <>
       <div className={styles.navContainer}>
@@ -50,7 +54,11 @@ const Nav: React.FC<Props> = ({ links }) => {
               <ul className={`${styles.links} ${isMenuOpen ? styles.open : ''}`}>
                 {links.map((link) => (
                   <li key={link.name + link.id} className={styles.listWrapper}>
-                    <a href={link.idtojump} className={styles.link}>
+                    <a 
+                      href={link.idtojump} 
+                      className={styles.link}
+                      onClick={handleLinkClick}
+                    >
                       <h3 className={styles.LinkName}>{link.name}</h3>
                     </a>
                   </li>
