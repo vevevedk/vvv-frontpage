@@ -8,6 +8,7 @@
 
 .nav {
   width: 100%;
+  max-width: var(--wrapper);
   margin: 0 auto;
   padding: 1rem 0;
   position: relative;
@@ -34,6 +35,7 @@
 
 .logo {
   height: 3rem;
+  margin-left: -1rem;
 }
 
 .logo img {
@@ -67,7 +69,7 @@
 
 .link {
   text-decoration: none;
-  color: var(--white);
+  color: #ffffff;
   font-size: 1rem;
   font-weight: 500;
   transition: color 0.3s ease;
@@ -95,5 +97,20 @@
 
   .navContainer {
     display: flex;
+  }
+
+  .links {
+    display: flex;
+    position: static;
+    flex-direction: row;
+    gap: 1rem;
+    background: none;
+    margin-left: auto;
+    padding-right: 1rem;
+  }
+
+  .link {
+    width: auto;
+    padding: 0.5rem;
   }
 }
