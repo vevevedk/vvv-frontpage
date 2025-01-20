@@ -94,3 +94,7 @@ Temporary Items
 
 # Next.js static files
 out/
+
+# Media files
+*.mp4
+!public/**/*.mp4
