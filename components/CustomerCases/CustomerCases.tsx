@@ -1,72 +1,66 @@
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { CustomerCasesData } from "../model/CustomerCasesModel";
 import styles from "../../styles/CustomerCasesStyle.module.css";
 
-const MyComponent: React.FC = () => {
- const [cases, setCases] = useState<CustomerCasesData[]>([]);
- const [isLoading, setIsLoading] = useState(true);
+const CustomerCases: React.FC = () => {
+  const [cases, setCases] = useState<CustomerCasesData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
- useEffect(() => {
-   const fetchData = async () => {
-     try {
-       const response = await fetch("/api/CustomerCasesData");
-       
-       if (!response.ok) {
-         throw new Error(`HTTP error! status: ${response.status}`);
-       }
-       
-       const data = await response.json();
-       
-       // Log received data for debugging
-       console.log("Received data:", data);
-       
-       // More robust array extraction
-       const casesArray = Array.isArray(data) 
-         ? data 
-         : (data.data ?? data.cases ?? []);
-       
-       setCases(casesArray);
-       setIsLoading(false);
-     } catch (error) {
-       console.error("Fetch error:", error);
-       setIsLoading(false);
-     }
-   };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/CustomerCasesData");
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setCases(data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setIsLoading(false);
+      }
+    };
 
-   fetchData();
- }, []);
+    fetchData();
+  }, []);
 
- if (isLoading) {
-   return <div>Loading references...</div>;
- }
+  if (isLoading) {
+    return <div>Loading cases...</div>;
+  }
 
- if (cases.length === 0) {
-   return <div>No references found</div>;
- }
-
- return (
-   <div id="cases" className={styles.cases_section}>
-     <div className={styles.cases_container}>
-       {cases.map((service) => (
-         <div key={service.id} className={styles.case}>
-           <img 
-             src={service.img} 
-             alt={service.title} 
-             className={styles.case_image}
-           />
-           <h3 className={styles.case_title}>{service.title}</h3>
-           <div className={styles.case_stats}>
-             {service.stats.map((stat) => (
-               <div key={stat} className={styles.case_stat}>
-                 {stat}
-               </div>
-             ))}
-           </div>
-         </div>
-       ))}
-     </div>
-   </div>
- );
+  return (
+    <section id="cases" className={styles.cases_section}>
+      <h2>Kunde Cases</h2>
+      <div className={styles.cases_container}>
+        {cases.map((caseItem) => (
+          <article key={caseItem.id} className={styles.case}>
+            <div className={styles.case_image_wrapper}>
+              <Image
+                src={caseItem.img}
+                alt={caseItem.title}
+                width={400}
+                height={300}
+                objectFit="cover"
+                className={styles.case_image}
+              />
+            </div>
+            <div className={styles.case_content}>
+              <h3 className={styles.case_title}>{caseItem.title}</h3>
+              <div className={styles.case_stats}>
+                {caseItem.stats.map((stat, index) => (
+                  <div key={`${caseItem.id}-stat-${index}`} className={styles.case_stat}>
+                    {stat}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 };
 
-export default MyComponent;
+export default CustomerCases;
