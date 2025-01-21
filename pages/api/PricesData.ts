@@ -7,11 +7,35 @@ import { useEffect } from 'react';
 //  price: number;
 //  description: string;
 
+type PriceData = {
+  id: number;
+  title: string;
+  price: number;
+  description: string;
+  servicesIncluded: string[];
+}
+
 export default function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<PriceData[]>
 ) {
-  res.status(200).json({ data: 'Prices Data' });
+  const prices = [
+    {
+      id: 1,
+      title: "Basic Package",
+      price: 4999,
+      description: "Perfect for small businesses",
+      servicesIncluded: [
+        "Website Design",
+        "Mobile Responsive",
+        "3 Pages",
+        "Basic SEO",
+        "Contact Form"
+      ]
+    }
+  ];
+
+  res.status(200).json(prices);
 }
 
 useEffect(() => {

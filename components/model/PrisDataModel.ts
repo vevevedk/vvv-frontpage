@@ -1,18 +1,7 @@
-export class PriceData {
+export interface PriceData {
   id: number;
   title: string;
   price: number;
+  description: string;
   servicesIncluded: string[];
-
-  constructor(
-    id: number,
-    title: string,
-    price: number,
-    servicesIncluded: string[]
-  ) {
-    this.id = id;
-    this.title = title;
-    this.price = price;
-    this.servicesIncluded = servicesIncluded;
-  }
 }

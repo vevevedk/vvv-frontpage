@@ -1,131 +1,88 @@
-import { useState, useEffect } from "react";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { PriceData } from "../model/PrisDataModel";
 import styles from "../../styles/Prices.module.css";
 import CTAButton, { Stil, Tekst } from "../CTA/CTA";
 
 const Prices: React.FC = () => {
-  const [domLoaded, setDomLoaded] = useState(false);
-  const [price, setPrices] = useState<PriceData[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("");
-  let [width, setWidth] = useState<number>((): number => {
-    if (typeof window !== "undefined") {
-      return window.innerWidth;
-    } else {
-      return 0;
-    }
-  });
+  const [prices, setPrices] = useState<PriceData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setDomLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    fetch(process.env.NEXT_PUBLIC_BASEPATH + "api/PricesData")
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/prices");
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         setPrices(data);
-        setActiveTab(data[1].title);
-      })
-      .catch((err) => console.error(err));
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setError(error instanceof Error ? error.message : 'An error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    const handleResize = () => setWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  if (isLoading) {
+    return <div>Loading prices...</div>;
+  }
 
-  const handleTabClick = (tabTitle: string) => {
-    setActiveTab(tabTitle);
-  };
+  if (error) {
+    return <div>Error loading prices: {error}</div>;
+  }
 
-  const services = [
-    { id: 1, name: "Service 1", description: "Description 1" },
-    { id: 2, name: "Service 2", description: "Description 2" },
-    // Add more services as needed
-  ];
+  if (!prices.length) {
+    return <div>No pricing information available.</div>;
+  }
 
   return (
-    <>
-      {domLoaded &&
-        (width >= 800 ? (
-          <>
-            <div id="prices" className={styles.prices_section}>
-              <h2>Prices</h2>
-              <div className={styles.prices_container}>
-                {services.map((service) => (
-                  <div key={service.id} className={styles.price}>
-                    <h3>{service.name}</h3>
-                    <p>{service.description}</p>
-                    <CTAButton
-                      stil={Stil.orange}
-                      tekst={Tekst.kontakt}
-                      popup={
-                        <div>
-                          <h3>{service.name}</h3>
-                          <p>{service.description}</p>
-                        </div>
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
+    <section id="prices" className={styles.prices_section}>
+      <h2>Priser</h2>
+      <div className={styles.prices_container}>
+        {prices.map((price) => (
+          <article key={price.id} className={styles.price_card}>
+            <h3 className={styles.price_title}>{price.title}</h3>
+            <div className={styles.price_amount}>
+              <span className={styles.currency}>DKK</span>
+              <span className={styles.amount}>{price.price.toLocaleString()}</span>
+              <span className={styles.period}>ex moms</span>
             </div>
-          </>
-        ) : (
-          <>
-            <div className={styles.priceWrap}>
-              <h2>Beskrivelse af priser</h2>
-              <div className={styles.tabBar}>
-                {price.map((prices) => (
-                  <button
-                    className={`${styles.tabButton} ${
-                      activeTab === prices.title ? styles.activeTabButton : ""
-                    }`}
-                    key={prices.price + prices.id}
-                    onClick={() => handleTabClick(prices.title)}
-                  >
-                    <h3 className={styles.title}>{prices.title}</h3>
-                  </button>
-                ))}
-              </div>
-              <div className={styles.content}>
-                {price.map((prices) => (
-                  <div
-                    key={prices.title + prices.id}
-                    className={
-                      activeTab === prices.title ? "" : styles.inactiveTab
-                    }
-                  >
-                    <h3> {prices.title}</h3>
-                    {prices.servicesIncluded.map((service) => (
-                      <ul
-                        key={prices.title + prices.id + service}
-                        className={styles.inc}
-                      >
-                        <li>
-                          <p> {service}</p>
-                        </li>
-                      </ul>
-                    ))}
-                    <p className={styles.price}>{prices.price} Dkk ex moms</p>
+            <p className={styles.description}>{price.description}</p>
+            <ul className={styles.features_list}>
+              {price.servicesIncluded.map((service, index) => (
+                <li key={`${price.id}-service-${index}`} className={styles.feature_item}>
+                  {service}
+                </li>
+              ))}
+            </ul>
+            <div className={styles.cta_wrapper}>
+              <CTAButton
+                stil={Stil.blue}
+                tekst={Tekst.kontakt}
+                popup={
+                  <div>
+                    <h3>{price.title}</h3>
+                    <p>{price.description}</p>
+                    <ul>
+                      {price.servicesIncluded.map((service, index) => (
+                        <li key={`popup-${price.id}-service-${index}`}>{service}</li>
+                      ))}
+                    </ul>
                   </div>
-                ))}
-                <CTAButton
-                  stil={Stil.orange}
-                  tekst={Tekst.kontakt}
-                  popup={
-                    <div>
-                      <h3> Oih diz is da shizzle</h3>
-                    </div>
-                  }
-                />
-              </div>
+                }
+              />
             </div>
-          </>
+          </article>
         ))}
-    </>
+      </div>
+    </section>
   );
 };
 
