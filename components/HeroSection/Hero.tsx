@@ -3,10 +3,11 @@ import style from '../../styles/HeroSection.module.css';
 
 interface HeroProps {
   title: string;
+  subtitle?: string;
   videoUrl?: string;
 }
 
-const Hero: React.FC<HeroProps> = ({ title, videoUrl = '/videos/hero.mp4' }) => {
+const Hero: React.FC<HeroProps> = ({ title, subtitle, videoUrl = '/videos/hero.mp4' }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   return (
@@ -24,6 +25,7 @@ const Hero: React.FC<HeroProps> = ({ title, videoUrl = '/videos/hero.mp4' }) => 
       </div>
       <div className={style.hero_text}>
         <h2>{title}</h2>
+        {subtitle && <p>{subtitle}</p>}
       </div>
     </div>
   );

@@ -9,9 +9,9 @@ import AboutMe from "../components/AboutMe/AboutMe";
 import { LinkingModel } from "../components/model/LinkModel";
 
 const Links: LinkingModel[] = [
-  new LinkingModel(1, "Beskrivelse Af Services", "#services"),
-  new LinkingModel(2, "Hvem Er Jeg", "#about"),
-  new LinkingModel(3, "Kunde Cases", "#cases"),
+  new LinkingModel(1, "Services", "#services"),
+  new LinkingModel(2, "Om os", "#about"),
+  new LinkingModel(3, "Cases", "#cases"),
   new LinkingModel(4, "Priser", "#prices"),
   new LinkingModel(5, "Kontakt", "#contact"),
 ];
@@ -26,7 +26,10 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <Nav links={Links} />
-      <Hero title="Internet på jysk" />
+      <Hero 
+        title="Internet på jysk" 
+        subtitle="[veh-VEH-veh]"
+      />
       <Services />
       <AboutMe />
       <CustomerCases />
