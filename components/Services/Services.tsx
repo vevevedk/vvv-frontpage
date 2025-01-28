@@ -3,16 +3,16 @@ import style from "../../styles/Services.module.css";
 import CTA from "../CTA/CTA";
 import { Stil, Tekst } from "../CTA/CTA";
 import { ServicesData } from "../model/ServicesModel";
-import { FaCode, FaChartLine, FaPaintBrush } from 'react-icons/fa';
+import { FaCode, FaChartLine, FaPaintBrush, FaShareSquare, FaSearch } from 'react-icons/fa';
 
 const Services: React.FC = () => {
   const [services, setServices] = useState<ServicesData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const icons = [
-    <FaCode key="code" size={50} />,
-    <FaChartLine key="chart" size={50} />,
-    <FaPaintBrush key="paint" size={50} />
+    <FaSearch key="search" size={50} />,
+    <FaShareSquare key="social" size={50} />,
+    <FaChartLine key="chart" size={50} />
   ];
 
   useEffect(() => {
@@ -47,10 +47,11 @@ const Services: React.FC = () => {
             <h3 className={style.header2}>{service.title}</h3>
             <div className={style.icon}>{icons[index]}</div>
             <p>{service.description}</p>
-            <div className={style.cta}>
+            {/* ER KOMMENTERET UD INDTIL JEG HAR TID TIL AT SKRIVE TEKST TIL DET
+              <div className={style.cta}>
               <CTA
                 stil={Stil.blue}
-                tekst={Tekst.kontakt}
+                tekst={Tekst.readMore}
                 popup={
                   <div>
                     <h3>{service.title}</h3>
@@ -58,7 +59,7 @@ const Services: React.FC = () => {
                   </div>
                 }
               />
-            </div>
+            </div>*/}
           </article>
         ))}
       </div>

@@ -11,10 +11,7 @@ export default function handler(
       {
         id: 0,
         breadtext: [
-          "We are a team of professionals...",
-          "Our mission is to...",
-          "Our values include...",
-          "We strive to..."
+          " Vi er specialister i markedsføring og digital kommunikation med +12 års erfaring. ",
         ],
         img: "/images/about/team-1.jpg"
       },

@@ -41,6 +41,8 @@ const AboutMe: React.FC = () => {
                 <p key={`text-${content.id}-${index}`}>{text}</p>
               ))}
             </div>
+            {/*
+            
             <div className={styles.about_image}>
               <Image
                 src={content.img}
@@ -51,6 +53,7 @@ const AboutMe: React.FC = () => {
                 priority={content.id === 0}
               />
             </div>
+            */}
           </article>
         ))}
       </div>
