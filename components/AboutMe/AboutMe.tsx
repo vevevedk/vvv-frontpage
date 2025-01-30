@@ -33,7 +33,7 @@ const AboutMe: React.FC = () => {
   return (
     <section id="about" className={styles.about_section}>
       <div className={`${styles.about_container} ${styles.wrapper}`}>
-        <h2>Hvem Er Vi</h2>
+        <h2>Hvem er vi</h2>
         {aboutData.map((content) => (
           <article key={`aboutme-${content.id}`} className={styles.about_content}>
             <div className={styles.about_text}>

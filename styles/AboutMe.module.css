@@ -20,6 +20,11 @@
   margin-bottom: 2rem;
   color: var(--primary-color);
   font-weight: 600;
+  text-transform: none;
+}
+
+.about_section .about_container h2 {
+  text-transform: none !important;
 }
 
 .about_content {

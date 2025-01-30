@@ -11,10 +11,11 @@ export default function handler(
       {
         id: 0,
         breadtext: [
-          " Vi er specialister i markedsføring og digital kommunikation med +12 års erfaring. ",
+          " Vi er specialister i markedsføring og digital kommunikation med +12 års erfaring. Vi har erfaring fra en lang række virksomheder inden for e-handel, rejsebranchen og serviceerhverv. Gennem mange års erfaring har vi opbygget et bredt fundament, som gør, at vi ud fra specialistarbejdet kan tilbyde vores kunder kompetent vejledning om, hvor i processen de befinder sig i forhold til deres mål.",
         ],
         img: "/images/about/team-1.jpg"
-      },
+      }
+      /*
       {
         id: 1,
         breadtext: [
@@ -23,6 +24,7 @@ export default function handler(
         ],
         img: "/images/about/team-2.jpg"
       }
+      */
     ];
 
     res.status(200).json(aboutData);
