@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 80">
+  <!-- Text "veveve" -->
+  <text x="20" y="58" 
+        font-family="Space Grotesk, sans-serif" 
+        font-size="52" 
+        font-weight="500" 
+        fill="#1A1B1E"
+        letter-spacing="-0.5">
+    veveve
+  </text>
+</svg>
