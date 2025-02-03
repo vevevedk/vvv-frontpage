@@ -9,20 +9,20 @@ export default function handler(
     {
       id: 1,
       title: "Wo clé",
-      img: "/images/cases/ecommerce.jpg",
-      stats: ["500% Revenue Growth", "1M+ Monthly Users"]
+      img: "/images/cases/wocle.svg",
+      stats: ["Fra 0 til 20 t. kr. månedlig omsætning", "ROAS 8 opnået indenfor 6 mdr."]
     },
     {
       id: 2,
       title: "Crossfit Lageret Holstebro",
-      img: "/images/cases/saas.jpg",
-      stats: ["98% Customer Satisfaction", "50% Reduced Load Time"]
+      img: "/images/cases/crossfit-lageret.jpg",
+      stats: ["50% reduktion i Ad Spend på Google", "Top placering på vigtigste søgninger på Google"]
     },
     {
       id: 3,
       title: "Porsaco",
-      img: "/images/cases/mobile.jpg",
-      stats: ["4.8 App Store Rating", "200K+ Downloads"]
+      img: "/images/cases/porsa.png",
+      stats: ["Opsætning af konverteringssporing i Google Analytics", "Robust kampagnestruktur på Google Search Ads"]
     }
   ];
 

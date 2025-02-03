@@ -8,43 +8,36 @@ export default function handler(
   const prices: PriceData[] = [
     {
       id: 1,
-      title: "Basic Package",
-      price: 4999,
-      description: "Perfect for small businesses",
+      title: "PPC / Paid Social Specialist",
+      price: 750,
+      description: "Fleksibel månedlig betaling",
       servicesIncluded: [
-        "Website Design",
-        "Mobile Responsive",
-        "3 Pages",
-        "Basic SEO",
-        "Contact Form"
+        "Opsæting og optimering af kampagner",
+        "Bud og Budget management",
+        "Optimering af målretning",
+        "Analyse og rapportering",
       ]
     },
     {
       id: 2,
-      title: "Professional",
-      price: 9999,
-      description: "Ideal for growing companies",
+      title: "Digital Marketing Strategi",
+      price: 1050,
+      description: "Når du har brug for sparring og rådgivning",
       servicesIncluded: [
-        "Everything in Basic",
-        "Custom Design",
-        "10 Pages",
-        "Advanced SEO",
-        "Analytics Integration",
-        "Social Media Integration"
+        "Evaluering af KPIer",
+        "Forecasting af KPIer og budgetter",
+        "Evaluering af Marketings Mix",
       ]
     },
     {
       id: 3,
-      title: "Enterprise",
-      price: 19999,
-      description: "For large organizations",
+      title: "En del af holdet",
+      price: '19999',
+      description: "For virksomheder der vil in-house",
       servicesIncluded: [
-        "Everything in Professional",
-        "E-commerce Integration",
-        "Unlimited Pages",
-        "Priority Support",
-        "Monthly Maintenance",
-        "Performance Optimization"
+        "Vi kommer med de kompetencer I mangler",
+        "Vi hjælper med rekruttering og ledelse",
+        "Vi agere som mentorer og sparer med jeres medarbejdere"
       ]
     }
   ];
