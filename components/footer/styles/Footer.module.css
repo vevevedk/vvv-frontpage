@@ -65,6 +65,7 @@
   font-size: 1.1rem;
   font-weight: 500;
   margin: 0;
+  text-transform: none;
 }
 
 .social_container {
@@ -72,7 +73,15 @@
   gap: 1.5rem;
 }
 
+.social_icon {
+  font-size: 1.5rem;
+  margin-right: 0.5rem;
+}
+
 .social_link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--white);
   text-decoration: none;
   transition: color 0.3s ease;
@@ -108,4 +117,8 @@
   .info_container {
     gap: 4rem;
   }
+}
+
+.social_title {
+  text-transform: none;
 } 

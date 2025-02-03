@@ -63,21 +63,12 @@ const Prices: React.FC = () => {
               ))}
             </ul>
             <div className={styles.cta_wrapper}>
-              <CTAButton
-                stil={Stil.blue}
-                tekst={Tekst.kontakt}
-                popup={
-                  <div>
-                    <h3>{price.title}</h3>
-                    <p>{price.description}</p>
-                    <ul>
-                      {price.servicesIncluded.map((service, index) => (
-                        <li key={`popup-${price.id}-service-${index}`}>{service}</li>
-                      ))}
-                    </ul>
-                  </div>
-                }
-              />
+              <a 
+                href="mailto:hello@veveve.dk" 
+                className={styles.cta_button}
+              >
+                Kontakt
+              </a>
             </div>
           </article>
         ))}

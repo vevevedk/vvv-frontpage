@@ -32,7 +32,7 @@ const CustomerCases: React.FC = () => {
 
   return (
     <section id="cases" className={styles.cases_section}>
-      <h2>Kunde Cases</h2>
+      <h2>Kunde cases</h2>
       <div className={styles.cases_container}>
         {cases.map((caseItem) => (
           <article key={caseItem.id} className={styles.case}>

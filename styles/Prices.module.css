@@ -41,6 +41,7 @@
   color: var(--primary-color);
   margin-bottom: 1.5rem;
   font-weight: 600;
+  text-transform: none;
 }
 
 .price_amount {
@@ -91,6 +92,20 @@
 
 .cta_wrapper {
   margin-top: auto;
+}
+
+.cta_button {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: var(--white);
+  text-decoration: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.cta_button:hover {
+  background-color: var(--primary-dark-color);
 }
 
 @media (max-width: 968px) {

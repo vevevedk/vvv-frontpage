@@ -1,8 +1,10 @@
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+
 export interface SocialMedia {
   id: number;
   url: string;
   name: string;
-  icon?: string;
+  icon: IconDefinition;
 }
 
 export interface ContactInfo {
