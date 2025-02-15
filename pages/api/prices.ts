@@ -32,7 +32,7 @@ export default function handler(
     {
       id: 3,
       title: "En del af holdet",
-      price: '19999',
+      price: 19999,
       description: "For virksomheder der vil in-house",
       servicesIncluded: [
         "Vi kommer med de kompetencer I mangler",
