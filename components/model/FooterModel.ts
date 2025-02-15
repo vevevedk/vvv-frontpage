@@ -1,15 +1,26 @@
-import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import Style from "./Footer.module.css";
+import { ContactInfo } from "../../model/FooterModel";
 
-export interface SocialMedia {
-  id: number;
-  url: string;
-  name: string;
-  icon: IconDefinition;
-}
+const contactInfo: ContactInfo = {
+  location: "Heibergsgade 1h, St",
+  zip: "8000 Aarhus C",
+  phone: "+45 61 66 39 30",
+  email: "andreas@veveve.dk"
+};
 
-export interface ContactInfo {
-  location: string;
-  zip: string;
-  phone: string;
-  email: string;
-}
+const FooterInfo = () => {
+  return (
+    <div className={Style.footerInfo}>
+      <div>
+        <p>{contactInfo.location}</p>
+        <p>{contactInfo.zip}</p>
+      </div>
+      <div>
+        <p>{contactInfo.phone}</p>
+        <p>{contactInfo.email}</p>
+      </div>
+    </div>
+  );
+};
+
+export default FooterInfo;
