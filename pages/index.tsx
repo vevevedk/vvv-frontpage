@@ -9,11 +9,11 @@ import AboutMe from "../components/AboutMe/AboutMe";
 import { LinkingModel } from "../components/model/LinkModel";
 
 const Links: LinkingModel[] = [
-  new LinkingModel(1, "Services", "#services"),
-  new LinkingModel(2, "Om os", "#about"),
-  new LinkingModel(3, "Cases", "#cases"),
-  new LinkingModel(4, "Priser", "#prices"),
-  new LinkingModel(5, "Kontakt", "#contact"),
+  new LinkingModel("1", "Services", "#services"),
+  new LinkingModel("2", "Om os", "#about"),
+  new LinkingModel("3", "Cases", "#cases"),
+  new LinkingModel("4", "Priser", "#prices"),
+  new LinkingModel("5", "Kontakt", "#contact"),
 ];
 
 export default function Home() {
