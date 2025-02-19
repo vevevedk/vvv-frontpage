@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Link from "next/link";
 import styles from "../../styles/navbar.module.css";
 import { LinkingModel } from "../model/LinkModel";
 
@@ -10,27 +11,55 @@ const MobileNavbar: React.FC<Props> = ({ links }) => {
   const [isOpen, setIsOpen] = useState(false);
   const logoUrl = process.env.NEXT_PUBLIC_LOGO_URL || '/icons/fallback-logo.svg';
 
-  console.log("MobileNavbar rendered");
-  console.log("isOpen state:", isOpen);
-  console.log("logoUrl:", logoUrl);
-  console.log("links:", links);
-
   const toggleMenu = () => {
-    console.log("Toggling menu...");
     setIsOpen(!isOpen);
+  };
+
+  // Helper function to render the appropriate link
+  const renderLink = (link: LinkingModel) => {
+    const handleClick = () => {
+      setIsOpen(false); // Close menu when link is clicked
+    };
+
+    // If the link starts with '#', it's an internal hash link
+    if (link.idtojump.startsWith('#')) {
+      return (
+        <a 
+          href={link.idtojump} 
+          className={styles.link}
+          onClick={handleClick}
+        >
+          <h3 className={styles.LinkName}>{link.name}</h3>
+        </a>
+      );
+    }
+    
+    // If it's not a hash link, use Next.js Link component
+    return (
+      <Link 
+        href={link.idtojump}
+        className={styles.link}
+        onClick={handleClick}
+      >
+        <h3 className={styles.LinkName}>{link.name}</h3>
+      </Link>
+    );
   };
 
   return (
     <nav className={styles.nav}>
       <div className={styles.navFlex}>
-        <img
-          src={logoUrl}
-          alt="Logo"
-          className={styles.logo}
-        />
+        <Link href="/">
+          <img
+            src={logoUrl}
+            alt="Logo"
+            className={styles.logo}
+          />
+        </Link>
         <button
           className={styles.menuButton}
           onClick={toggleMenu}
+          aria-label={isOpen ? "Close menu" : "Open menu"}
         >
           <svg 
             stroke="currentColor" 
@@ -51,9 +80,7 @@ const MobileNavbar: React.FC<Props> = ({ links }) => {
         <ul className={`${styles.links} ${isOpen ? styles.open : ""}`}>
           {links.map((link) => (
             <li key={link.name + link.id} className={styles.listWrapper}>
-              <a href={link.idtojump} className={styles.link}>
-                <h3 className={styles.LinkName}>{link.name}</h3>
-              </a>
+              {renderLink(link)}
             </li>
           ))}
         </ul>

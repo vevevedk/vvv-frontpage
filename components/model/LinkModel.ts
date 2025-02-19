@@ -1,3 +1,4 @@
+// components/model/LinkModel.ts
 export class LinkingModel {
   id: string;
   name: string;

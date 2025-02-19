@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Link from "next/link";
 import styles from "../../styles/navbar.module.css";
 import { LinkingModel } from "../model/LinkModel";
 import { FaBars, FaTimes } from 'react-icons/fa';
@@ -18,6 +19,33 @@ const Nav: React.FC<Props> = ({ links }) => {
     setIsMenuOpen(false);
   };
 
+  // Helper function to render the appropriate link
+  const renderLink = (link: LinkingModel) => {
+    // If the link starts with '#', it's an internal hash link
+    if (link.idtojump.startsWith('#')) {
+      return (
+        <a 
+          href={link.idtojump} 
+          className={styles.link}
+          onClick={handleLinkClick}
+        >
+          <h3 className={styles.LinkName}>{link.name}</h3>
+        </a>
+      );
+    }
+    
+    // If it's not a hash link, use Next.js Link component
+    return (
+      <Link 
+        href={link.idtojump}
+        className={styles.link}
+        onClick={handleLinkClick}
+      >
+        <h3 className={styles.LinkName}>{link.name}</h3>
+      </Link>
+    );
+  };
+
   return (
     <>
       <div className={styles.navContainer}>
@@ -32,9 +60,7 @@ const Nav: React.FC<Props> = ({ links }) => {
             <ul className={styles.links}>
               {links.map((link) => (
                 <li key={link.name + link.id} className={styles.listWrapper}>
-                  <a href={link.idtojump} className={styles.link}>
-                    <h3 className={styles.LinkName}>{link.name}</h3>
-                  </a>
+                  {renderLink(link)}
                 </li>
               ))}
             </ul>
@@ -54,13 +80,7 @@ const Nav: React.FC<Props> = ({ links }) => {
               <ul className={`${styles.links} ${isMenuOpen ? styles.open : ''}`}>
                 {links.map((link) => (
                   <li key={link.name + link.id} className={styles.listWrapper}>
-                    <a 
-                      href={link.idtojump} 
-                      className={styles.link}
-                      onClick={handleLinkClick}
-                    >
-                      <h3 className={styles.LinkName}>{link.name}</h3>
-                    </a>
+                    {renderLink(link)}
                   </li>
                 ))}
               </ul>

@@ -1,0 +1,16 @@
+/* styles/Clients.module.css */
+.container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.createForm {
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.createForm input {
+    flex: 1;
+    padding: 0.

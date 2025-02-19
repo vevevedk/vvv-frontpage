@@ -1,0 +1,590 @@
+/* styles/Analytics.module.css */
+.dashboardContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-right: 1px solid #e5e7eb;
+}
+
+.sidebarNav {
+  position: sticky;
+  top: 1.5rem;
+}
+
+.sidebarTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebarList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebarList li {
+  margin-bottom: 0.5rem;
+}
+
+.sidebarLink {
+  display: block;
+  padding: 0.5rem;
+  color: #4b5563;
+  text-decoration: none;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.sidebarLink:hover {
+  background-color: #f3f4f6;
+  color: #2563eb;
+}
+
+.mainContent {
+  flex: 1;
+  padding: 2rem;
+}
+
+.performanceOverview {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.metricCard {
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.metricCard h3 {
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.metricValue {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.75rem;
+}
+
+.metricChanges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.positive {
+  color: #059669;
+}
+
+.negative {
+  color: #dc2626;
+}
+
+.comparisonText {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.dataSection {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.dataSection h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #111827;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.dataTable th {
+  background-color: #f9fafb;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.dataTable td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #4b5563;
+}
+
+.dataTable tr:hover td {
+  background-color: #f9fafb;
+}
+
+.highlightedRow td {
+  background-color: #f0f9ff;
+}
+
+.highlightedRow:hover td {
+  background-color: #e0f2fe;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 1.125rem;
+  color: #6b7280;
+}
+
+.error {
+  padding: 1rem;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 0.375rem;
+  margin: 1rem;
+}
+
+.active {
+  background-color: #e5e7eb;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+/* styles/Analytics.module.css */
+/* Add these to your existing styles */
+
+.loadingContainer,
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.loading,
+.error {
+  padding: 2rem;
+  text-align: center;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.retryButton {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  background-color: #0051b3;
+}
+
+.reportsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.reportCard {
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  text-decoration: none;
+  color: inherit;
+}
+
+.reportCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reportCard h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+}
+
+.reportCard p {
+  margin: 0 0 1.5rem 0;
+  color: #666;
+}
+
+.viewReport {
+  color: #0070f3;
+  font-weight: 500;
+}
+
+.reportCard:hover .viewReport {
+  text-decoration: underline;
+}
+
+.clientActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.editButton,
+.deleteButton,
+.saveButton,
+.cancelButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.editButton {
+  background-color: #edf2f7;
+  color: #2d3748;
+}
+
+.deleteButton {
+  background-color: #fed7d7;
+  color: #c53030;
+}
+
+.saveButton {
+  background-color: #48bb78;
+  color: white;
+}
+
+.cancelButton {
+  background-color: #edf2f7;
+  color: #2d3748;
+}
+
+.editForm {
+  width: 100%;
+}
+
+.editActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.noClients {
+  text-align: center;
+  color: #718096;
+  padding: 2rem;
+}
+
+.createForm {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 1rem;
+}
+
+.input {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: white;
+}
+
+.button,
+.saveButton,
+.cancelButton,
+.editButton,
+.deleteButton,
+.addAccountButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.button,
+.saveButton {
+  background-color: #0070f3;
+  color: white;
+}
+
+.button:hover,
+.saveButton:hover {
+  background-color: #0051b3;
+}
+
+.cancelButton {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
+
+.cancelButton:hover {
+  background-color: #cbd5e0;
+}
+
+.editButton {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
+
+.editButton:hover {
+  background-color: #cbd5e0;
+}
+
+.deleteButton {
+  background-color: #fed7d7;
+  color: #c53030;
+}
+
+.deleteButton:hover {
+  background-color: #feb2b2;
+}
+
+.addAccountButton {
+  background-color: #48bb78;
+  color: white;
+  margin-top: 1rem;
+}
+
+.addAccountButton:hover {
+  background-color: #38a169;
+}
+
+.clientsList {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  padding: 1rem 0;
+}
+
+.clientCard {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.clientName {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.clientActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.accountsSection {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.accountsSection h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.accountsList {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.accountItem {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.accountInfo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.accountInfo strong {
+  font-size: 1.1rem;
+  color: #333;
+  grid-column: 1 / -1;
+}
+
+.accountInfo span {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.locationsList {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+}
+
+.locations {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.locations strong {
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.noLocations {
+  color: #999;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.accountActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.editButton,
+.deleteButton {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.editButton {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.editButton:hover {
+  background-color: #d0d0d0;
+}
+
+.deleteButton {
+  background-color: #ff4444;
+  color: white;
+}
+
+.deleteButton:hover {
+  background-color: #ff0000;
+}
+
+.addAccountButton {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.addAccountButton:hover {
+  background-color: #0051cc;
+}
+
+.accountForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #f7fafc;
+  border-radius: 4px;
+}
+
+.locationsList {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.locations {
+  display: inline-block;
+  margin-right: 1rem;
+}
+
+.noLocations {
+  color: #999;
+  font-style: italic;
+}
+
+.locationSelect {
+  margin: 1rem 0;
+}
+
+.multiSelect {
+  width: 100%;
+  min-height: 100px;
+  margin-top: 0.5rem;
+}
