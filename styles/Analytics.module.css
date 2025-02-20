@@ -2,28 +2,78 @@
 .dashboardContainer {
   display: flex;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  position: relative;
+  background: #f9fafb;
 }
 
 .sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
   width: 250px;
-  background-color: #ffffff;
-  padding: 1.5rem;
-  border-right: 1px solid #e5e7eb;
+  height: 100vh;
+  background: white;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  transform: translateX(0);
+  transition: transform 0.3s ease-in-out;
+  z-index: 1000;
+}
+
+.sidebarCollapsed {
+  transform: translateX(-250px);
+}
+
+.mainContent {
+  flex: 1;
+  margin-left: 250px;
+  padding: 2rem;
+  transition: margin-left 0.3s ease-in-out;
+  width: calc(100% - 250px);
+}
+
+.mainContentExpanded {
+  margin-left: 0;
+  width: 100%;
+}
+
+.sidebarToggle {
+  position: fixed;
+  left: 250px;
+  top: 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+  padding: 0.5rem;
+  cursor: pointer;
+  z-index: 1001;
+  transition: left 0.3s ease-in-out;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.sidebarToggle:hover {
+  background: #f7fafc;
+}
+
+.sidebarToggleCollapsed {
+  left: 0;
 }
 
 .sidebarNav {
-  position: sticky;
-  top: 1.5rem;
+  padding: 1.5rem 1rem;
 }
 
 .sidebarTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
   margin-bottom: 1.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  padding-left: 0.5rem;
+  color: #1a202c;
 }
 
 .sidebarList {
@@ -34,25 +84,29 @@
 
 .sidebarList li {
   margin-bottom: 0.5rem;
+  width: 100%;
 }
 
 .sidebarLink {
   display: block;
-  padding: 0.5rem;
-  color: #4b5563;
+  padding: 0.75rem 1rem;
+  color: #4a5568;
   text-decoration: none;
   border-radius: 0.375rem;
-  transition: all 0.2s ease;
+  background-color: #ffffff;
+  margin-bottom: 4px;
+  transition: all 0.2s ease-in-out;
 }
 
 .sidebarLink:hover {
-  background-color: #f3f4f6;
-  color: #2563eb;
+  background-color: #f7fafc;
+  color: #2b6cb0;
 }
 
-.mainContent {
-  flex: 1;
-  padding: 2rem;
+.sidebarLink.active {
+  background-color: #ebf8ff;
+  color: #2b6cb0;
+  font-weight: 500;
 }
 
 .performanceOverview {
@@ -223,22 +277,21 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
-  padding: 1.5rem;
+  margin-top: 2rem;
 }
 
 .reportCard {
-  padding: 1.5rem;
   background: white;
+  padding: 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  text-decoration: none;
-  color: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .reportCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .reportCard h2 {
@@ -252,7 +305,9 @@
 }
 
 .viewReport {
-  color: #0070f3;
+  display: inline-block;
+  margin-top: 1rem;
+  color: #2b6cb0;
   font-weight: 500;
 }
 
@@ -587,4 +642,81 @@
   width: 100%;
   min-height: 100px;
   margin-top: 0.5rem;
+}
+
+.uploadContainer {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.uploadForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.select {
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.fileInput {
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: white;
+}
+
+.error {
+  color: #e53e3e;
+  padding: 0.5rem;
+  background-color: #fff5f5;
+  border-radius: 4px;
+}
+
+.submitButton {
+  padding: 0.75rem;
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitButton:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #0051cc;
+}
+
+.performanceContainer {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.performanceContent {
+  margin-top: 2rem;
 }

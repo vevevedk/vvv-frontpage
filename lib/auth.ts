@@ -44,3 +44,43 @@ export function getUser(token: string) {
     return null;
   }
 }
+
+interface TokenPayload {
+  email: string;
+  role: string;
+  iat?: number;
+  exp?: number;
+}
+
+export async function verifyToken(token: string): Promise<AuthRequest['user'] | null> {
+  try {
+    // Try process.env.JWT_SECRET first
+    const envSecret = process.env.JWT_SECRET;
+    if (envSecret) {
+      const decoded = jwt.verify(token, envSecret) as AuthRequest['user'];
+      return decoded;
+    }
+    
+    // Fallback to JWT_SECRET constant
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthRequest['user'];
+    return decoded;
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    return null;
+  }
+}
+
+export const generateToken = async (payload: Omit<TokenPayload, 'iat' | 'exp'>): Promise<string | null> => {
+  try {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('JWT_SECRET not configured');
+      return null;
+    }
+
+    return jwt.sign(payload, secret, { expiresIn: '8h' });
+  } catch (error) {
+    console.error('Token generation failed:', error);
+    return null;
+  }
+};

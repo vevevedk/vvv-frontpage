@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import styles from '../../styles/Analytics.module.css';
 import { Client, ClientAccount, AccountType } from '../../types/clients';
+// Make sure to import as default
+import AnalyticsLayout from '../../components/layouts/AnalyticsLayout';
 
 interface Location {
     id: number;
@@ -27,6 +30,9 @@ const ClientsManagement: React.FC = () => {
         account_id: '',
         locations: [] as number[]
     });
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    const router = useRouter();
 
     useEffect(() => {
         fetchClients();
@@ -203,345 +209,299 @@ const ClientsManagement: React.FC = () => {
 
     if (loading) {
         return (
-            <div className={styles.dashboardContainer}>
-                <aside className={styles.sidebar}>
-                    <nav className={styles.sidebarNav}>
-                        <h2 className={styles.sidebarTitle}>Analytics</h2>
-                        <ul className={styles.sidebarList}>
-                            <li>
-                                <a href="/analytics/paid-shopping-performance" className={styles.sidebarLink}>
-                                    Paid Shopping Performance
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/analytics/gsc" className={styles.sidebarLink}>
-                                    GSC Performance
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/analytics/clients" className={`${styles.sidebarLink} ${styles.active}`}>
-                                    Client Management
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-                </aside>
-                <main className={styles.mainContent}>
-                    <div className={styles.loading}>Loading...</div>
-                </main>
-            </div>
+            <AnalyticsLayout>
+                <div className={styles.loading}>Loading...</div>
+            </AnalyticsLayout>
         );
     }
 
-    // Show error state if there's an error
     if (error) {
-        return <div className={styles.error}>Error: {error}</div>;
+        return (
+            <AnalyticsLayout>
+                <div className={styles.error}>Error: {error}</div>
+            </AnalyticsLayout>
+        );
     }
 
     return (
-        <div className={styles.dashboardContainer}>
-            <aside className={styles.sidebar}>
-                <nav className={styles.sidebarNav}>
-                    <h2 className={styles.sidebarTitle}>Analytics</h2>
-                    <ul className={styles.sidebarList}>
-                        <li>
-                            <a href="/analytics/paid-shopping-performance" className={styles.sidebarLink}>
-                                Paid Shopping Performance
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/analytics/gsc" className={styles.sidebarLink}>
-                                GSC Performance
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/analytics/clients" className={`${styles.sidebarLink} ${styles.active}`}>
-                                Client Management
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </aside>
+        <AnalyticsLayout>
+            <h1>Client Management</h1>
 
-            <main className={styles.mainContent}>
-                <h1>Client Management</h1>
+            {error && (
+                <div className={styles.error}>
+                    {error}
+                    <button onClick={() => setError(null)} className={styles.dismissButton}>
+                        Dismiss
+                    </button>
+                </div>
+            )}
 
-                {error && (
-                    <div className={styles.error}>
-                        {error}
-                        <button onClick={() => setError(null)} className={styles.dismissButton}>
-                            Dismiss
-                        </button>
-                    </div>
-                )}
+            <form onSubmit={handleCreateClient} className={styles.createForm}>
+                <input
+                    type="text"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="New Client Name"
+                    required
+                    className={styles.input}
+                />
+                <button type="submit" className={styles.button}>Create Client</button>
+            </form>
 
-                <form onSubmit={handleCreateClient} className={styles.createForm}>
-                    <input
-                        type="text"
-                        value={newClientName}
-                        onChange={(e) => setNewClientName(e.target.value)}
-                        placeholder="New Client Name"
-                        required
-                        className={styles.input}
-                    />
-                    <button type="submit" className={styles.button}>Create Client</button>
-                </form>
+            <div className={styles.clientsList}>
+                {clients.map(client => (
+                    <div key={client.id} className={styles.clientCard}>
+                        {editingClient?.id === client.id ? (
+                            <form onSubmit={handleUpdateClient} className={styles.editForm}>
+                                <input
+                                    type="text"
+                                    value={editingClient.name}
+                                    onChange={(e) => setEditingClient({
+                                        ...editingClient,
+                                        name: e.target.value
+                                    })}
+                                    required
+                                    className={styles.input}
+                                />
+                                <div className={styles.buttonGroup}>
+                                    <button type="submit" className={styles.saveButton}>Save</button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setEditingClient(null)}
+                                        className={styles.cancelButton}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <>
+                                <h2 className={styles.clientName}>{client.name}</h2>
+                                <div className={styles.clientActions}>
+                                    <button 
+                                        onClick={() => setEditingClient(client)}
+                                        className={styles.editButton}
+                                    >
+                                        Edit
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDeleteClient(client.id)}
+                                        className={styles.deleteButton}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
 
-                <div className={styles.clientsList}>
-                    {clients.map(client => (
-                        <div key={client.id} className={styles.clientCard}>
-                            {editingClient?.id === client.id ? (
-                                <form onSubmit={handleUpdateClient} className={styles.editForm}>
-                                    <input
-                                        type="text"
-                                        value={editingClient.name}
-                                        onChange={(e) => setEditingClient({
-                                            ...editingClient,
-                                            name: e.target.value
-                                        })}
-                                        required
-                                        className={styles.input}
-                                    />
-                                    <div className={styles.buttonGroup}>
-                                        <button type="submit" className={styles.saveButton}>Save</button>
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setEditingClient(null)}
-                                            className={styles.cancelButton}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </form>
-                            ) : (
-                                <>
-                                    <h2 className={styles.clientName}>{client.name}</h2>
-                                    <div className={styles.clientActions}>
-                                        <button 
-                                            onClick={() => setEditingClient(client)}
-                                            className={styles.editButton}
-                                        >
-                                            Edit
-                                        </button>
-                                        <button 
-                                            onClick={() => handleDeleteClient(client.id)}
-                                            className={styles.deleteButton}
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-
-                                    <div className={styles.accountsSection}>
-                                        <h3>Accounts</h3>
-                                        {client.accounts && Array.isArray(client.accounts) && client.accounts.length > 0 ? (
-                                            <ul className={styles.accountsList}>
-                                                {client.accounts.filter(account => account !== null).map((account) => (
-                                                    <li key={account.id} className={styles.accountItem}>
-                                                        {editingAccount?.id === account.id ? (
-                                                            <div className={styles.accountForm}>
-                                                                <input
-                                                                    type="text"
-                                                                    value={editingAccount.account_name}
-                                                                    onChange={(e) => setEditingAccount({
-                                                                        ...editingAccount,
-                                                                        account_name: e.target.value
-                                                                    })}
-                                                                    className={styles.input}
-                                                                />
+                                <div className={styles.accountsSection}>
+                                    <h3>Accounts</h3>
+                                    {client.accounts && Array.isArray(client.accounts) && client.accounts.length > 0 ? (
+                                        <ul className={styles.accountsList}>
+                                            {client.accounts.filter(account => account !== null).map((account) => (
+                                                <li key={account.id} className={styles.accountItem}>
+                                                    {editingAccount?.id === account.id ? (
+                                                        <div className={styles.accountForm}>
+                                                            <input
+                                                                type="text"
+                                                                value={editingAccount.account_name}
+                                                                onChange={(e) => setEditingAccount({
+                                                                    ...editingAccount,
+                                                                    account_name: e.target.value
+                                                                })}
+                                                                className={styles.input}
+                                                            />
+                                                            <select
+                                                                value={editingAccount.account_type}
+                                                                onChange={(e) => setEditingAccount({
+                                                                    ...editingAccount,
+                                                                    account_type: e.target.value as AccountType
+                                                                })}
+                                                                className={styles.select}
+                                                            >
+                                                                <option value={AccountType.GoogleAds}>{AccountType.GoogleAds}</option>
+                                                                <option value={AccountType.GoogleAnalytics}>{AccountType.GoogleAnalytics}</option>
+                                                            </select>
+                                                            <input
+                                                                type="text"
+                                                                value={editingAccount.account_id}
+                                                                onChange={(e) => setEditingAccount({
+                                                                    ...editingAccount,
+                                                                    account_id: e.target.value
+                                                                })}
+                                                                className={styles.input}
+                                                            />
+                                                            <div className={styles.locationSelect}>
+                                                                <label>Locations:</label>
                                                                 <select
-                                                                    value={editingAccount.account_type}
-                                                                    onChange={(e) => setEditingAccount({
-                                                                        ...editingAccount,
-                                                                        account_type: e.target.value as AccountType
-                                                                    })}
-                                                                    className={styles.select}
+                                                                    multiple
+                                                                    value={editingAccount.locations || []}
+                                                                    onChange={(e) => {
+                                                                        const selectedOptions = Array.from(e.target.selectedOptions);
+                                                                        const selectedLocations = selectedOptions.map(option => 
+                                                                            parseInt(option.value)
+                                                                        );
+                                                                        setEditingAccount({
+                                                                            ...editingAccount,
+                                                                            locations: selectedLocations
+                                                                        });
+                                                                    }}
+                                                                    className={styles.multiSelect}
                                                                 >
-                                                                    <option value={AccountType.GoogleAds}>{AccountType.GoogleAds}</option>
-                                                                    <option value={AccountType.GoogleAnalytics}>{AccountType.GoogleAnalytics}</option>
+                                                                    {locations.map(location => (
+                                                                        <option key={location.id} value={location.id}>
+                                                                            {location.country_name}
+                                                                        </option>
+                                                                    ))}
                                                                 </select>
-                                                                <input
-                                                                    type="text"
-                                                                    value={editingAccount.account_id}
-                                                                    onChange={(e) => setEditingAccount({
-                                                                        ...editingAccount,
-                                                                        account_id: e.target.value
-                                                                    })}
-                                                                    className={styles.input}
-                                                                />
-                                                                <div className={styles.locationSelect}>
-                                                                    <label>Locations:</label>
-                                                                    <select
-                                                                        multiple
-                                                                        value={editingAccount.locations || []}
-                                                                        onChange={(e) => {
-                                                                            const selectedOptions = Array.from(e.target.selectedOptions);
-                                                                            const selectedLocations = selectedOptions.map(option => 
-                                                                                parseInt(option.value)
-                                                                            );
-                                                                            setEditingAccount({
-                                                                                ...editingAccount,
-                                                                                locations: selectedLocations
-                                                                            });
-                                                                        }}
-                                                                        className={styles.multiSelect}
-                                                                    >
-                                                                        {locations.map(location => (
-                                                                            <option key={location.id} value={location.id}>
-                                                                                {location.country_name}
-                                                                            </option>
-                                                                        ))}
-                                                                    </select>
-                                                                </div>
-                                                                <div className={styles.buttonGroup}>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => handleUpdateAccount(client.id, account.id)}
-                                                                        className={styles.saveButton}
-                                                                    >
-                                                                        Save
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => setEditingAccount(null)}
-                                                                        className={styles.cancelButton}
-                                                                    >
-                                                                        Cancel
-                                                                    </button>
+                                                            </div>
+                                                            <div className={styles.buttonGroup}>
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={() => handleUpdateAccount(client.id, account.id)}
+                                                                    className={styles.saveButton}
+                                                                >
+                                                                    Save
+                                                                </button>
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={() => setEditingAccount(null)}
+                                                                    className={styles.cancelButton}
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className={styles.accountInfo}>
+                                                                <strong>{account.account_name}</strong>
+                                                                <span>{account.account_type}</span>
+                                                                <span>{account.account_id}</span>
+                                                                <div className={styles.locationsList}>
+                                                                    {account.locations && account.locations.length > 0 ? (
+                                                                        <div className={styles.locations}>
+                                                                            <strong>Locations: </strong>
+                                                                            {locations
+                                                                                .filter(loc => account.locations.includes(loc.id))
+                                                                                .map(loc => loc.country_name)
+                                                                                .join(', ')}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className={styles.noLocations}>No locations selected</span>
+                                                                    )}
                                                                 </div>
                                                             </div>
-                                                        ) : (
-                                                            <>
-                                                                <div className={styles.accountInfo}>
-                                                                    <strong>{account.account_name}</strong>
-                                                                    <span>{account.account_type}</span>
-                                                                    <span>{account.account_id}</span>
-                                                                    <div className={styles.locationsList}>
-                                                                        {account.locations && account.locations.length > 0 ? (
-                                                                            <div className={styles.locations}>
-                                                                                <strong>Locations: </strong>
-                                                                                {locations
-                                                                                    .filter(loc => account.locations.includes(loc.id))
-                                                                                    .map(loc => loc.country_name)
-                                                                                    .join(', ')}
-                                                                            </div>
-                                                                        ) : (
-                                                                            <span className={styles.noLocations}>No locations selected</span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                                <div className={styles.accountActions}>
-                                                                    <button
-                                                                        onClick={() => setEditingAccount(account)}
-                                                                        className={styles.editButton}
-                                                                    >
-                                                                        Edit
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteAccount(client.id, account.id)}
-                                                                        className={styles.deleteButton}
-                                                                    >
-                                                                        Delete
-                                                                    </button>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <p className={styles.noAccounts}>No accounts added yet</p>
-                                        )}
+                                                            <div className={styles.accountActions}>
+                                                                <button
+                                                                    onClick={() => setEditingAccount(account)}
+                                                                    className={styles.editButton}
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteAccount(client.id, account.id)}
+                                                                    className={styles.deleteButton}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className={styles.noAccounts}>No accounts added yet</p>
+                                    )}
 
-                                        {showAccountForm === client.id ? (
-                                            <div className={styles.accountForm}>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Account Name"
-                                                    value={newAccount.account_name}
-                                                    onChange={(e) => setNewAccount({
-                                                        ...newAccount,
-                                                        account_name: e.target.value
-                                                    })}
-                                                    className={styles.input}
-                                                />
-                                                <select
-                                                    value={newAccount.account_type}
-                                                    onChange={(e) => setNewAccount({
-                                                        ...newAccount,
-                                                        account_type: e.target.value as AccountType
-                                                    })}
-                                                    className={styles.select}
-                                                >
-                                                    <option value={AccountType.GoogleAds}>{AccountType.GoogleAds}</option>
-                                                    <option value={AccountType.GoogleAnalytics}>{AccountType.GoogleAnalytics}</option>
-                                                </select>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Account ID"
-                                                    value={newAccount.account_id}
-                                                    onChange={(e) => setNewAccount({
-                                                        ...newAccount,
-                                                        account_id: e.target.value
-                                                    })}
-                                                    className={styles.input}
-                                                />
-                                                <div className={styles.locationSelect}>
-                                                    <label>Locations:</label>
-                                                    <select
-                                                        multiple
-                                                        value={newAccount.locations}
-                                                        onChange={(e) => {
-                                                            const values = Array.from(
-                                                                e.target.selectedOptions, 
-                                                                option => parseInt(option.value)
-                                                            );
-                                                            setNewAccount({
-                                                                ...newAccount,
-                                                                locations: values
-                                                            });
-                                                        }}
-                                                        className={styles.multiSelect}
-                                                    >
-                                                        {locations.map(location => (
-                                                            <option key={location.id} value={location.id}>
-                                                                {location.country_name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div className={styles.buttonGroup}>
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => handleAddAccount(client.id)}
-                                                        className={styles.saveButton}
-                                                    >
-                                                        Add Account
-                                                    </button>
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => setShowAccountForm(null)}
-                                                        className={styles.cancelButton}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <button 
-                                                onClick={() => setShowAccountForm(client.id)}
-                                                className={styles.addAccountButton}
+                                    {showAccountForm === client.id ? (
+                                        <div className={styles.accountForm}>
+                                            <input
+                                                type="text"
+                                                placeholder="Account Name"
+                                                value={newAccount.account_name}
+                                                onChange={(e) => setNewAccount({
+                                                    ...newAccount,
+                                                    account_name: e.target.value
+                                                })}
+                                                className={styles.input}
+                                            />
+                                            <select
+                                                value={newAccount.account_type}
+                                                onChange={(e) => setNewAccount({
+                                                    ...newAccount,
+                                                    account_type: e.target.value as AccountType
+                                                })}
+                                                className={styles.select}
                                             >
-                                                Add Account
-                                            </button>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </main>
-        </div>
+                                                <option value={AccountType.GoogleAds}>{AccountType.GoogleAds}</option>
+                                                <option value={AccountType.GoogleAnalytics}>{AccountType.GoogleAnalytics}</option>
+                                            </select>
+                                            <input
+                                                type="text"
+                                                placeholder="Account ID"
+                                                value={newAccount.account_id}
+                                                onChange={(e) => setNewAccount({
+                                                    ...newAccount,
+                                                    account_id: e.target.value
+                                                })}
+                                                className={styles.input}
+                                            />
+                                            <div className={styles.locationSelect}>
+                                                <label>Locations:</label>
+                                                <select
+                                                    multiple
+                                                    value={newAccount.locations}
+                                                    onChange={(e) => {
+                                                        const values = Array.from(
+                                                            e.target.selectedOptions, 
+                                                            option => parseInt(option.value)
+                                                        );
+                                                        setNewAccount({
+                                                            ...newAccount,
+                                                            locations: values
+                                                        });
+                                                    }}
+                                                    className={styles.multiSelect}
+                                                >
+                                                    {locations.map(location => (
+                                                        <option key={location.id} value={location.id}>
+                                                            {location.country_name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className={styles.buttonGroup}>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => handleAddAccount(client.id)}
+                                                    className={styles.saveButton}
+                                                >
+                                                    Add Account
+                                                </button>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setShowAccountForm(null)}
+                                                    className={styles.cancelButton}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button 
+                                            onClick={() => setShowAccountForm(client.id)}
+                                            className={styles.addAccountButton}
+                                        >
+                                            Add Account
+                                        </button>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </AnalyticsLayout>
     );
 };
 
