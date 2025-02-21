@@ -23,6 +23,15 @@ const calculateMissingDays = (maxDate: string): number => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
+const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+        return `${(num / 1000000).toFixed(1)}M rows`;
+    } else if (num >= 1000) {
+        return `${(num / 1000).toFixed(1)}K rows`;
+    }
+    return num.toLocaleString() + ' rows';
+};
+
 const DataQA: NextPage = () => {
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<number>(0);
@@ -132,7 +141,9 @@ const DataQA: NextPage = () => {
                                                     'N/A'
                                                 )}
                                             </td>
-                                            <td>{stat.row_count.toLocaleString()}</td>
+                                            <td className={styles.rowCount}>
+                                                {formatNumber(stat.row_count)}
+                                            </td>
                                             <td>
                                                 <a 
                                                     href={`/analytics/upload?client=${selectedClient}&table=${stat.table_name}`}
