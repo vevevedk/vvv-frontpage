@@ -658,12 +658,17 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   max-width: 600px;
   margin: 2rem auto;
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
@@ -674,6 +679,10 @@
   margin-bottom: 0.5rem;
   font-weight: 500;
   color: #1a202c;
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #4a5568;
 }
 
 .select {
@@ -688,6 +697,23 @@
   border-radius: 4px;
   background-color: white;
   font-size: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  background-color: white;
+  color: #4a5568;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
 }
 
 .fileInput {
@@ -700,6 +726,18 @@
   border: 1px dashed #e2e8f0;
   border-radius: 4px;
   background-color: #f8fafc;
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px dashed #e2e8f0;
+  border-radius: 0.375rem;
+  background-color: #f7fafc;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fileInput:hover {
+  border-color: #4299e1;
+  background-color: #ebf8ff;
 }
 
 .error {
@@ -707,6 +745,12 @@
   padding: 0.5rem;
   background-color: #fff5f5;
   border-radius: 4px;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background-color: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 0.375rem;
+  color: #c53030;
 }
 
 .submitButton {
@@ -844,4 +888,282 @@
 
 .ok {
   color: #38a169;
+}
+
+.dateFilters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-end;
+}
+
+.dateInput {
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  width: 150px;
+  color: #4a5568;
+  background-color: white;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.paginationControls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  margin-top: 1rem;
+}
+
+.pageInfo {
+  font-size: 0.875rem;
+  color: #4a5568;
+}
+
+.pageButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pageButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  background: white;
+  color: #4a5568;
+  cursor: pointer;
+}
+
+.pageButton:hover:not(:disabled) {
+  background: #f7fafc;
+}
+
+.pageButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loadingText {
+    margin-top: 1rem;
+    color: #4a5568;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.noData {
+    padding: 2rem;
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.comparisonSection {
+    position: relative;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.comparisonHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.comparisonHeader select:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.positive {
+    color: #38a169;
+    font-weight: 500;
+}
+
+.negative {
+    color: #e53e3e;
+    font-weight: 500;
+}
+
+.totalRow {
+    border-top: 2px solid #e2e8f0;
+    font-weight: 600;
+    background-color: #f8fafc;
+}
+
+.totalRow td {
+    padding: 1rem 0.75rem;
+}
+
+.totalsSummary {
+    display: flex;
+    gap: 2rem;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+}
+
+.totalsSummaryBox {
+    flex: 1;
+}
+
+.totalsSummaryBox h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    color: #4a5568;
+}
+
+.totalsSummaryBox table {
+    width: 100%;
+}
+
+.totalsSummaryBox th {
+    text-align: left;
+    font-weight: 500;
+    padding: 0.5rem 1rem 0.5rem 0;
+    color: #64748b;
+}
+
+.totalsSummaryBox td {
+    text-align: right;
+    font-weight: 600;
+    padding: 0.5rem 0;
+}
+
+.tableSection {
+    margin-bottom: 2rem;
+}
+
+.tableSection h3 {
+    color: #4a5568;
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.relatedTables {
+    font-size: 0.875rem;
+    color: #718096;
+    margin-top: 0.5rem;
+}
+
+.relatedTables span {
+    font-style: italic;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.dataTypeInfo {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    margin-top: 0.75rem;
+    padding: 1rem;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+
+.description {
+    margin: 0 0 0.5rem 0;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+    color: #4a5568;
+}
+
+.container {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.container h1 {
+    margin-bottom: 2rem;
+    color: #1a202c;
+    font-size: 1.875rem;
+    font-weight: 600;
+}
+
+.relatedTables {
+    font-size: 0.875rem;
+    color: #718096;
+    color: #718096;
+}
+
+.relatedTables span {
+    font-style: italic;
+    font-weight: 500;
+    color: #4a5568;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.uploadButton {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.uploadButton:hover:not(:disabled) {
+    background-color: #3182ce;
+}
+
+.uploadButton:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.success {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: #f0fff4;
+    border: 1px solid #9ae6b4;
+    border-radius: 0.375rem;
+    color: #2f855a;
 }
