@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import formidable from 'formidable';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import { Pool } from 'pg';
-import * as csvParse from 'csv-parse';
+import { parse } from 'csv-parse';
 
 export const config = {
     api: {
@@ -27,47 +27,32 @@ const transformColumnName = (columnName: string): string => {
         .replace(/^[0-9]/, '_$&');   // prefix with underscore if starts with number
 };
 
+// Add debug logging for CSV parsing
+const parseCSV = async (fileContent: string) => {
+    return new Promise((resolve, reject) => {
+        const results: any[] = [];
+        parse(fileContent, {
+            columns: true,
+            skip_empty_lines: true,
+            trim: true
+        })
+        .on('data', (data) => results.push(data))
+        .on('error', reject)
+        .on('end', () => resolve(results));
+    });
+};
+
 const transformDate = (dateString: string): string => {
-    // Try parsing as Month DD, YYYY format (e.g., "Feb 10, 2025")
-    const monthDayYear = /^([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{4})$/;
-    const monthMatch = dateString.match(monthDayYear);
-    
-    if (monthMatch) {
-        const [_, month, day, year] = monthMatch;
-        const monthNum = new Date(`${month} 1, 2000`).getMonth() + 1;
-        return `${year}-${monthNum.toString().padStart(2, '0')}-${day.padStart(2, '0')}`;
+    if (!dateString) {
+        throw new Error('Date string is required');
     }
 
-    // Try DD/MM/YYYY format
-    const ddmmyyyy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-    const match = dateString.match(ddmmyyyy);
-    
-    if (match) {
-        const [_, day, month, year] = match;
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+        throw new Error(`Invalid date: ${dateString}`);
     }
 
-    // Try parsing as ISO date (YYYY-MM-DD)
-    const isoDate = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
-    const isoMatch = dateString.match(isoDate);
-    
-    if (isoMatch) {
-        const [_, year, month, day] = isoMatch;
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    }
-
-    // If no match, log warning and return ISO formatted date
-    console.warn(`Parsing date using fallback method: ${dateString}`);
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) {
-            throw new Error('Invalid date');
-        }
-        return date.toISOString().split('T')[0];
-    } catch (error) {
-        console.error(`Failed to parse date: ${dateString}`);
-        throw new Error(`Invalid date format: ${dateString}`);
-    }
+    return date.toISOString().split('T')[0];
 };
 
 // Add a mapping function for table names
@@ -82,13 +67,7 @@ const mapTableName = (displayName: string): string => {
 // Modify the createUpsertQuery function
 const createUpsertQuery = (table: string, columns: string[], clientId: string, rowValues: any[]) => {
     const sanitizedTable = mapTableName(table);
-    console.log('Creating query with:', { 
-        sanitizedTable, 
-        columns,
-        clientId,
-        rowValues 
-    });
-
+    
     return {
         text: `
             INSERT INTO ${sanitizedTable} (${['client_id', ...columns].join(', ')})
@@ -108,102 +87,92 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    const form = formidable({});
-    let currentRow: any = null; // Define currentRow at the top level
-
     try {
+        const form = formidable();
         const [fields, files] = await form.parse(req);
-        const file = Array.isArray(files.file) ? files.file[0] : files.file;
-        const clientId = Array.isArray(fields.clientId) ? fields.clientId[0] : fields.clientId;
-        const table = Array.isArray(fields.table) ? fields.table[0] : fields.table;
-
-        if (!file || !clientId || !table) {
-            return res.status(400).json({ 
-                message: 'Missing required fields',
-                details: { hasFile: !!file, hasClientId: !!clientId, hasTable: !!table }
-            });
+        
+        const file = files.file?.[0];
+        const clientId = fields.clientId?.[0];
+        
+        if (!file || !clientId) {
+            return res.status(400).json({ message: 'Missing file or client ID' });
         }
 
-        console.log('Processing file:', {
-            filename: file.originalFilename,
-            size: file.size,
-            type: file.mimetype
-        });
-
-        // Sanitize table name before use
-        const sanitizedTable = mapTableName(table);
-        console.log('Using table:', sanitizedTable);
-
-        // Read and parse CSV file
-        const fileContent = fs.readFileSync(file.filepath);
-        const parser = csvParse.parse(fileContent, {
-            columns: true,
-            skip_empty_lines: true
-        });
-
-        let rowCount = 0;
+        const fileContent = await fs.readFile(file.filepath, 'utf-8');
+        const records = await parseCSV(fileContent);
+        
+        let rowsProcessed = 0;
         let skippedCount = 0;
 
-        for await (const row of parser) {
-            currentRow = row;
+        if (fields.dataType[0] === 'search_console_daily') {
+            const client = await pool.connect();
             
-            const transformedRow: Record<string, any> = {};
-            Object.entries(row).forEach(([key, value]) => {
-                const dbColumn = transformColumnName(key);
-                transformedRow[dbColumn] = value;
-            });
+            try {
+                await client.query('BEGIN');
+                
+                for (const record of records) {
+                    try {
+                        const mappedRecord = {
+                            date: transformDate(record.Date),
+                            query: record.Query,
+                            landing_page: record['Landing Page'],
+                            impressions: parseInt(record.Impressions) || 0,
+                            url_clicks: parseInt(record['Url Clicks']) || 0,
+                            average_position: parseFloat(record['Average Position']) || 0,
+                            country: record.Country || 'Unknown'
+                        };
 
-            if (transformedRow.date) {
-                transformedRow.date = transformDate(transformedRow.date);
-            }
+                        await client.query(`
+                            INSERT INTO search_console_data 
+                            (date, query, landing_page, impressions, url_clicks, average_position, client_id, country)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                            ON CONFLICT (date, query, landing_page, client_id, country) 
+                            DO UPDATE SET
+                                impressions = EXCLUDED.impressions,
+                                url_clicks = EXCLUDED.url_clicks,
+                                average_position = EXCLUDED.average_position
+                        `, [
+                            mappedRecord.date,
+                            mappedRecord.query,
+                            mappedRecord.landing_page,
+                            mappedRecord.impressions,
+                            mappedRecord.url_clicks,
+                            mappedRecord.average_position,
+                            clientId,
+                            mappedRecord.country
+                        ]);
+                        
+                        rowsProcessed++;
+                    } catch (error) {
+                        console.warn('Skip record:', error.message);
+                        skippedCount++;
+                    }
+                }
 
-            // Convert numeric fields
-            transformedRow.impressions = parseInt(transformedRow.impressions, 10);
-            transformedRow.url_clicks = parseInt(transformedRow.url_clicks, 10);
-            transformedRow.average_position = parseFloat(transformedRow.average_position);
+                await client.query('COMMIT');
+                
+                return res.status(200).json({
+                    message: `Processed ${rowsProcessed} rows, skipped ${skippedCount} duplicates`,
+                    rowsProcessed,
+                    skippedCount,
+                    totalRows: records.length
+                });
 
-            const columns = Object.keys(transformedRow);
-            const rowValues = Object.values(transformedRow);
-
-            console.log('Processing row:', {
-                clientId,
-                columns,
-                rowValues
-            });
-
-            // Pass rowValues to query creation
-            const queryObj = createUpsertQuery(table, columns, clientId, rowValues);
-            const result = await pool.query(queryObj.text, queryObj.values);
-            
-            if (result.rowCount === 0) {
-                skippedCount++;
-            } else {
-                rowCount++;
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
             }
         }
 
-        // Clean up temporary file
-        fs.unlinkSync(file.filepath);
-
-        return res.status(200).json({ 
-            message: 'Upload successful',
-            rowsProcessed: rowCount,
-            rowsSkipped: skippedCount
-        });
+        return res.status(400).json({ message: 'Invalid data type' });
 
     } catch (error) {
-        console.error('Server error:', {
-            error: error,
-            message: error.message,
-            sampleData: currentRow // Use currentRow instead of row
-        });
+        console.error('Upload error:', error);
         return res.status(500).json({
             message: 'Upload failed',
-            error: error.message,
-            details: process.env.NODE_ENV === 'development' ? {
-                stack: error.stack,
-                lastProcessedRow: currentRow // Include last processed row in error details
-            } : undefined
+            error: error instanceof Error ? error.message : 'Unknown error'
         });
     }
 }
