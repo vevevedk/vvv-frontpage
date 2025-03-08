@@ -1,26 +1,15 @@
+import { NextPage } from 'next';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import type { NextPage } from 'next';
 import AnalyticsLayout from '../../components/layouts/AnalyticsLayout';
-import styles from '../../styles/Analytics.module.css';
+import styles from '@/styles/analytics/Analytics.module.css';
+import type { Client } from '../../types';
+import UploadForm from './components/upload/UploadForm';
+import { DataQualityInsights } from './components/data-quality/DataQualityInsights';
+import { GetServerSideProps } from 'next';
+import prisma from '@/lib/prisma';
 
-interface UploadFormData {
-    file: File | null;
-    table: string;
-    clientId: number;
-}
-
-interface Client {
-    id: number;
-    name: string;
-}
-
-const ALLOWED_TABLES = [
-    { id: 'search_console_data', name: 'Search Console Data' },
-    { id: 'paid_shopping_data', name: 'Paid Shopping Data' }
-] as const;
-
-const DATA_TYPES = [
+export const DATA_TYPES = [
     {
         id: 'campaign_performance_daily',
         name: 'Campaign Performance Daily',
@@ -42,143 +31,102 @@ const DATA_TYPES = [
     }
 ] as const;
 
-// Update the type definition
 type DataType = typeof DATA_TYPES[number]['id'];
 
-const Upload: NextPage = () => {
-    const [selectedClient, setSelectedClient] = useState<number>(0);
+interface Props {
+    clients: Client[];
+}
+
+interface ProcessingStatus {
+    processed: number;
+    total: number;
+    status: 'processing' | 'complete' | 'error';
+    message?: string;
+}
+
+interface UploadError {
+    message: string;
+    details?: string;
+}
+
+const Upload: NextPage<Props> = ({ clients }) => {
+    const router = useRouter();
+    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedType, setSelectedType] = useState<DataType>('');
-    const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string>('');
     const [success, setSuccess] = useState<string>('');
-    const [clients, setClients] = useState<Client[]>([]);
-
-    const handleUpload = async () => {
-        if (!selectedClient || !selectedFile || !selectedType) return;
-
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('clientId', selectedClient.toString());
-        formData.append('dataType', selectedType);
-
-        setIsUploading(true);
-        setError('');
-        setSuccess('');
-
-        try {
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) throw new Error(data.message || 'Upload failed');
-
-            setSuccess(`Successfully uploaded ${data.rowsProcessed} rows`);
-            setSelectedFile(null);
-            
-            // Reset file input
-            const fileInput = document.getElementById('file') as HTMLInputElement;
-            if (fileInput) fileInput.value = '';
-            
-        } catch (error) {
-            setError(error instanceof Error ? error.message : 'Upload failed');
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    const router = useRouter();
-    const [formData, setFormData] = useState<UploadFormData>({
-        file: null,
-        table: 'search_console_data',
-        clientId: 0
-    });
-    const [uploading, setUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
-
-    useEffect(() => {
-        fetchClients();
-        
-        // Set initial values from URL query params
-        if (router.query.client) {
-            setFormData(prev => ({
-                ...prev,
-                clientId: Number(router.query.client)
-            }));
-        }
-        if (router.query.table) {
-            setFormData(prev => ({
-                ...prev,
-                table: router.query.table as string
-            }));
-        }
-    }, [router.query]);
-
-    const fetchClients = async () => {
-        try {
-            const response = await fetch('/api/clients');
-            if (!response.ok) throw new Error('Failed to fetch clients');
-            const data = await response.json();
-            setClients(data);
-        } catch (error) {
-            setError('Failed to load clients');
-        }
-    };
+    const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null);
+    const [uploadError, setUploadError] = useState<UploadError | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0] || null;
-        setFormData(prev => ({ ...prev, file }));
-        setError(null);
+        const file = e.target.files?.[0];
+        setSelectedFile(file || null);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const { file, table, clientId } = formData;
-
-        if (!file || !clientId) {
-            setError('Please select both a client and a file');
-            return;
-        }
-
-        const formPayload = new FormData();
-        formPayload.append('file', file);
-        formPayload.append('table', table);
-        formPayload.append('clientId', clientId.toString());
-
+    const handleUpload = async (file: File) => {
         try {
-            setUploading(true);
-            setUploadProgress(0);
-            setError(null);
+            console.log('Starting upload for file:', file.name);
+            setUploadError(null);
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('clientId', selectedClient.toString());
+            formData.append('tableType', selectedType);
+
+            console.log('Form data contents:', {
+                file: file.name,
+                clientId: selectedClient,
+                tableType: selectedType
+            });
 
             const response = await fetch('/api/upload', {
                 method: 'POST',
-                body: formPayload
+                headers: {
+                    // Don't set Content-Type here, let the browser handle it
+                },
+                body: formData
             });
 
-            const result = await response.json();
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
 
             if (!response.ok) {
-                throw new Error(result.error || result.message || 'Upload failed');
+                console.log('Upload failed with error:', data);
+                setUploadError({
+                    message: 'Upload Failed',
+                    details: data.message || 'Unknown error occurred'
+                });
+                return;
             }
 
-            setUploadProgress(100);
-            setFormData(prev => ({ ...prev, file: null }));
-            
-            // Reset file input
-            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-            if (fileInput) fileInput.value = '';
-            
-            alert(`Upload successful! Processed ${result.rowsProcessed} rows (${result.rowsSkipped} duplicates skipped)`);
-        } catch (err) {
-            console.error('Upload error:', err);
-            setError(err instanceof Error ? err.message : 'Upload failed');
-        } finally {
-            setUploading(false);
-            setUploadProgress(0);
+            pollProcessingStatus();
+        } catch (error) {
+            console.error('Upload error:', error);
+            setUploadError({
+                message: 'Upload Error',
+                details: error instanceof Error ? error.message : 'Failed to upload file'
+            });
         }
+    };
+
+    const pollProcessingStatus = async () => {
+        const pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/api/processing-status');
+                const status: ProcessingStatus = await response.json();
+                
+                setProcessingStatus(status);
+                
+                if (status.status === 'complete' || status.status === 'error') {
+                    clearInterval(pollInterval);
+                }
+            } catch (error) {
+                console.error('Status polling error:', error);
+                clearInterval(pollInterval);
+            }
+        }, 1000); // Poll every second
     };
 
     return (
@@ -186,78 +134,106 @@ const Upload: NextPage = () => {
             <div className={styles.container}>
                 <h1>Data Upload</h1>
                 
-                <div className={styles.uploadForm}>
-                    <div className={styles.formGroup}>
-                        <label htmlFor="client">Select Client</label>
-                        <select
-                            id="client"
-                            value={selectedClient}
-                            onChange={(e) => setSelectedClient(Number(e.target.value))}
-                            className={styles.select}
-                        >
-                            <option value="">Select a client...</option>
-                            {clients.map(client => (
-                                <option key={client.id} value={client.id}>
-                                    {client.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className={styles.formGroup}>
-                        <label htmlFor="dataType">Data Type</label>
-                        <select
-                            id="dataType"
-                            value={selectedType}
-                            onChange={(e) => setSelectedType(e.target.value as DataType)}
-                            className={styles.select}
-                        >
-                            <option value="">Select a data type...</option>
-                            {DATA_TYPES.map(type => (
-                                <option key={type.id} value={type.id}>
-                                    {type.name}
-                                </option>
-                            ))}
-                        </select>
-                        {selectedType && (
-                            <div className={styles.dataTypeInfo}>
-                                <p className={styles.description}>
-                                    {DATA_TYPES.find(t => t.id === selectedType)?.description}
-                                </p>
-                                <div className={styles.relatedTables}>
-                                    <p>Tables affected: <span>
-                                        {DATA_TYPES.find(t => t.id === selectedType)?.tables.join(', ')}
-                                    </span></p>
-                                </div>
+                {uploadError && (
+                    <div className={styles.errorContainer}>
+                        <div className={styles.errorContent}>
+                            <div className={styles.errorHeader}>
+                                <span className={styles.errorIcon}>⚠️</span>
+                                <h3>{uploadError.message}</h3>
                             </div>
-                        )}
+                            {uploadError.details && (
+                                <div className={styles.errorDetails}>
+                                    {uploadError.details}
+                                </div>
+                            )}
+                            <div className={styles.errorHelp}>
+                                {uploadError.message.includes('Missing required columns') && (
+                                    <div className={styles.columnHelp}>
+                                        <p>Your file must include these required columns:</p>
+                                        <ul>
+                                            <li>query</li>
+                                            <li>date</li>
+                                            {/* Add other required columns */}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
+                )}
 
-                    <div className={styles.formGroup}>
-                        <label htmlFor="file">Upload File (CSV)</label>
-                        <input
-                            type="file"
-                            id="file"
-                            accept=".csv"
-                            onChange={handleFileChange}
-                            className={styles.fileInput}
-                        />
+                <UploadForm 
+                    selectedClient={selectedClient}
+                    selectedFile={selectedFile}
+                    selectedType={selectedType}
+                    clients={clients}
+                    onClientChange={setSelectedClient}
+                    onFileChange={handleFileChange}
+                    onTypeChange={(type) => setSelectedType(type as DataType)}
+                    error={error}
+                    setError={setError}
+                    success={success}
+                    setSuccess={setSuccess}
+                />
+
+                {processingStatus && (
+                    <div className={styles.processingContainer}>
+                        <div className={styles.processingInfo}>
+                            <div className={styles.processingHeader}>
+                                <span className={styles.processingTitle}>Processing Data</span>
+                                <span className={styles.processingCount}>
+                                    {processingStatus.processed.toLocaleString()} / {processingStatus.total.toLocaleString()} rows
+                                </span>
+                            </div>
+                            
+                            <div className={styles.progressBarContainer}>
+                                <div 
+                                    className={styles.progressBar}
+                                    style={{ 
+                                        width: `${(processingStatus.processed / processingStatus.total) * 100}%`
+                                    }}
+                                />
+                            </div>
+
+                            <div className={styles.processingMessage}>
+                                {processingStatus.message || 'Processing your data...'}
+                            </div>
+                        </div>
                     </div>
-
-                    <button
-                        onClick={handleUpload}
-                        disabled={!selectedClient || !selectedFile || !selectedType || isUploading}
-                        className={styles.uploadButton}
-                    >
-                        {isUploading ? 'Uploading...' : 'Upload Data'}
-                    </button>
-
-                    {error && <div className={styles.error}>{error}</div>}
-                    {success && <div className={styles.success}>{success}</div>}
-                </div>
+                )}
             </div>
         </AnalyticsLayout>
     );
 };
 
 export default Upload;
+
+export const getServerSideProps: GetServerSideProps = async () => {
+    try {
+        const clients = await prisma.clients.findMany({
+            select: {
+                id: true,
+                name: true
+            },
+            orderBy: {
+                name: 'asc'
+            }
+        });
+
+        return {
+            props: {
+                clients: clients.map(client => ({
+                    id: client.id,
+                    name: client.name
+                }))
+            }
+        };
+    } catch (error) {
+        console.error('Failed to fetch clients:', error);
+        return {
+            props: {
+                clients: []
+            }
+        };
+    }
+};

@@ -2,28 +2,34 @@ import { useState, ReactNode } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { HiMenuAlt2, HiX } from 'react-icons/hi';
-import styles from '../../styles/Analytics.module.css';
+import styles from '@/styles/analytics/Analytics.module.css';
+import path from 'path';
 
 const ANALYTICS_REPORTS = [
   {
-    id: 'paid-shopping-performance',
-    title: 'Paid Shopping Performance',
-    path: '/analytics/paid-shopping-performance'
-  },
-  {
-    id: 'gsc',
-    title: 'GSC Performance',
-    path: '/analytics/gsc'
-  },
-  {
-    id: 'clients',
-    title: 'Client Management',
-    path: '/analytics/clients'
+    id: 'data-qa',
+    title: 'Data Quality',
+    path: '/analytics/data-qa'
   },
   {
     id: 'upload',
     title: 'Data Upload',
     path: '/analytics/upload'
+  },
+  {
+    id: 'client',
+    title: 'Client Management',
+    path: '/analytics/clients'
+  },
+  {
+    id: 'gsc-performance',
+    title: 'Search Performance',
+    path: '/analytics/gsc-performance'
+  },
+  {
+    id: 'paid-shopping-performance',
+    title: 'Paid Shopping Performance',
+    path: '/analytics/paid-shopping-performance'
   }
 ] as const;
 

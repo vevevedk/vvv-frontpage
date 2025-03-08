@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import AnalyticsLayout from '../../components/layouts/AnalyticsLayout';
-import styles from '../../styles/Analytics.module.css';
+import styles from '@/styles/analytics/Analytics.module.css';
 
 const PaidShoppingPerformance = () => {
   const [loading, setLoading] = useState(false);

@@ -1,5 +1,5 @@
 import { CountryStats, ComparisonStats } from '../types';
-import styles from '../styles/Analytics.module.css';
+import styles from '../styles/analytics/Analytics.module.css';
 
 interface TotalsSummaryProps {
     mainStats: CountryStats[];
@@ -9,33 +9,46 @@ interface TotalsSummaryProps {
 const TotalsSummary: React.FC<TotalsSummaryProps> = ({ mainStats, comparisonStats }) => {
     // Helper functions
     const formatNumber = (num: number): string => {
-        return isNaN(num) ? '0' : num.toLocaleString();
+        return isNaN(num) || num === 0 ? '0' : num.toLocaleString();
+    };
+
+    const formatPercentage = (value: number, total: number): string => {
+        if (!value || !total) return '0.0%';
+        return ((value / total) * 100).toFixed(1) + '%';
     };
 
     const formatDiff = (value: number, total: number): string => {
-        if (isNaN(value) || isNaN(total)) return '0 (0.0%)';
-        const pct = total !== 0 ? (value / total) * 100 : 0;
+        const numStr = formatNumber(value);
+        const pctStr = formatPercentage(value, total);
         const sign = value > 0 ? '+' : '';
-        return `${sign}${formatNumber(value)} (${sign}${pct.toFixed(1)}%)`;
+        return `${sign}${numStr} (${sign}${pctStr})`;
     };
 
-    const calculatePosition = (position: number, impressions: number): string => {
-        if (isNaN(position) || isNaN(impressions) || impressions === 0) return '0.0';
-        return (position / impressions).toFixed(1);
-    };
-
-    // Calculate totals with safeguards
-    const totals = mainStats.reduce((acc, curr) => ({
-        query_count: (acc.query_count || 0) + (curr.query_count || 0),
-        impressions: (acc.impressions || 0) + (curr.impressions || 0),
-        clicks: (acc.clicks || 0) + (curr.clicks || 0),
-        position: (acc.position || 0) + ((curr.position || 0) * (curr.impressions || 0)),
-    }), {
+    // Aggregate current period totals
+    const totals = mainStats.reduce((acc, curr) => {
+        const impressions = parseInt(curr.impressions as string) || 0;
+        const clicks = parseInt(curr.url_clicks as string) || 0;
+        const position = parseFloat(curr.average_position as string) || 0;
+        
+        return {
+            query_count: acc.query_count + 1, // Count unique queries
+            impressions: acc.impressions + impressions,
+            clicks: acc.clicks + clicks,
+            position: acc.position + (position * impressions), // Weighted position
+            total_weight: acc.total_weight + impressions
+        };
+    }, {
         query_count: 0,
         impressions: 0,
         clicks: 0,
         position: 0,
+        total_weight: 0
     });
+
+    // Calculate weighted average position
+    const avgPosition = totals.total_weight > 0 
+        ? (totals.position / totals.total_weight).toFixed(1)
+        : '0.0';
 
     const comparisonTotals = comparisonStats.reduce((acc, curr) => ({
         query_count_diff: (acc.query_count_diff || 0) + (curr.query_count_diff || 0),
@@ -69,7 +82,11 @@ const TotalsSummary: React.FC<TotalsSummaryProps> = ({ mainStats, comparisonStat
                         </tr>
                         <tr>
                             <th>Avg Position:</th>
-                            <td>{calculatePosition(totals.position, totals.impressions)}</td>
+                            <td>{avgPosition}</td>
+                        </tr>
+                        <tr>
+                            <th>CTR:</th>
+                            <td>{formatPercentage(totals.clicks, totals.impressions)}</td>
                         </tr>
                     </tbody>
                 </table>

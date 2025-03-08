@@ -1,0 +1,32 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+}
+
+model clients {
+  id   Int    @id @default(autoincrement())
+  name String
+  // ... other fields
+}
+
+model search_console_data {
+  id          Int      @id @default(autoincrement())
+  client_id   Int
+  date        DateTime
+  query       String
+  page        String
+  clicks      Int
+  impressions Int
+  position    Float
+  ctr         Float
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@unique([client_id, date, query, page])
+} 

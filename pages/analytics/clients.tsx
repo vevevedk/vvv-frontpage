@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import styles from '../../styles/Analytics.module.css';
+import styles from '@/styles/analytics/Analytics.module.css';
 import { Client, ClientAccount, AccountType } from '../../types/clients';
 // Make sure to import as default
 import AnalyticsLayout from '../../components/layouts/AnalyticsLayout';
