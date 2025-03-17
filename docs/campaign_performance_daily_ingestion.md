@@ -228,4 +228,160 @@ To upload campaign performance data:
 2. Choose the client
 3. Upload the Google Ads performance report CSV
 4. Review the validation results
-5. Confirm the upload if validation passes 
+5. Confirm the upload if validation passes
+
+# Data Handling Requirements for Google Ads Campaign Performance Data
+
+## CSV Data Processing Rules
+
+### 1. NULL/Empty Values
+- Input format: `--` (double dash)
+- Appears in:
+  - Text fields (e.g., Budget name)
+  - Numeric fields (e.g., Target CPA, Target ROAS)
+  - Percentage fields
+- Processing rule: Convert all `--` values to NULL in database
+
+### 2. Percentage Values
+- Input format: `XX.XX%` (e.g., "100.00%", "69.23%")
+- Special cases:
+  - `> 90%` → Store as 90.0 with flag
+  - `< 10%` → Store as 10.0 with flag
+- Processing rules:
+  - Strip % symbol
+  - Convert to decimal number
+  - For special cases, consider adding flag columns (e.g., is_greater_than, is_less_than)
+- Affected columns:
+  - search_impression_share
+  - search_top_is
+  - search_abs_top_is
+  - search_lost_is_rank
+  - search_lost_top_is_rank
+  - search_lost_abs_top_is_rank
+  - search_lost_is_budget
+  - search_exact_match_is
+  - display_lost_is_rank
+  - display_lost_is_budget
+
+### 3. Date Values
+- Input format: YYYY-MM-DD
+- Example: "2025-01-12"
+- Processing rule: Direct PostgreSQL date format, no transformation needed
+- Affected columns:
+  - Day (date)
+  - update_date
+
+### 4. Currency Values
+- Input format: XX.XX (e.g., "250.00", "14.65")
+- Characteristics:
+  - Always 2 decimal places
+  - No thousand separators
+  - Currency code in separate column
+- Processing rules:
+  - Parse as Decimal(15,2)
+  - Store currency code separately
+- Affected columns:
+  - Budget
+  - Cost
+  - Recommended budget
+  - Target CPA
+  - Target ROAS
+
+### 5. Integer Values with Thousand Separators
+- Input format: Uses comma as thousand separator
+- Example: "2,047" for impressions
+- Processing rule: Remove commas before converting to integer
+- Affected columns:
+  - Impr.
+  - Clicks
+  - Est. add. interactions/wk
+
+## Implementation Notes
+
+```python
+# Example data cleaning function structure
+def clean_google_ads_csv_value(value: str, column_type: str) -> Any:
+    """
+    Clean Google Ads CSV data based on column type
+    
+    Args:
+        value: Raw value from CSV
+        column_type: One of 'percentage', 'currency', 'integer', 'date'
+        
+    Returns:
+        Cleaned value in appropriate Python type
+    """
+    if value.strip() == '--':
+        return None
+    # ... rest of implementation
+```
+
+## Data Quality Checks
+- Verify currency code matches expected value (e.g., 'DKK')
+- Ensure all percentage values are between 0-100
+- Validate date formats
+- Check for unexpected thousand separators
+- Verify no negative values in metrics (impressions, clicks, cost)
+
+## Additional Processing Requirements
+
+### Campaign Identifiers
+- Campaign IDs are large integers (e.g., 21864065231)
+- Must validate ID format and length
+- Campaign IDs are unique within a client account
+
+### Status and State Management
+- Campaign status values:
+  - "Enabled"
+  - "Paused"
+- Status values:
+  - "Eligible (Limited)"
+  - "Paused"
+- Status reasons may contain multiple reasons separated by semicolon
+  - Example: "limited by bidding strategy type; unknown"
+
+### Currency Handling
+- Primary currency observed: "DKK"
+- Requirements:
+  - Validate currency codes against ISO 4217
+  - Store original currency with amounts
+  - Consider future currency conversion needs
+
+### Data Deduplication Rules
+1. Primary key combination:
+   - client_id
+   - campaign_id
+   - date
+2. Update logic:
+   - If row exists: update with new values
+   - If row doesn't exist: insert new record
+3. Track update_date for data freshness
+
+### Campaign Name Specifications
+- May contain special characters (=, &, *, etc.)
+- Format patterns observed:
+  - Parameter-style: "lg=da&lc=holstebro&tt=search-exact&ct=*"
+  - Plain text: "CrossFit Holstebro"
+- Maximum length: 255 characters
+- No character restrictions (store as-is)
+
+### Bid Strategy Specifications
+- Known strategy types:
+  - "CPC (enhanced)"
+  - "Maximize clicks"
+- Store original values without modification
+- Consider adding strategy type validation
+
+### Error Handling
+1. Data Validation Errors:
+   - Invalid currency codes
+   - Malformed dates
+   - Invalid numeric values
+2. Processing Errors:
+   - Duplicate records
+   - Missing required fields
+   - Referential integrity violations
+3. Error Response:
+   - Log detailed error information
+   - Provide user-friendly error messages
+   - Support partial success with error records 

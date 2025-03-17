@@ -1,3 +1,20 @@
+-- First drop existing tables (in correct order due to dependencies)
+DROP TABLE IF EXISTS campaign_optimization CASCADE;
+DROP TABLE IF EXISTS campaign_bid_strategies CASCADE;
+DROP TABLE IF EXISTS campaign_budgets CASCADE;
+DROP TABLE IF EXISTS campaign_performance_daily CASCADE;
+DROP TABLE IF EXISTS campaigns CASCADE;
+
+-- Now create migrations table
+CREATE TABLE IF NOT EXISTS migrations (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Now we can run the migration file again
+\i db/migrations/002_create_campaign_tables.sql
+
 -- Create campaign performance tables
 CREATE TABLE campaign_performance_daily (
     id SERIAL PRIMARY KEY,
