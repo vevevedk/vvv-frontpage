@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '../../../../styles/Analytics.module.css';
+import styles from '@/styles/analytics/Analytics.module.css';
 
 interface UploadHandlerProps {
     onUpload: () => Promise<void>;

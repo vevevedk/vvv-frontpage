@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import TotalsSummary from '../TotalsSummary';
 import styles from '@/styles/analytics/Analytics.module.css';
-import { Client } from '@/types';
+import type { Client } from '@/types';
 import { DATA_TYPES } from '../../upload';
 import RequiredColumnsInfo from './RequiredColumnsInfo';
 import CsvPreview from './CsvPreview';
@@ -10,13 +10,14 @@ import { validateCsv } from '@/utils/csvValidation';
 import UploadSummary from './UploadSummary';
 import UploadProgress from './UploadProgress';
 import { DataQualityInsights } from '../data-quality/DataQualityInsights';
+import { UploadHandler } from './UploadHandler';
 
 interface UploadFormProps {
-    selectedClient: number;
+    selectedClient: Client | null;
     selectedFile: File | null;
     selectedType: string;
     clients: Client[];
-    onClientChange: (clientId: number) => void;
+    onClientChange: (client: Client | null) => void;
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onTypeChange: (type: string) => void;
     error: string;
@@ -51,7 +52,7 @@ interface QualityMetrics {
     isSignificantChange: boolean;
 }
 
-export default function UploadForm({
+const UploadForm: React.FC<UploadFormProps> = ({
     selectedClient,
     selectedFile,
     selectedType,
@@ -64,7 +65,7 @@ export default function UploadForm({
     success,
     setSuccess,
     uploadSummary
-}: UploadFormProps) {
+}) => {
     const [csvData, setCsvData] = useState<{
         headers: string[];
         rows: string[][];
@@ -88,13 +89,12 @@ export default function UploadForm({
         status: 'Processing...'
     });
     const [showConfirm, setShowConfirm] = useState(false);
-    const requiredColumns = ['date', 'query', 'page', 'clicks', 'impressions', 'position', 'ctr'];
     const [progress, setProgress] = useState<string>('');
     const [qualityMetrics, setQualityMetrics] = useState<QualityMetrics[]>([]);
     const [significantChanges, setSignificantChanges] = useState(0);
     const [preliminaryData, setPreliminaryData] = useState(0);
 
-    const selectedDataType = DATA_TYPES.find(type => type.id === selectedType);
+    const selectedTypeConfig = DATA_TYPES.find(t => t.id === selectedType);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -109,20 +109,31 @@ export default function UploadForm({
         onFileChange(e);
     };
 
+    const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+        if (value === '') {
+            onClientChange(null);
+        } else if (value === 'all') {
+            onClientChange({ id: 'all', name: 'All Clients (MCC Account)' } as Client);
+        } else {
+            const client = clients.find(c => c.id.toString() === value);
+            onClientChange(client || null);
+        }
+    };
+
     const handleUpload = async () => {
-        if (!selectedClient || !selectedFile || !selectedType) {
-            setError('Please select a client, file, and data type');
+        if (!selectedFile || !selectedType || !selectedClient) {
+            setError('Please select a file, data type, and client');
             return;
         }
 
         setIsUploading(true);
         setError('');
         setSuccess('');
-        setProgress('');
-        
+
         const formData = new FormData();
         formData.append('file', selectedFile);
-        formData.append('clientId', selectedClient.toString());
+        formData.append('clientId', selectedClient.id.toString());
         formData.append('dataType', selectedType);
 
         try {
@@ -131,63 +142,27 @@ export default function UploadForm({
                 body: formData,
             });
 
-            const reader = response.body?.getReader();
-            if (!reader) throw new Error('No response body');
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const text = new TextDecoder().decode(value);
-                console.log('Received chunk:', text); // Debug log
-
-                const messages = text.split('\n').filter(Boolean);
-
-                for (const message of messages) {
-                    if (message.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(message.slice(6));
-                            console.log('Parsed message:', data); // Debug log
-                            
-                            if (data.type === 'quality') {
-                                console.log('Received quality metrics:', data.metrics); // Debug log
-                                setQualityMetrics(prev => [...prev, data.metrics]);
-                                if (data.metrics.isSignificantChange) {
-                                    setSignificantChanges(prev => prev + 1);
-                                }
-                                if (data.metrics.state === 'preliminary') {
-                                    setPreliminaryData(prev => prev + 1);
-                                }
-                            }
-                            
-                            if (data.type === 'progress') {
-                                setProgress(data.status);
-                            } else if (data.result) {
-                                setUploadResult({
-                                    totalProcessed: data.result.totalProcessed,
-                                    added: data.result.added,
-                                    updated: data.result.updated,
-                                    skipped: data.result.skipped,
-                                    timestamp: data.result.timestamp
-                                });
-                                setSuccess(`Upload complete! ${data.result.totalProcessed.toLocaleString()} records processed.`);
-                            }
-                        } catch (e) {
-                            console.error('Failed to parse message:', message, e);
-                        }
-                    }
-                }
+            const data = await response.json();
+            
+            if (!response.ok) {
+                console.error('Upload failed:', data);
+                throw new Error(data.message || 'Upload failed. Please check the console for details.');
             }
-        } catch (error) {
-            console.error('Upload error:', error);
-            setError(error instanceof Error ? error.message : 'Upload failed');
+
+            setSuccess('File uploaded successfully');
+            if (data.result) {
+                setUploadResult(data.result);
+            }
+        } catch (err) {
+            console.error('Upload error:', err);
+            setError(err instanceof Error ? err.message : 'Upload failed. Please check the console for details.');
         } finally {
             setIsUploading(false);
         }
     };
 
     const resetForm = () => {
-        onClientChange(0);
+        onClientChange(null);
         onTypeChange('');
         onFileChange({ target: { files: null }} as any);
         setUploadResult(null);
@@ -205,209 +180,118 @@ export default function UploadForm({
         await handleUpload();
     };
 
+    const isUploadDisabled = !selectedFile || !selectedType || !selectedClient;
+
     return (
-        <div className={styles.form}>
-            <div className={styles.formGroup}>
-                <label htmlFor="client">Select Client</label>
-                <select
-                    id="client"
-                    value={selectedClient}
-                    onChange={(e) => onClientChange(Number(e.target.value))}
-                >
-                    <option value="">Choose a client...</option>
-                    {clients.map((client) => (
-                        <option key={client.id} value={client.id}>
-                            {client.name}
-                        </option>
-                    ))}
-                </select>
-            </div>
+        <div className={styles.uploadForm}>
+            <div className={styles.formControls}>
+                <div className={styles.formGroup}>
+                    <label htmlFor="dataType">Data Type</label>
+                    <select
+                        id="dataType"
+                        value={selectedType}
+                        onChange={(e) => onTypeChange(e.target.value)}
+                        className={styles.select}
+                    >
+                        <option value="">Select Data Type</option>
+                        {DATA_TYPES.map((type) => (
+                            <option key={type.id} value={type.id}>
+                                {type.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-            <div className={styles.formGroup}>
-                <label htmlFor="type">Data Type</label>
-                <select
-                    id="type"
-                    value={selectedType}
-                    onChange={(e) => onTypeChange(e.target.value)}
-                >
-                    <option value="">Choose data type...</option>
-                    <option value="search_console_daily">Search Console Daily</option>
-                    <option value="analytics_daily">Analytics Daily</option>
-                </select>
-            </div>
-
-            <div className={styles.formGroup}>
-                <label>Upload File</label>
-                <div 
-                    className={`${styles.fileInput} ${selectedFile ? styles.hasFile : ''}`}
-                    onClick={() => document.getElementById('file')?.click()}
-                >
-                    <input
-                        type="file"
-                        id="file"
-                        accept=".csv"
-                        onChange={handleFileChange}
-                        style={{ display: 'none' }}
-                    />
-                    {selectedFile ? (
-                        <div className={styles.fileName}>
-                            {selectedFile.name}
-                        </div>
-                    ) : (
-                        <>
-                            <p>Drop your CSV file here</p>
-                            <small>or click to browse</small>
-                        </>
-                    )}
+                <div className={styles.formGroup}>
+                    <label htmlFor="client">Client</label>
+                    <select
+                        id="client"
+                        value={selectedClient?.id || ''}
+                        onChange={handleClientChange}
+                        className={styles.select}
+                    >
+                        <option value="">Select Client</option>
+                        {selectedType === 'campaign_performance_daily' && (
+                            <option value="all">All Clients (MCC Account)</option>
+                        )}
+                        {clients.map((client) => (
+                            <option key={client.id} value={client.id}>
+                                {client.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
-            {selectedDataType && (
-                <RequiredColumnsInfo columns={selectedDataType.requiredColumns} />
+            <div className={styles.fileUploadSection}>
+                <div className={styles.formGroup}>
+                    <label htmlFor="file">Upload CSV File</label>
+                    <div className={styles.dropZone}>
+                        <input
+                            type="file"
+                            id="file"
+                            accept=".csv"
+                            onChange={onFileChange}
+                            className={styles.fileInput}
+                        />
+                        <div className={styles.dropZoneContent}>
+                            {selectedFile ? (
+                                <div className={styles.selectedFileInfo}>
+                                    <span className={styles.fileName}>{selectedFile.name}</span>
+                                    <button 
+                                        onClick={() => onFileChange({ target: { files: null }} as any)}
+                                        className={styles.clearFile}
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className={styles.uploadIcon}>📄</div>
+                                    <p>Drag and drop your CSV file here</p>
+                                    <p className={styles.browseText}>or click to browse</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {selectedType && (
+                <div className={styles.dataTypeInfo}>
+                    <h3>{DATA_TYPES.find(t => t.id === selectedType)?.name}</h3>
+                    <p>{DATA_TYPES.find(t => t.id === selectedType)?.description}</p>
+                    <div className={styles.requiredColumns}>
+                        <h4>Required Columns:</h4>
+                        <ul>
+                            {DATA_TYPES.find(t => t.id === selectedType)?.requiredColumns.map((col) => (
+                                <li key={col}>{col}</li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
             )}
 
-            {selectedFile && csvData.headers.length > 0 && (
-                <CsvPreview
-                    headers={csvData.headers}
-                    rows={csvData.rows}
-                    requiredColumns={selectedDataType?.requiredColumns || []}
-                    missingColumns={csvData.missingColumns}
+            <div className={styles.actionButtons}>
+                <UploadHandler
+                    onUpload={handleUpload}
+                    isUploading={isUploading}
+                    disabled={isUploadDisabled}
                 />
-            )}
-
-            {!fileChanged && uploadSummary && (
-                <div className={styles.warning}>
-                    Warning: This file appears to have been already uploaded. 
-                    Are you sure you want to upload it again?
-                </div>
-            )}
-
-            <div className={styles.buttonGroup}>
-                <button 
-                    onClick={handleUploadClick}
-                    disabled={!selectedClient || !selectedFile || !selectedType || isUploading}
-                    className={styles.uploadButton}
-                >
-                    {isUploading ? (
-                        <div className={styles.uploadingState}>
-                            <span className={styles.spinner}></span>
-                            <span>Uploading...</span>
-                        </div>
-                    ) : (
-                        <div className={styles.uploadState}>
-                            <span className={styles.uploadIcon}>↑</span>
-                            <span>Upload File</span>
-                        </div>
-                    )}
-                </button>
-
-                {(uploadResult || error) && (
-                    <button 
+                {(error || success) && (
+                    <button
                         onClick={resetForm}
                         className={styles.resetButton}
                     >
-                        Clear Form
+                        Reset Form
                     </button>
                 )}
             </div>
 
-            {isUploading && (
-                <motion.div 
-                    className={styles.progress}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                >
-                    <div className={styles.progressIcon}>⏳</div>
-                    <div className={styles.progressMessage}>
-                        {progress || 'Processing...'}
-                    </div>
-                </motion.div>
-            )}
-
-            {isUploading && qualityMetrics.length > 0 && (
-                <DataQualityInsights
-                    metrics={qualityMetrics}
-                    totalRecords={uploadResult?.totalProcessed || 0}
-                    significantChanges={significantChanges}
-                    preliminaryData={preliminaryData}
-                />
-            )}
-
-            <AnimatePresence>
-                {error && (
-                    <motion.div 
-                        className={styles.error}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                    >
-                        <div className={styles.errorIcon}>⚠️</div>
-                        <div className={styles.errorMessage}>
-                            {typeof error === 'string' ? (
-                                <>
-                                    <strong>Error:</strong> {error}
-                                </>
-                            ) : (
-                                error
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-
-                {showConfirm && (
-                    <motion.div 
-                        className={styles.confirmDialog}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                    >
-                        <h3>Confirm Upload</h3>
-                        <p>Are you sure you want to upload this file?</p>
-                        <div className={styles.confirmButtons}>
-                            <button 
-                                onClick={handleConfirmUpload}
-                                className={styles.confirmButton}
-                            >
-                                Yes, Upload
-                            </button>
-                            <button 
-                                onClick={() => setShowConfirm(false)}
-                                className={styles.cancelButton}
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-
-                {uploadResult && (
-                    <motion.div 
-                        className={styles.summary}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                    >
-                        <h3>Upload Summary</h3>
-                        <div className={styles.summaryGrid}>
-                            <div>
-                                <div className={styles.summaryLabel}>Total Processed</div>
-                                <div className={styles.summaryValue}>{uploadResult.totalProcessed.toLocaleString()}</div>
-                            </div>
-                            <div>
-                                <div className={styles.summaryLabel}>Newly Added</div>
-                                <div className={styles.summaryValue}>{uploadResult.added.toLocaleString()}</div>
-                            </div>
-                            <div>
-                                <div className={styles.summaryLabel}>Updated</div>
-                                <div className={styles.summaryValue}>{uploadResult.updated.toLocaleString()}</div>
-                            </div>
-                            <div>
-                                <div className={styles.summaryLabel}>Skipped</div>
-                                <div className={styles.summaryValue}>{uploadResult.skipped.toLocaleString()}</div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {error && <div className={styles.error}>{error}</div>}
+            {success && <div className={styles.success}>{success}</div>}
         </div>
     );
-}
+};
+
+export default UploadForm;
