@@ -28,6 +28,8 @@
     "eslint-config-next": "13.1.1",
     "formidable": "^3.5.2",
     "framer-motion": "^12.4.7",
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^146.0.0",
     "jsonwebtoken": "^9.0.2",
     "next": "^15.1.4",
     "next-auth": "^4.24.11",
