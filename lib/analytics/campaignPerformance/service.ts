@@ -51,6 +51,13 @@ interface CampaignPerformanceRecord {
   status_changes?: string;
 }
 
+export class ValidationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ValidationError';
+    }
+}
+
 export class CampaignPerformanceService {
   constructor(private pool: Pool) {}
 
@@ -86,8 +93,47 @@ export class CampaignPerformanceService {
     );
   }
 
+  private validateRecord(record: CampaignPerformanceRecord): void {
+    const requiredFields = [
+      'date',
+      'campaign_name',
+      'campaign_id',
+      'campaign_status',
+      'account_name',
+      'impressions',
+      'clicks',
+      'cost',
+      'currency_code',
+      'conversions',
+      'conversion_value'
+    ];
+
+    for (const field of requiredFields) {
+      if (record[field] === undefined || record[field] === null || record[field] === '') {
+        throw new ValidationError(`Missing required field: ${field}`);
+      }
+    }
+
+    // Validate numeric fields
+    const numericFields = ['impressions', 'clicks', 'cost', 'conversions', 'conversion_value'];
+    for (const field of numericFields) {
+      if (isNaN(Number(record[field]))) {
+        throw new ValidationError(`Invalid numeric value for ${field}: ${record[field]}`);
+      }
+    }
+
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(record.date)) {
+      throw new ValidationError(`Invalid date format: ${record.date}. Expected YYYY-MM-DD`);
+    }
+  }
+
   async processRecord(clientId: number | 'all', record: CampaignPerformanceRecord): Promise<void> {
     try {
+      // Validate record before processing
+      this.validateRecord(record);
+
       const client = await this.pool.connect();
       try {
         await client.query('BEGIN');
@@ -96,7 +142,7 @@ export class CampaignPerformanceService {
         if (clientId === 'all') {
           const lookupId = await this.getClientIdFromAccount(record.account_name);
           if (!lookupId) {
-            throw new Error(`No client found for account: ${record.account_name}`);
+            throw new ValidationError(`No client found for account: ${record.account_name}`);
           }
           effectiveClientId = lookupId;
         } else {
@@ -106,7 +152,10 @@ export class CampaignPerformanceService {
 
         await this.processCampaign(client, effectiveClientId, record);
         await this.processCampaignPerformance(client, effectiveClientId, record);
-        await this.processCampaignBudget(client, effectiveClientId, record);
+        
+        if (record.budget_name && record.budget) {
+          await this.processCampaignBudget(client, effectiveClientId, record);
+        }
 
         await client.query('COMMIT');
       } catch (error) {
@@ -116,8 +165,11 @@ export class CampaignPerformanceService {
         client.release();
       }
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
       console.error('Error processing record:', error);
-      throw error;
+      throw new Error('Failed to process campaign performance record');
     }
   }
 

@@ -48,29 +48,7 @@ const DATA_TYPES: Record<string, DataTypeConfig> = {
       'Cost',
       'Currency code',
       'Conversions',
-      'Conv. value',
-      'Search impr. share',
-      'Search top IS',
-      'Search abs. top IS',
-      'Search lost IS (rank)',
-      'Search lost top IS (rank)',
-      'Search lost abs. top IS (rank)',
-      'Search lost IS (budget)',
-      'Search exact match IS',
-      'Display lost IS (budget)',
-      'Display lost IS (rank)',
-      'Search lost top IS (budget)',
-      'Search lost abs. top IS (budget)',
-      'Relative CTR',
-      'Optimization score',
-      'Account optimization headroom',
-      'Ad changes',
-      'Bid changes',
-      'Keyword changes',
-      'Network changes',
-      'Targeting changes',
-      'Budget changes',
-      'Status changes'
+      'Conv. value'
     ],
     columnMappings: {
       'Day': 'date',
@@ -86,13 +64,20 @@ const DATA_TYPES: Record<string, DataTypeConfig> = {
       'Clicks': 'clicks',
       'Cost': 'cost',
       'Currency code': 'currency_code',
+      'Converted currency code': 'converted_currency_code',
+      'Cost (Converted currency)': 'converted_cost',
       'Conversions': 'conversions',
       'Conv. value': 'conversion_value',
       'Budget name': 'budget_name',
       'Budget': 'budget',
       'Budget type': 'budget_type',
+      'Recommended budget': 'recommended_budget',
+      'Est. add. interactions/wk (rec. budget)': 'est_add_interactions_per_week',
+      'Est. add. cost/wk (rec. budget)': 'est_add_cost_per_week',
       'Bid strategy': 'bid_strategy',
       'Bid strategy type': 'bid_strategy_type',
+      'Target CPA': 'target_cpa',
+      'Target ROAS': 'target_roas',
       'Search impr. share': 'search_impression_share',
       'Search top IS': 'search_top_is',
       'Search abs. top IS': 'search_abs_top_is',
@@ -133,6 +118,18 @@ const DATA_TYPES: Record<string, DataTypeConfig> = {
     tables: ['analytics_data']
   }
 };
+
+interface SearchConsoleRecord {
+    client_id: number;
+    date: string;
+    query: string;
+    page: string;
+    clicks: number;
+    impressions: number;
+    position: number;
+    country: string;
+    ctr?: number;
+}
 
 const router = createRouter<NextApiRequest, NextApiResponse>();
 
@@ -180,8 +177,11 @@ router.post(async (req, res) => {
     });
 
     // Helper function to send progress
-    const sendProgress = (processed: number, total: number, status: string, completed = false, result?: any) => {
-      res.write(`data: ${JSON.stringify({ processed, total, status, completed, result })}\n\n`);
+    const sendProgress = (processed: number, total: number, status: string) => {
+        res.write(`data: ${JSON.stringify({ processed, total, status })}\n\n`);
+        if (res.flush) {
+            res.flush();
+        }
     };
 
     // Add timestamp to all console logs
@@ -336,6 +336,25 @@ router.post(async (req, res) => {
             console.error('Error processing campaign record:', error);
             errors++;
           }
+        } else if (dataType === 'search_console_daily') {
+          const searchRecord: SearchConsoleRecord = {
+            client_id: Number(clientId),
+            date: row['Date'],
+            query: row['Query'],
+            page: row['Landing Page'],
+            clicks: Number(row['Url Clicks']),
+            impressions: Number(row['Impressions']),
+            position: Number(row['Average Position']),
+            country: row['Country']
+          };
+
+          // Calculate CTR
+          if (searchRecord.clicks && searchRecord.impressions) {
+            searchRecord.ctr = searchRecord.clicks / searchRecord.impressions;
+          }
+
+          // Process search console record
+          // ... existing search console processing code ...
         } else {
           const mappedRecord = {
             client_id: Number(clientId),
@@ -558,9 +577,7 @@ router.post(async (req, res) => {
     sendProgress(
       processed, 
       processed, 
-      `Complete. ${added.toLocaleString()} added, ${updated.toLocaleString()} updated`, 
-      true,
-      result  // Add result object to the progress message
+      `Complete. Processed ${processed.toLocaleString()} records with ${errors} errors`
     );
 
     res.write(`data: ${JSON.stringify(result)}\n\n`);

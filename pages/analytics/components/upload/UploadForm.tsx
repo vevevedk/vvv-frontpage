@@ -64,20 +64,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
     setError,
     success,
     setSuccess,
-    uploadSummary
 }) => {
-    const [csvData, setCsvData] = useState<{
-        headers: string[];
-        rows: string[][];
-        missingColumns: string[];
-    }>({
-        headers: [],
-        rows: [],
-        missingColumns: []
-    });
-    const [fileChanged, setFileChanged] = useState<boolean>(false);
-    const [previousFile, setPreviousFile] = useState<string>('');
-    const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [uploadProgress, setUploadProgress] = useState<{
         processed: number;
@@ -86,28 +73,8 @@ const UploadForm: React.FC<UploadFormProps> = ({
     }>({
         processed: 0,
         total: 0,
-        status: 'Processing...'
+        status: ''
     });
-    const [showConfirm, setShowConfirm] = useState(false);
-    const [progress, setProgress] = useState<string>('');
-    const [qualityMetrics, setQualityMetrics] = useState<QualityMetrics[]>([]);
-    const [significantChanges, setSignificantChanges] = useState(0);
-    const [preliminaryData, setPreliminaryData] = useState(0);
-
-    const selectedTypeConfig = DATA_TYPES.find(t => t.id === selectedType);
-
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Check if this is a new file
-        const currentFileName = file.name + file.lastModified;
-        const isNewFile = currentFileName !== previousFile;
-        setFileChanged(isNewFile);
-        setPreviousFile(currentFileName);
-
-        onFileChange(e);
-    };
 
     const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value;
@@ -142,154 +109,225 @@ const UploadForm: React.FC<UploadFormProps> = ({
                 body: formData,
             });
 
-            const data = await response.json();
-            
-            if (!response.ok) {
-                console.error('Upload failed:', data);
-                throw new Error(data.message || 'Upload failed. Please check the console for details.');
-            }
+            // Handle SSE for progress updates
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
 
-            setSuccess('File uploaded successfully');
-            if (data.result) {
-                setUploadResult(data.result);
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.error) {
+                                    throw new Error(data.error);
+                                }
+                                setUploadProgress({
+                                    processed: data.processed,
+                                    total: data.total,
+                                    status: data.status
+                                });
+                                if (data.completed) {
+                                    setSuccess('Upload completed successfully');
+                                }
+                            } catch (e) {
+                                console.error('Error parsing progress:', e);
+                            }
+                        }
+                    }
+                }
             }
         } catch (err) {
             console.error('Upload error:', err);
-            setError(err instanceof Error ? err.message : 'Upload failed. Please check the console for details.');
+            setError(err instanceof Error ? err.message : 'Upload failed');
         } finally {
             setIsUploading(false);
         }
     };
 
-    const resetForm = () => {
-        onClientChange(null);
-        onTypeChange('');
-        onFileChange({ target: { files: null }} as any);
-        setUploadResult(null);
-        setError('');
-        setSuccess('');
-        setShowConfirm(false);
-    };
-
-    const handleUploadClick = () => {
-        setShowConfirm(true);
-    };
-
-    const handleConfirmUpload = async () => {
-        setShowConfirm(false);
-        await handleUpload();
-    };
-
-    const isUploadDisabled = !selectedFile || !selectedType || !selectedClient;
-
     return (
-        <div className={styles.uploadForm}>
-            <div className={styles.formControls}>
-                <div className={styles.formGroup}>
-                    <label htmlFor="dataType">Data Type</label>
-                    <select
-                        id="dataType"
-                        value={selectedType}
-                        onChange={(e) => onTypeChange(e.target.value)}
-                        className={styles.select}
-                    >
-                        <option value="">Select Data Type</option>
-                        {DATA_TYPES.map((type) => (
-                            <option key={type.id} value={type.id}>
-                                {type.name}
-                            </option>
-                        ))}
-                    </select>
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold text-gray-900">Data Upload</h2>
                 </div>
 
-                <div className={styles.formGroup}>
-                    <label htmlFor="client">Client</label>
-                    <select
-                        id="client"
-                        value={selectedClient?.id || ''}
-                        onChange={handleClientChange}
-                        className={styles.select}
-                    >
-                        <option value="">Select Client</option>
-                        {selectedType === 'campaign_performance_daily' && (
-                            <option value="all">All Clients (MCC Account)</option>
+                {/* Form Content */}
+                <form onSubmit={(e) => {
+                    e.preventDefault();
+                    handleUpload();
+                }}>
+                    <div className="px-6 py-4 space-y-4">
+                        {/* Data Type Selection */}
+                        <div>
+                            <label htmlFor="dataType" className="block text-sm font-medium text-gray-700 mb-1">
+                                Data Type
+                            </label>
+                            <select
+                                id="dataType"
+                                name="dataType"
+                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                value={selectedType}
+                                onChange={(e) => {
+                                    onTypeChange(e.target.value);
+                                    onClientChange(null);
+                                }}
+                            >
+                                <option value="">Select a data type</option>
+                                {DATA_TYPES.map((type) => (
+                                    <option key={type.id} value={type.id}>
+                                        {type.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Client Selection */}
+                        {selectedType && (
+                            <div>
+                                <label htmlFor="client" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Client
+                                </label>
+                                <select
+                                    id="client"
+                                    name="client"
+                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    value={selectedClient ? (selectedClient.id === 'all' ? 'all' : selectedClient.id) : ''}
+                                    onChange={handleClientChange}
+                                >
+                                    <option value="">Select a client</option>
+                                    {selectedType === 'campaign_performance_daily' && (
+                                        <option value="all">All Clients (MCC Account)</option>
+                                    )}
+                                    {clients.map((client) => (
+                                        <option key={client.id} value={client.id}>
+                                            {client.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         )}
-                        {clients.map((client) => (
-                            <option key={client.id} value={client.id}>
-                                {client.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
 
-            <div className={styles.fileUploadSection}>
-                <div className={styles.formGroup}>
-                    <label htmlFor="file">Upload CSV File</label>
-                    <div className={styles.dropZone}>
-                        <input
-                            type="file"
-                            id="file"
-                            accept=".csv"
-                            onChange={onFileChange}
-                            className={styles.fileInput}
-                        />
-                        <div className={styles.dropZoneContent}>
-                            {selectedFile ? (
-                                <div className={styles.selectedFileInfo}>
-                                    <span className={styles.fileName}>{selectedFile.name}</span>
-                                    <button 
-                                        onClick={() => onFileChange({ target: { files: null }} as any)}
-                                        className={styles.clearFile}
+                        {/* File Upload */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Upload File
+                            </label>
+                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                                <div className="space-y-1 text-center">
+                                    <svg
+                                        className="mx-auto h-12 w-12 text-gray-400"
+                                        stroke="currentColor"
+                                        fill="none"
+                                        viewBox="0 0 48 48"
+                                        aria-hidden="true"
                                     >
-                                        Clear
-                                    </button>
+                                        <path
+                                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                            strokeWidth={2}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                    <div className="flex text-sm text-gray-600">
+                                        <label
+                                            htmlFor="file-upload"
+                                            className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                                        >
+                                            <span>Upload a file</span>
+                                            <input
+                                                id="file-upload"
+                                                name="file-upload"
+                                                type="file"
+                                                className="sr-only"
+                                                accept=".csv"
+                                                onChange={onFileChange}
+                                            />
+                                        </label>
+                                        <p className="pl-1">or drag and drop</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500">CSV files only</p>
                                 </div>
-                            ) : (
-                                <>
-                                    <div className={styles.uploadIcon}>📄</div>
-                                    <p>Drag and drop your CSV file here</p>
-                                    <p className={styles.browseText}>or click to browse</p>
-                                </>
+                            </div>
+                            {selectedFile && (
+                                <div className="mt-2 text-sm text-gray-500">
+                                    Selected file: {selectedFile.name}
+                                </div>
                             )}
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {selectedType && (
-                <div className={styles.dataTypeInfo}>
-                    <h3>{DATA_TYPES.find(t => t.id === selectedType)?.name}</h3>
-                    <p>{DATA_TYPES.find(t => t.id === selectedType)?.description}</p>
-                    <div className={styles.requiredColumns}>
-                        <h4>Required Columns:</h4>
-                        <ul>
-                            {DATA_TYPES.find(t => t.id === selectedType)?.requiredColumns.map((col) => (
-                                <li key={col}>{col}</li>
-                            ))}
-                        </ul>
+                    {/* Footer */}
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={!selectedFile || !selectedType || !selectedClient || isUploading}
+                            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
+                            {isUploading ? 'Uploading...' : 'Upload'}
+                        </button>
                     </div>
-                </div>
-            )}
 
-            <div className={styles.actionButtons}>
-                <UploadHandler
-                    onUpload={handleUpload}
-                    isUploading={isUploading}
-                    disabled={isUploadDisabled}
-                />
-                {(error || success) && (
-                    <button
-                        onClick={resetForm}
-                        className={styles.resetButton}
-                    >
-                        Reset Form
-                    </button>
-                )}
+                    {/* Progress and Messages */}
+                    {(uploadProgress.processed > 0 || error || success) && (
+                        <div className="px-6 pb-4 space-y-4">
+                            {uploadProgress.processed > 0 && (
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-medium text-gray-900">Progress</span>
+                                        <span className="text-gray-500">{uploadProgress.status}</span>
+                                    </div>
+                                    <div className="bg-gray-200 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-2 bg-blue-600 transition-all duration-500"
+                                            style={{
+                                                width: `${(uploadProgress.processed / Math.max(uploadProgress.total, 1)) * 100}%`
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {error && (
+                                <div className="rounded-md bg-red-50 p-4">
+                                    <div className="flex">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className="text-sm text-red-700">{error}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {success && (
+                                <div className="rounded-md bg-green-50 p-4">
+                                    <div className="flex">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className="text-sm text-green-700">{success}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </form>
             </div>
-
-            {error && <div className={styles.error}>{error}</div>}
-            {success && <div className={styles.success}>{success}</div>}
         </div>
     );
 };
