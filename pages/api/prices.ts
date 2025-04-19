@@ -9,7 +9,7 @@ export default function handler(
     {
       id: 1,
       title: "PPC / Paid Social Specialist",
-      price: 750,
+      price: 950,
       description: "Fleksibel månedlig betaling",
       servicesIncluded: [
         "Opsæting og optimering af kampagner",
@@ -21,7 +21,7 @@ export default function handler(
     {
       id: 2,
       title: "Digital Marketing Strategi",
-      price: 1050,
+      price: 1150,
       description: "Når du har brug for sparring og rådgivning",
       servicesIncluded: [
         "Evaluering af KPIer",
