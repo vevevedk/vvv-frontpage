@@ -122,4 +122,4 @@ Temporary Items
 
 # Media files
 *.mp4
-!public/**/*.mp4
+!public/**/*.mp4schema_org_data.csv
