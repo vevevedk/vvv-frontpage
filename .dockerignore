@@ -1,0 +1,30 @@
+# VCS
+.git
+.git/*
+
+# Node/Next
+node_modules
+.next
+out
+dist
+coverage
+coverage-*
+**/*.log
+**/*.swp
+**/.DS_Store
+
+# Python
+**/__pycache__/
+**/*.pyc
+backend/db.sqlite3
+backend/logs
+
+# Env/Secrets (not needed at build time)
+.env
+.env.*
+env/*.env
+
+# Docker/meta
+Dockerfile
+frontend.Dockerfile
+docker-compose*.yml
