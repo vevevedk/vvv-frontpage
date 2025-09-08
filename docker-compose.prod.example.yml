@@ -20,7 +20,7 @@ services:
       - vvv_network
 
   backend:
-    image: your-registry/vvv-backend:latest
+    image: ghcr.io/vevevedk/vvv-backend:latest
     env_file:
       - ./env/backend.env
     environment:
@@ -34,7 +34,7 @@ services:
       - vvv_network
 
   worker:
-    image: your-registry/vvv-backend:latest
+    image: ghcr.io/vevevedk/vvv-backend:latest
     command: celery -A api worker -l info
     env_file:
       - ./env/backend.env
@@ -45,7 +45,7 @@ services:
       - vvv_network
 
   beat:
-    image: your-registry/vvv-backend:latest
+    image: ghcr.io/vevevedk/vvv-backend:latest
     command: celery -A api beat -l info
     env_file:
       - ./env/backend.env
@@ -56,11 +56,11 @@ services:
       - vvv_network
 
   frontend:
-    image: your-registry/vvv-frontend:latest
+    image: ghcr.io/vevevedk/vvv-frontend:latest
     env_file:
       - ./env/frontend.env
     ports:
-      - "3000:3000"
+      - "3001:3001"
     networks:
       - vvv_network
 

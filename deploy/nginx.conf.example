@@ -3,7 +3,7 @@ server {
     server_name your-domain.com www.your-domain.com;
 
     # Redirect to HTTPS if using TLS termination here; otherwise remove
-    return 301 https://$host$request_uri\;
+    return 301 https://$host$request_uri
 }
 
 # If terminating TLS on this server, add:
@@ -19,7 +19,7 @@ server {
 #     client_max_body_size 20m;
 # 
 #     location /api/ {
-#         proxy_pass http://backend:8000/api/\;
+#         proxy_pass http://backend:8000/api/
 #         proxy_set_header Host $host;
 #         proxy_set_header X-Real-IP $remote_addr;
 #         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -27,7 +27,7 @@ server {
 #     }
 # 
 #     location / {
-#         proxy_pass http://frontend:3000/\;
+#         proxy_pass http://frontend:3001/
 #         proxy_set_header Host $host;
 #         proxy_set_header X-Real-IP $remote_addr;
 #         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
