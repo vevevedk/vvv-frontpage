@@ -1,0 +1,36 @@
+server {
+    listen 80;
+    server_name your-domain.com www.your-domain.com;
+
+    # Redirect to HTTPS if using TLS termination here; otherwise remove
+    return 301 https://$host$request_uri\;
+}
+
+# If terminating TLS on this server, add:
+# server {
+#     listen 443 ssl http2;
+#     server_name your-domain.com www.your-domain.com;
+# 
+#     ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+#     include /etc/letsencrypt/options-ssl-nginx.conf;
+#     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+# 
+#     client_max_body_size 20m;
+# 
+#     location /api/ {
+#         proxy_pass http://backend:8000/api/\;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+# 
+#     location / {
+#         proxy_pass http://frontend:3000/\;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+# }

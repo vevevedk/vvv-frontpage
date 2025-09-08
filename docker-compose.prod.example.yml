@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: vvv_database
+      POSTGRES_USER: vvv_user
+      POSTGRES_PASSWORD: vvv_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vvv_network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - vvv_network
+
+  backend:
+    image: your-registry/vvv-backend:latest
+    env_file:
+      - ./env/backend.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=api.settings.prod
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8001:8000"
+    networks:
+      - vvv_network
+
+  worker:
+    image: your-registry/vvv-backend:latest
+    command: celery -A api worker -l info
+    env_file:
+      - ./env/backend.env
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - vvv_network
+
+  beat:
+    image: your-registry/vvv-backend:latest
+    command: celery -A api beat -l info
+    env_file:
+      - ./env/backend.env
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - vvv_network
+
+  frontend:
+    image: your-registry/vvv-frontend:latest
+    env_file:
+      - ./env/frontend.env
+    ports:
+      - "3000:3000"
+    networks:
+      - vvv_network
+
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      # If terminating TLS here, also expose 443 and mount certs
+      # - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - vvv_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  vvv_network:
+    driver: bridge
