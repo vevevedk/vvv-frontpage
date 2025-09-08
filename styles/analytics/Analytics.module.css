@@ -774,14 +774,14 @@
 }
 
 .selectedFileInfo {
-  display: flex;
-  align-items: center;
+    display: flex;
+    align-items: center;
   justify-content: center;
   gap: 1rem;
 }
 
 .fileName {
-  font-weight: 500;
+    font-weight: 500;
   color: #374151;
 }
 
@@ -801,12 +801,12 @@
 .dataTypeInfo {
   background-color: #f3f4f6;
   padding: 1.5rem;
-  border-radius: 0.5rem;
+    border-radius: 0.5rem;
   margin-top: 1.5rem;
 }
 
 .dataTypeInfo h3 {
-  margin: 0 0 1rem 0;
+    margin: 0 0 1rem 0;
   color: #1f2937;
 }
 
@@ -815,7 +815,7 @@
 }
 
 .requiredColumns h4 {
-  margin: 0 0 0.5rem 0;
+    margin: 0 0 0.5rem 0;
   color: #374151;
 }
 
@@ -832,7 +832,7 @@
   background-color: #e5e7eb;
   padding: 0.25rem 0.75rem;
   border-radius: 0.25rem;
-  font-size: 0.875rem;
+    font-size: 0.875rem;
 }
 
 .actionButtons {
@@ -844,11 +844,11 @@
 .uploadButton {
   padding: 0.75rem 1.5rem;
   background-color: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
   transition: background-color 0.2s;
 }
 
@@ -858,17 +858,17 @@
 
 .uploadButton:disabled {
   background-color: #9ca3af;
-  cursor: not-allowed;
+    cursor: not-allowed;
 }
 
 .resetButton {
-  padding: 0.75rem 1.5rem;
+    padding: 0.75rem 1.5rem;
   background-color: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  cursor: pointer;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
   transition: background-color 0.2s;
 }
 
@@ -877,11 +877,11 @@
 }
 
 .error {
-  background-color: #fee2e2;
+    background-color: #fee2e2;
   border: 1px solid #ef4444;
   color: #991b1b;
   padding: 1rem;
-  border-radius: 0.375rem;
+    border-radius: 0.375rem;
   margin-top: 1rem;
 }
 
@@ -890,7 +890,7 @@
   border: 1px solid #22c55e;
   color: #166534;
   padding: 1rem;
-  border-radius: 0.375rem;
+    border-radius: 0.375rem;
   margin-top: 1rem;
 }
 

@@ -1,65 +1,42 @@
-import React, { useState, useEffect } from "react";
-import style from "../../styles/Services.module.css";
-import CTA from "../CTA/CTA";
-import { Stil, Tekst } from "../CTA/CTA";
-import { ServicesData } from "../model/ServicesModel";
-import { FaCode, FaChartLine, FaPaintBrush, FaShareSquare, FaSearch } from 'react-icons/fa';
+import React from "react";
+import { FaSearch, FaShareSquare, FaChartLine } from 'react-icons/fa';
 
 const Services: React.FC = () => {
-  const [services, setServices] = useState<ServicesData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const icons = [
-    <FaSearch key="search" size={50} />,
-    <FaShareSquare key="social" size={50} />,
-    <FaChartLine key="chart" size={50} />
+  const services = [
+    {
+      id: 1,
+      title: "Search Engine Marketing (SEM)",
+      description: "Markedsføring på søgemaskiner. Optimering af Google Ads kampagner, Google My Business og Google Search Console",
+      icon: <FaSearch size={50} />
+    },
+    {
+      id: 2,
+      title: "Social Media Marketing (SMM)",
+      description: "Markedsføring på sociale medier. Facebook, Instagram, LinkedIn, TikTok og andre sociale platforme.",
+      icon: <FaShareSquare size={50} />
+    },
+    {
+      id: 3,
+      title: "Analyse & Rapportering",
+      description: "Analyse af markedsføring og kampagner. Rapportering af kampagner og resultater.",
+      icon: <FaChartLine size={50} />
+    }
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("/api/ServicesData");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setServices(data);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Fetch error:", error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  if (isLoading) {
-    return <div>Loading services...</div>;
-  }
-
   return (
-    <section id="services" className={style.BGblue}>
-      <h2>Services</h2>
-      <div className={`${style.ServicesContainer} ${style.wrapper}`}>
-        {services.map((service, index) => (
-          <article key={service.title + service.id} className={style.Service}>
-            <h3 className={style.header2}>{service.title}</h3>
-            <div className={style.icon}>{icons[index]}</div>
-            <p>{service.description}</p>
-            {/* ER KOMMENTERET UD INDTIL JEG HAR TID TIL AT SKRIVE TEKST TIL DET
-              <div className={style.cta}>
-              <CTA
-                stil={Stil.blue}
-                tekst={Tekst.readMore}
-                popup={
-                  <div>
-                    <h3>{service.title}</h3>
-                    {service.description}
-                  </div>
-                }
-              />
-            </div>*/}
+    <section id="services" className="bg-primary py-16 px-4">
+      <h2 className="text-center text-4xl md:text-5xl mb-12 font-semibold text-white">Services</h2>
+      <div className="max-w-wrapper mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
+        {services.map((service) => (
+          <article
+            key={service.id}
+            className="bg-white rounded-custom shadow-lg p-8 text-center transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl flex flex-col items-center"
+          >
+            <h3 className="text-2xl md:text-3xl mb-6 font-semibold text-primary">{service.title}</h3>
+            <div className="text-primary my-8 flex justify-center items-center transition-transform duration-300 group-hover:scale-110">
+              {service.icon}
+            </div>
+            <p className="text-text leading-relaxed mb-6">{service.description}</p>
           </article>
         ))}
       </div>

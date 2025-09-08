@@ -1,20 +1,13 @@
-:root {
-  --primary-color: #004658;
-  --secondary-color: #ff9101;
-  --text-color: #252525;
-  --background-color: #f2f2f2;
-  --white: #ffffff;
-  --gray: #e6e6e6;
-  --wrapper: 1200px;
-  --rounded1: 16px;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html, body {
   margin: 0;
   padding: 0;
   font-family: 'Roboto', sans-serif;
-  color: var(--text-color);
-  background-color: var(--background-color);
+  color: #252525;
+  background-color: #f2f2f2;
 }
 
 a {

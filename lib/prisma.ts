@@ -7,14 +7,7 @@ declare global {
 // Construct DATABASE_URL from environment variables
 const DATABASE_URL = `postgresql://${process.env.DB_USER}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
 
-const prisma = global.prisma || new PrismaClient({
-  datasources: {
-    db: {
-      url: DATABASE_URL,
-    },
-  },
-  log: ['query', 'error', 'warn'],
-});
+export const prisma = global.prisma || new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') {
   global.prisma = prisma;

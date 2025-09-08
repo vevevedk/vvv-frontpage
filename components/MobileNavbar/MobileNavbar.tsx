@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import styles from "../../styles/navbar.module.css";
 import { LinkingModel } from "../model/LinkModel";
 
 interface Props {
@@ -9,7 +8,6 @@ interface Props {
 
 const MobileNavbar: React.FC<Props> = ({ links }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const logoUrl = process.env.NEXT_PUBLIC_LOGO_URL || '/icons/fallback-logo.svg';
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -26,10 +24,10 @@ const MobileNavbar: React.FC<Props> = ({ links }) => {
       return (
         <a 
           href={link.idtojump} 
-          className={styles.link}
+          className="px-4 py-2 text-white hover:text-secondary transition-colors"
           onClick={handleClick}
         >
-          <h3 className={styles.LinkName}>{link.name}</h3>
+          <h3 className="font-semibold text-lg">{link.name}</h3>
         </a>
       );
     }
@@ -38,26 +36,22 @@ const MobileNavbar: React.FC<Props> = ({ links }) => {
     return (
       <Link 
         href={link.idtojump}
-        className={styles.link}
+        className="px-4 py-2 text-white hover:text-secondary transition-colors"
         onClick={handleClick}
       >
-        <h3 className={styles.LinkName}>{link.name}</h3>
+        <h3 className="font-semibold text-lg">{link.name}</h3>
       </Link>
     );
   };
 
   return (
-    <nav className={styles.nav}>
-      <div className={styles.navFlex}>
+    <nav className="w-full bg-primary shadow-md">
+      <div className="max-w-wrapper mx-auto flex items-center justify-between py-4 px-6">
         <Link href="/">
-          <img
-            src={logoUrl}
-            alt="Logo"
-            className={styles.logo}
-          />
+          <span className="text-2xl md:text-3xl font-bold text-white">veveve</span>
         </Link>
         <button
-          className={styles.menuButton}
+          className="text-white text-2xl"
           onClick={toggleMenu}
           aria-label={isOpen ? "Close menu" : "Open menu"}
         >
@@ -77,13 +71,20 @@ const MobileNavbar: React.FC<Props> = ({ links }) => {
             )}
           </svg>
         </button>
-        <ul className={`${styles.links} ${isOpen ? styles.open : ""}`}>
-          {links.map((link) => (
-            <li key={link.name + link.id} className={styles.listWrapper}>
-              {renderLink(link)}
-            </li>
-          ))}
-        </ul>
+        {isOpen && (
+          <div className="fixed inset-0 bg-black/70 z-50 flex flex-col items-center justify-center">
+            <button className="absolute top-6 right-6 text-white text-3xl" onClick={toggleMenu}>
+              ×
+            </button>
+            <ul className="flex flex-col space-y-8">
+              {links.map((link) => (
+                <li key={link.name + link.id}>
+                  {renderLink(link)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </nav>
   );

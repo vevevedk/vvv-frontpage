@@ -1,5 +1,4 @@
-import { CountryStats, ComparisonStats } from '../types';
-import styles from '../styles/analytics/Analytics.module.css';
+import { CountryStats, ComparisonStats } from '../lib/types/analytics';
 
 interface TotalsSummaryProps {
     mainStats: CountryStats[];
@@ -63,60 +62,60 @@ const TotalsSummary: React.FC<TotalsSummaryProps> = ({ mainStats, comparisonStat
     });
 
     return (
-        <div className={styles.totalsSummary}>
-            <div className={styles.totalsSummaryBox}>
-                <h3>Performance Totals</h3>
-                <table>
-                    <tbody>
-                        <tr>
-                            <th>Total Queries:</th>
-                            <td>{formatNumber(totals.query_count)}</td>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Totals</h3>
+                <table className="w-full">
+                    <tbody className="space-y-2">
+                        <tr className="flex justify-between">
+                            <th className="text-sm font-medium text-gray-600">Total Queries:</th>
+                            <td className="text-sm text-gray-900">{formatNumber(totals.query_count)}</td>
                         </tr>
-                        <tr>
-                            <th>Total Impressions:</th>
-                            <td>{formatNumber(totals.impressions)}</td>
+                        <tr className="flex justify-between">
+                            <th className="text-sm font-medium text-gray-600">Total Impressions:</th>
+                            <td className="text-sm text-gray-900">{formatNumber(totals.impressions)}</td>
                         </tr>
-                        <tr>
-                            <th>Total Clicks:</th>
-                            <td>{formatNumber(totals.clicks)}</td>
+                        <tr className="flex justify-between">
+                            <th className="text-sm font-medium text-gray-600">Total Clicks:</th>
+                            <td className="text-sm text-gray-900">{formatNumber(totals.clicks)}</td>
                         </tr>
-                        <tr>
-                            <th>Avg Position:</th>
-                            <td>{avgPosition}</td>
+                        <tr className="flex justify-between">
+                            <th className="text-sm font-medium text-gray-600">Avg Position:</th>
+                            <td className="text-sm text-gray-900">{avgPosition}</td>
                         </tr>
-                        <tr>
-                            <th>CTR:</th>
-                            <td>{formatPercentage(totals.clicks, totals.impressions)}</td>
+                        <tr className="flex justify-between">
+                            <th className="text-sm font-medium text-gray-600">CTR:</th>
+                            <td className="text-sm text-gray-900">{formatPercentage(totals.clicks, totals.impressions)}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div className={styles.totalsSummaryBox}>
-                <h3>Comparison Totals</h3>
-                <table>
-                    <tbody>
-                        <tr>
-                            <th>Query Change:</th>
-                            <td className={comparisonTotals.query_count_diff >= 0 ? styles.positive : styles.negative}>
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Comparison Totals</h3>
+                <table className="w-full">
+                    <tbody className="space-y-2">
+                        <tr className="flex justify-between">
+                            <th className="text-sm font-medium text-gray-600">Query Change:</th>
+                            <td className={`text-sm ${comparisonTotals.query_count_diff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {formatDiff(comparisonTotals.query_count_diff, totals.query_count)}
                             </td>
                         </tr>
-                        <tr>
-                            <th>Impression Change:</th>
-                            <td className={comparisonTotals.impressions_diff >= 0 ? styles.positive : styles.negative}>
+                        <tr className="flex justify-between">
+                            <th className="text-sm font-medium text-gray-600">Impression Change:</th>
+                            <td className={`text-sm ${comparisonTotals.impressions_diff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {formatDiff(comparisonTotals.impressions_diff, totals.impressions)}
                             </td>
                         </tr>
-                        <tr>
-                            <th>Click Change:</th>
-                            <td className={comparisonTotals.clicks_diff >= 0 ? styles.positive : styles.negative}>
+                        <tr className="flex justify-between">
+                            <th className="text-sm font-medium text-gray-600">Click Change:</th>
+                            <td className={`text-sm ${comparisonTotals.clicks_diff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {formatDiff(comparisonTotals.clicks_diff, totals.clicks)}
                             </td>
                         </tr>
-                        <tr>
-                            <th>Position Change:</th>
-                            <td className={comparisonTotals.position_diff <= 0 ? styles.positive : styles.negative}>
+                        <tr className="flex justify-between">
+                            <th className="text-sm font-medium text-gray-600">Position Change:</th>
+                            <td className={`text-sm ${comparisonTotals.position_diff <= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {(comparisonTotals.position_diff || 0).toFixed(1)}
                             </td>
                         </tr>

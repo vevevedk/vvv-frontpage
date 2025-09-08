@@ -14,7 +14,7 @@ const Links: LinkingModel[] = [
   new LinkingModel("3", "Cases", "#cases"),
   new LinkingModel("4", "Priser", "#prices"),
   new LinkingModel("5", "Kontakt", "#contact"),
-  new LinkingModel("6", "Login", "/auth/login"), // Note: This uses a full path, not a hash
+  new LinkingModel("6", "Login", "/login"), // Note: This uses a full path, not a hash
 ];
 
 export default function Home() {
