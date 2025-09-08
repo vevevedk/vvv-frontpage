@@ -6,9 +6,10 @@ RUN npm ci || npm i
 
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY package*.json ./
+RUN npm ci || npm i
 COPY . .
-# Build with production env baked in
+# Build with production env baked in (standalone)
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
@@ -17,11 +18,10 @@ WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1
 
-# Copy standalone build if available, fallback to full .next
-COPY --from=builder /app/.next ./.next
+# Use Next standalone output
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3001
 CMD ["npm", "run", "start"]
