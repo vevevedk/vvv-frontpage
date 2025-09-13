@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import styles from '@/styles/analytics/Analytics.module.css';
-import { Client, ClientAccount, AccountType } from '../../types/clients';
+import { Client, ClientAccount, AccountType } from '../../lib/types/clients';
 // Make sure to import as default
 import AnalyticsLayout from '../../components/layouts/AnalyticsLayout';
 
@@ -333,7 +333,7 @@ const ClientsManagement: React.FC = () => {
                                                                 <label>Locations:</label>
                                                                 <select
                                                                     multiple
-                                                                    value={editingAccount.locations || []}
+                                                                    value={(editingAccount.locations || []).map(String)}
                                                                     onChange={(e) => {
                                                                         const selectedOptions = Array.from(e.target.selectedOptions);
                                                                         const selectedLocations = selectedOptions.map(option => 
@@ -450,7 +450,7 @@ const ClientsManagement: React.FC = () => {
                                                 <label>Locations:</label>
                                                 <select
                                                     multiple
-                                                    value={newAccount.locations}
+                                                    value={newAccount.locations.map(String)}
                                                     onChange={(e) => {
                                                         const values = Array.from(
                                                             e.target.selectedOptions, 

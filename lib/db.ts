@@ -12,7 +12,13 @@ console.log('Process ENV:', {
 });
 
 // Create connection config
-const config = {
+const config: {
+    host: string | undefined;
+    user: string | undefined;
+    database: string | undefined;
+    port: number;
+    password?: string;
+} = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     database: process.env.DB_NAME,
@@ -21,7 +27,7 @@ const config = {
 
 // Only add password if it's set
 if (process.env.DB_PASSWORD) {
-    config['password'] = process.env.DB_PASSWORD;
+    config.password = process.env.DB_PASSWORD;
 }
 
 if (!config.host || !config.user || !config.database || !config.port) {

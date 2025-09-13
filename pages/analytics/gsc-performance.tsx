@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
 import AnalyticsLayout from '../../components/layouts/AnalyticsLayout';
 import styles from '@/styles/analytics/Analytics.module.css';
-import TotalsSummary from '../../components/TotalsSummary';
+import TotalsSummary from '../../components/analytics/summary/TotalsSummary';
 
 // Add this utility function at the top of the file
 const formatNumber = (value: string | number, decimals: number = 0): string => {
@@ -490,14 +490,14 @@ const GSCPerformance: NextPage = () => {
                                                 {currentPage === totalPages && (
                                                     <tr className={styles.totalRow}>
                                                         <td>Total</td>
-                                                        <td>{calculateTotals(gscData).query_count.toLocaleString()}</td>
-                                                        <td>{calculateTotals(gscData).impressions.toLocaleString()}</td>
-                                                        <td>{calculateTotals(gscData).clicks.toLocaleString()}</td>
+                                                        <td>{calculateTotals(aggregateByCountry(gscData)).query_count.toLocaleString()}</td>
+                                                        <td>{calculateTotals(aggregateByCountry(gscData)).impressions.toLocaleString()}</td>
+                                                        <td>{calculateTotals(aggregateByCountry(gscData)).clicks.toLocaleString()}</td>
                                                         <td>
-                                                            {((calculateTotals(gscData).clicks / calculateTotals(gscData).impressions) * 100).toFixed(1)}%
+                                                            {((calculateTotals(aggregateByCountry(gscData)).clicks / calculateTotals(aggregateByCountry(gscData)).impressions) * 100).toFixed(1)}%
                                                         </td>
                                                         <td>
-                                                            {(calculateTotals(gscData).position / calculateTotals(gscData).impressions).toFixed(1)}
+                                                            {(calculateTotals(aggregateByCountry(gscData)).position / calculateTotals(aggregateByCountry(gscData)).impressions).toFixed(1)}
                                                         </td>
                                                     </tr>
                                                 )}
@@ -547,25 +547,25 @@ const GSCPerformance: NextPage = () => {
                                                     return (
                                                         <tr key={index}>
                                                             <td>{stat.country}</td>
-                                                            <td className={compStat?.query_count_diff >= 0 ? styles.positive : styles.negative}>
+                                                            <td className={(compStat?.query_count_diff || 0) >= 0 ? styles.positive : styles.negative}>
                                                                 {formatDiff(
                                                                     compStat?.query_count_diff || 0,
                                                                     compStat?.query_count_diff_pct || 0
                                                                 )}
                                                             </td>
-                                                            <td className={compStat?.impressions_diff >= 0 ? styles.positive : styles.negative}>
+                                                            <td className={(compStat?.impressions_diff || 0) >= 0 ? styles.positive : styles.negative}>
                                                                 {formatDiff(
                                                                     compStat?.impressions_diff || 0,
                                                                     compStat?.impressions_diff_pct || 0
                                                                 )}
                                                             </td>
-                                                            <td className={compStat?.clicks_diff >= 0 ? styles.positive : styles.negative}>
+                                                            <td className={(compStat?.clicks_diff || 0) >= 0 ? styles.positive : styles.negative}>
                                                                 {formatDiff(
                                                                     compStat?.clicks_diff || 0,
                                                                     compStat?.clicks_diff_pct || 0
                                                                 )}
                                                             </td>
-                                                            <td className={compStat?.position_diff <= 0 ? styles.positive : styles.negative}>
+                                                            <td className={(compStat?.position_diff || 0) <= 0 ? styles.positive : styles.negative}>
                                                                 {formatPositionDiff(compStat?.position_diff || 0)}
                                                             </td>
                                                         </tr>

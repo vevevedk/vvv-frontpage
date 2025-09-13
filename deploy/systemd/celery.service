@@ -1,0 +1,20 @@
+[Unit]
+Description=Celery Worker for VEVEVE Django API
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/vvv/vvv-frontpage/backend
+Environment="DJANGO_SETTINGS_MODULE=api.settings.prod"
+EnvironmentFile=-/etc/vvv/backend.env
+ExecStart=/opt/vvv/vvv-frontpage/.venv/bin/celery -A api worker -l info --concurrency=4
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+
+

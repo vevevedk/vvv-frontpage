@@ -19,7 +19,7 @@ prisma.$connect()
     console.log('Successfully connected to database');
     console.log('Using connection string:', DATABASE_URL);
   })
-  .catch((error) => {
+  .catch((error: any) => {
     console.error('Failed to connect to database:', error);
     console.error('Attempted connection string:', DATABASE_URL);
   });

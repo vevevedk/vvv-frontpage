@@ -147,7 +147,7 @@ export default function EnhancedAnalytics() {
       });
       
       const response = await api.get(`/api/woocommerce/orders/enhanced_analytics/?${params}`);
-      setAnalytics(response.data);
+      setAnalytics(response.data as EnhancedAnalyticsData);
     } catch (err) {
       setError('Failed to fetch enhanced analytics');
       console.error('Error fetching enhanced analytics:', err);
@@ -164,7 +164,7 @@ export default function EnhancedAnalytics() {
       });
       
       const response = await api.get(`/api/woocommerce/orders/customer_segmentation/?${params}`);
-      setSegmentation(response.data);
+      setSegmentation(response.data as CustomerSegmentationData);
     } catch (err) {
       console.error('Error fetching customer segmentation:', err);
     }
@@ -285,26 +285,22 @@ export default function EnhancedAnalytics() {
         <StatsCard
           title="Total Orders"
           value={analytics.overview.total_orders}
-          icon={ShoppingBagIcon}
-          change={null}
+          icon={<ShoppingBagIcon className="h-6 w-6" />}
         />
         <StatsCard
           title="Total Revenue"
           value={`$${analytics.overview.total_revenue.toLocaleString()}`}
-          icon={CurrencyDollarIcon}
-          change={null}
+          icon={<CurrencyDollarIcon className="h-6 w-6" />}
         />
         <StatsCard
           title="Avg Order Value"
           value={`$${analytics.overview.avg_order_value.toFixed(2)}`}
-          icon={ChartBarIcon}
-          change={null}
+          icon={<ChartBarIcon className="h-6 w-6" />}
         />
         <StatsCard
           title="Unique Customers"
           value={analytics.overview.unique_customers}
-          icon={UserGroupIcon}
-          change={null}
+          icon={<UserGroupIcon className="h-6 w-6" />}
         />
       </div>
 
@@ -435,6 +431,7 @@ export default function EnhancedAnalytics() {
     </div>
   );
 }
+
 
 
 

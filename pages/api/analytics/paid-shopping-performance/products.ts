@@ -1,11 +1,11 @@
 // pages/api/analytics/paid-shopping-performance/products.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { pool } from '../../../../lib/db';
-import { PaidShoppingProductData } from '../../../../types/analytics';
+// import { PaidShoppingProductData } from '../../../../types/analytics';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<{ productPerformance: PaidShoppingProductData[] } | { message: string }>
+  res: NextApiResponse<{ productPerformance: any[] } | { message: string }>
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });

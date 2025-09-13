@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
 import AnalyticsLayout from '../../components/layouts/AnalyticsLayout';
 import styles from '@/styles/analytics/Analytics.module.css';
-import { DataQualityOverview } from './components/data-quality/DataQualityOverview';
-import { DataQualityInsights } from './components/data-quality/DataQualityInsights';
+import { DataQualityOverview } from '../../components/analytics/data-quality/DataQualityOverview';
+import { DataQualityInsights } from '../../components/analytics/data-quality/DataQualityInsights';
 
 interface TableStats {
     table_name: string;

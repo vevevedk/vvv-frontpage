@@ -1,6 +1,14 @@
 import { Pool } from 'pg';
 import { dataQualityConfigs } from './config';
 
+type data_state = 'preliminary' | 'maturing' | 'stable';
+
+interface DataQualityConfig {
+  requiredFields: string[];
+  varianceThreshold: number;
+  maturityPeriod: number;
+}
+
 export class DataQualityService {
   private pool: Pool;
 

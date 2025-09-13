@@ -18,6 +18,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # App code
 COPY backend /app
 
+# Create logs directory
+RUN mkdir -p /app/logs
+
 # Expose port and default run command
 EXPOSE 8000
 CMD ["gunicorn", "api.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

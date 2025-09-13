@@ -62,7 +62,7 @@ export default function JobMonitoring() {
         ? '/pipeline-jobs/'
         : `/pipeline-jobs/?pipeline_id=${selectedPipeline}`;
       const response = await api.get(url);
-      setJobs(response.data || []);
+      setJobs((response.data as PipelineJob[]) || []);
     } catch (err) {
       setError('Failed to fetch jobs');
       console.error('Error fetching jobs:', err);
@@ -74,7 +74,7 @@ export default function JobMonitoring() {
 
   const cancelJob = async (jobId: number) => {
     try {
-      await api.post(`/pipeline-jobs/${jobId}/cancel/`);
+      await api.post(`/pipeline-jobs/${jobId}/cancel/`, {});
       fetchJobs(); // Refresh the list
     } catch (err) {
       alert('Failed to cancel job');

@@ -1,0 +1,16 @@
+[Unit]
+Description=Gunicorn for VEVEVE Django API
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/vvv/vvv-frontpage/backend
+Environment="DJANGO_SETTINGS_MODULE=api.settings.prod"
+EnvironmentFile=-/etc/vvv/backend.env
+ExecStart=/opt/vvv/vvv-frontpage/.venv/bin/gunicorn api.wsgi:application --bind 127.0.0.1:8000 --workers 3
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

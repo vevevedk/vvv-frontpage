@@ -59,25 +59,26 @@ export default function OrderAnalytics() {
       const response = await api.get(url);
       
       // Debug: Check for duplicate status values
-      if (response.data?.status_breakdown) {
-        const statusCounts = {};
-        response.data.status_breakdown.forEach(status => {
+      const data = response.data as any;
+      if (data?.status_breakdown) {
+        const statusCounts: { [key: string]: number } = {};
+        data.status_breakdown.forEach((status: any) => {
           statusCounts[status.status] = (statusCounts[status.status] || 0) + 1;
         });
         
         const duplicates = Object.entries(statusCounts).filter(([status, count]) => count > 1);
         if (duplicates.length > 0) {
           console.warn('Duplicate status values found:', duplicates);
-          console.log('Full status breakdown data:', response.data.status_breakdown);
+          console.log('Full status breakdown data:', data.status_breakdown);
         }
       }
       
       // Process the data to handle duplicate status values
-      if (response.data?.status_breakdown) {
-        const processedBreakdown = [];
-        const statusMap = new Map();
+      if (data?.status_breakdown) {
+        const processedBreakdown: any[] = [];
+        const statusMap = new Map<string, any>();
         
-        response.data.status_breakdown.forEach(status => {
+        data.status_breakdown.forEach((status: any) => {
           if (statusMap.has(status.status)) {
             // Combine duplicate statuses
             const existing = statusMap.get(status.status);
@@ -90,10 +91,10 @@ export default function OrderAnalytics() {
         });
         
         // Update the response data with processed breakdown
-        response.data.status_breakdown = processedBreakdown;
+        data.status_breakdown = processedBreakdown;
       }
       
-      setStats(response.data);
+      setStats(data);
     } catch (err) {
       setError('Failed to fetch order statistics');
       console.error('Error fetching order stats:', err);

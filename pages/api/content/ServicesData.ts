@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { ServicesData } from '../../components/model/ServicesModel';
+import { ServicesData } from '../../../components/model/ServicesModel';
 
 export default function handler(
   req: NextApiRequest,

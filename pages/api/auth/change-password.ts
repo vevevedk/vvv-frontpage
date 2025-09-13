@@ -19,7 +19,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const { current_password, new_password } = validatedData;
 
       const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: session.user?.id },
         select: { password: true },
       });
 

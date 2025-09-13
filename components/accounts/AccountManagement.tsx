@@ -132,7 +132,7 @@ export default function AccountManagement() {
   const fetchCompanies = async () => {
     try {
       const response = await api.get('/companies/');
-      setCompanies(response.data);
+      setCompanies(response.data as Company[]);
     } catch (err) {
       console.error('Failed to load companies:', err);
     }
@@ -239,8 +239,8 @@ export default function AccountManagement() {
 
   const handleTestConnection = async (configId: number) => {
     try {
-      const response = await api.post(`/account-configurations/${configId}/test_connection/`);
-      alert(response.data.message);
+      const response = await api.post(`/account-configurations/${configId}/test_connection/`, {});
+      alert((response.data as { message: string }).message);
     } catch (err) {
       alert('Connection test failed');
     }

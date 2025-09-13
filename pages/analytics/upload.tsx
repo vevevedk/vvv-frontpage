@@ -3,50 +3,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import AnalyticsLayout from '../../components/layouts/AnalyticsLayout';
 import styles from '@/styles/analytics/Analytics.module.css';
-import type { Client } from '../../types';
-import UploadForm from './components/upload/UploadForm';
-import { DataQualityInsights } from './components/data-quality/DataQualityInsights';
+import type { Client } from '../../lib/types/clients';
+import UploadForm from '../../components/analytics/upload/UploadForm';
+import { DataQualityInsights } from '../../components/analytics/data-quality/DataQualityInsights';
 import { GetServerSideProps } from 'next';
 import prisma from '@/lib/prisma';
 
-export const DATA_TYPES = [
-    {
-        id: 'search_console_daily',
-        name: 'Search Console Daily',
-        description: 'Google Search Console query and page performance data',
-        tables: ['search_console_data'],
-        requiredColumns: ['date', 'query', 'page', 'clicks', 'impressions', 'position', 'ctr'],
-        templateUrl: '/templates/search_console_daily.csv'
-    },
-    {
-        id: 'campaign_performance_daily',
-        name: 'Campaign Performance Daily',
-        description: 'Google Ads campaign performance metrics',
-        tables: ['campaign_performance_daily', 'campaigns', 'campaign_budgets'],
-        requiredColumns: [
-            'Day',
-            'Campaign',
-            'Campaign ID',
-            'Account',
-            'Impr.',
-            'Clicks',
-            'Cost',
-            'Conversions',
-            'Conv. value',
-            'Search impr. share',
-            'Campaign status'
-        ],
-        templateUrl: '/templates/campaign_performance_daily.csv'
-    },
-    {
-        id: 'analytics_daily',
-        name: 'Analytics Daily',
-        description: 'Google Analytics daily performance metrics',
-        tables: ['analytics_data'],
-        requiredColumns: ['Date', 'Users', 'New Users', 'Sessions', 'Bounce Rate', 'Pages / Session', 'Avg. Session Duration'],
-        templateUrl: '/templates/analytics_daily.csv'
-    }
-] as const;
+import { DATA_TYPES } from '../../lib/constants/analytics';
 
 type DataType = typeof DATA_TYPES[number]['id'];
 
@@ -70,7 +33,7 @@ const Upload: NextPage<Props> = ({ clients }) => {
     const router = useRouter();
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [selectedType, setSelectedType] = useState<DataType>('');
+    const [selectedType, setSelectedType] = useState<DataType | null>(null);
     const [error, setError] = useState<string>('');
     const [success, setSuccess] = useState<string>('');
     const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null);
@@ -88,13 +51,13 @@ const Upload: NextPage<Props> = ({ clients }) => {
             
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('clientId', selectedClient.toString());
-            formData.append('tableType', selectedType);
+            formData.append('clientId', selectedClient?.toString() || '');
+            formData.append('tableType', selectedType!);
 
             console.log('Form data contents:', {
                 file: file.name,
                 clientId: selectedClient,
-                tableType: selectedType
+                tableType: selectedType!
             });
 
             const response = await fetch('/api/upload', {
@@ -239,7 +202,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
 
         return {
             props: {
-                clients: clients.map(client => ({
+                clients: clients.map((client: any) => ({
                     id: client.id,
                     name: client.name
                 }))

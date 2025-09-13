@@ -3,9 +3,9 @@ import { createRouter } from 'next-connect';
 import formidable from 'formidable';
 import { parse } from 'csv-parse';
 import { promises as fs } from 'fs';
-import { pool } from '../../lib/db';
-import { DataQualityService } from '../../lib/analytics/dataQuality/service';
-import { CampaignPerformanceService } from '../../lib/analytics/campaignPerformance/service';
+import { pool } from '../../../lib/db';
+import { DataQualityService } from '../../../lib/analytics/dataQuality/service';
+import { CampaignPerformanceService } from '../../../lib/analytics/campaignPerformance/service';
 
 // Configure API to handle file uploads
 export const config = {

@@ -54,7 +54,7 @@ export default function SyncLogs() {
       }
       
       const response = await api.get(url);
-      setLogs(response.data);
+      setLogs(response.data as SyncLog[]);
     } catch (err) {
       setError('Failed to fetch sync logs');
       console.error('Error fetching logs:', err);

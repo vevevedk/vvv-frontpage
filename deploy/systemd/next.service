@@ -1,0 +1,18 @@
+[Unit]
+Description=Next.js Frontend for VEVEVE
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/vvv/vvv-frontpage
+EnvironmentFile=-/etc/vvv/frontend.env
+ExecStart=/usr/bin/env node /opt/vvv/vvv-frontpage/node_modules/next/dist/bin/next start -p 3001
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+

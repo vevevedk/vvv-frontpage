@@ -1,11 +1,9 @@
 // pages/api/analytics/paid-shopping-performance/channels.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { pool } from '../../../../lib/db';
-import { PaidShoppingChannelData } from '../../../../types/analytics';
-
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<{ channelPerformance: PaidShoppingChannelData[] } | { message: string }>
+  res: NextApiResponse<{ channelPerformance: any[] } | { message: string }>
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
