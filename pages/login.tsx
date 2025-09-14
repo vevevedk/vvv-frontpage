@@ -147,14 +147,6 @@ export default function Login() {
           </form>
         </div>
 
-        {/* Test credentials section */}
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Test Credentials</h3>
-          <div className="text-xs text-gray-600 space-y-1">
-            <p><span className="font-medium">Email:</span> admin@veveve.dk</p>
-            <p><span className="font-medium">Password:</span> testpass123</p>
-          </div>
-        </div>
       </div>
     </div>
   );
