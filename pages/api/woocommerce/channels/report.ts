@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
-const DJANGO_API_URL = process.env.DJANGO_API_URL || 'http://localhost:8001/api';
+const DJANGO_API_URL = process.env.DJANGO_API_URL || '/api';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
