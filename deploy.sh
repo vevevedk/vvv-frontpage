@@ -46,7 +46,7 @@ docker build -f frontend.Dockerfile -t vvv-frontend:latest . || {
 # Build backend (if Dockerfile exists)
 if [ -f "backend/Dockerfile" ]; then
     print_status "Building backend image..."
-    docker build -f backend/Dockerfile -t vvv-backend:latest ./backend || {
+    docker build -f backend/Dockerfile -t vvv-backend:latest . || {
         print_error "Failed to build backend image"
         exit 1
     }
