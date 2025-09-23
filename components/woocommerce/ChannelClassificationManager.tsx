@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   PlusIcon,
   PencilIcon,
@@ -78,6 +78,13 @@ export default function ChannelClassificationManager({
   const [filterChannelType, setFilterChannelType] = useState<string>('all');
   // Track inline channel type selections for quick classify per discovered row
   const [inlineTypes, setInlineTypes] = useState<Record<string, string>>({});
+  // Horizontal scroll sync (top scrollbar <-> table) for Discovery and Rules
+  const discoveryTopScrollRef = useRef<HTMLDivElement | null>(null);
+  const discoveryBottomScrollRef = useRef<HTMLDivElement | null>(null);
+  const discoveryInnerWidthRef = useRef<HTMLDivElement | null>(null);
+  const rulesTopScrollRef = useRef<HTMLDivElement | null>(null);
+  const rulesBottomScrollRef = useRef<HTMLDivElement | null>(null);
+  const rulesInnerWidthRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -85,6 +92,33 @@ export default function ChannelClassificationManager({
       fetchDiscoveredTrafficSources();
     }
   }, [isOpen]);
+
+  // Sync handlers
+  useEffect(() => {
+    const pair = (
+      top: HTMLDivElement | null,
+      bottom: HTMLDivElement | null
+    ) => {
+      if (!top || !bottom) return () => {};
+      let syncing = false;
+      const onTop = () => {
+        if (syncing) return; syncing = true; bottom.scrollLeft = top.scrollLeft; syncing = false;
+      };
+      const onBottom = () => {
+        if (syncing) return; syncing = true; top.scrollLeft = bottom.scrollLeft; syncing = false;
+      };
+      top.addEventListener('scroll', onTop);
+      bottom.addEventListener('scroll', onBottom);
+      return () => {
+        top.removeEventListener('scroll', onTop);
+        bottom.removeEventListener('scroll', onBottom);
+      };
+    };
+
+    const cleanup1 = pair(discoveryTopScrollRef.current, discoveryBottomScrollRef.current);
+    const cleanup2 = pair(rulesTopScrollRef.current, rulesBottomScrollRef.current);
+    return () => { cleanup1 && cleanup1(); cleanup2 && cleanup2(); };
+  }, [discoveredSources, filteredClassifications.length]);
 
   const fetchClassifications = async () => {
     try {
@@ -249,7 +283,7 @@ export default function ChannelClassificationManager({
 
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Form */}
-          <div className="w-1/3 p-6 border-r border-gray-200 overflow-y-auto">
+          <div className="w-1/3 p-6 border-r border-gray-200 overflow-y-auto sticky top-0 self-start max-h-[calc(90vh-64px)]">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               {editingId ? 'Edit Classification' : 'Add New Classification'}
             </h3>
@@ -433,11 +467,16 @@ export default function ChannelClassificationManager({
                     <p className="text-sm text-gray-400 mt-1">Sync some WooCommerce data to see traffic sources.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div>
+                    {/* Top horizontal scrollbar */}
+                    <div ref={discoveryTopScrollRef} className="overflow-x-auto mb-2">
+                      <div ref={discoveryInnerWidthRef} className="min-w-[900px]"></div>
+                    </div>
+                    <div ref={discoveryBottomScrollRef} className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
                             Source/Medium
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -457,7 +496,7 @@ export default function ChannelClassificationManager({
                       <tbody className="bg-white divide-y divide-gray-200">
                         {discoveredSources.map((source, index) => (
                           <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
+                            <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-white">
                               <div>
                                 <div className="text-sm font-medium text-gray-900">
                                   {source.source_medium}
@@ -507,6 +546,7 @@ export default function ChannelClassificationManager({
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -543,11 +583,16 @@ export default function ChannelClassificationManager({
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div>
+                    {/* Top horizontal scrollbar */}
+                    <div ref={rulesTopScrollRef} className="overflow-x-auto mb-2">
+                      <div ref={rulesInnerWidthRef} className="min-w-[900px]"></div>
+                    </div>
+                    <div ref={rulesBottomScrollRef} className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
                             Source
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -567,7 +612,7 @@ export default function ChannelClassificationManager({
                       <tbody className="bg-white divide-y divide-gray-200">
                         {filteredClassifications.map((classification) => (
                           <tr key={classification.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white">
                               {classification.source}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -605,6 +650,7 @@ export default function ChannelClassificationManager({
                         ))}
                       </tbody>
                     </table>
+                    </div>
                     
                     {filteredClassifications.length === 0 && (
                       <div className="text-center py-12">
