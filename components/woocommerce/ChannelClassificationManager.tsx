@@ -118,7 +118,7 @@ export default function ChannelClassificationManager({
     const cleanup1 = pair(discoveryTopScrollRef.current, discoveryBottomScrollRef.current);
     const cleanup2 = pair(rulesTopScrollRef.current, rulesBottomScrollRef.current);
     return () => { cleanup1 && cleanup1(); cleanup2 && cleanup2(); };
-  }, [discoveredSources, filteredClassifications.length]);
+  }, [discoveredSources, classifications.length, filterChannelType, searchTerm]);
 
   const fetchClassifications = async () => {
     try {
