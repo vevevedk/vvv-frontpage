@@ -20,7 +20,8 @@ import {
   ShoppingCartIcon,
   CurrencyDollarIcon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon
+  ArrowTrendingDownIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
@@ -243,6 +244,83 @@ export default function ChannelReport() {
     return null;
   };
 
+  const exportToCSV = async () => {
+    if (!reportData) return;
+
+    try {
+      // Fetch detailed order data from the API
+      const accessToken = localStorage.getItem('accessToken');
+      const params = new URLSearchParams({ 
+        period: period.toString(),
+        client_name: selectedClient !== 'all' ? selectedClient : '',
+        export: 'true' // Flag to get detailed order data
+      });
+      
+      const response = await fetch(`/api/woocommerce/orders/channels_report/?${params}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const detailedData = await response.json();
+      
+      // Prepare CSV data with order details
+      const csvData = [
+        // Header row
+        [
+          'Order ID',
+          'Order Date',
+          'Order Total (DKK)',
+          'UTM Source (meta:_wc_order_attribution_utm_source)',
+          'Source Type (meta:_wc_order_attribution_source_type)',
+          'Classified Channel Type',
+          'Customer Email',
+          'Order Status',
+          'Currency',
+          'Client Name'
+        ],
+        // Order rows
+        ...(detailedData.orders || []).map((order: any) => [
+          order.order_id || '',
+          order.order_date || '',
+          order.order_total ? parseFloat(order.order_total).toFixed(2) : '0.00',
+          order.attribution_utm_source || '',
+          order.attribution_source_type || '',
+          order.channel_type || 'Unclassified',
+          order.billing_email || '',
+          order.status || '',
+          order.currency || '',
+          order.client_name || ''
+        ])
+      ];
+
+      // Convert to CSV string
+      const csvContent = csvData.map(row => 
+        row.map(field => `"${field}"`).join(',')
+      ).join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `channel_orders_detailed_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export data. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -395,6 +473,17 @@ export default function ChannelReport() {
             />
             <span>Show all channels</span>
           </label>
+
+          <button
+            type="button"
+            onClick={exportToCSV}
+            disabled={!reportData}
+            className="inline-flex items-center px-3 py-2 rounded-md border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            title="Export to CSV"
+          >
+            <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+            Export CSV
+          </button>
 
           <button
             type="button"

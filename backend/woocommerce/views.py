@@ -482,6 +482,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             period = int(request.query_params.get('period', 30))
             comparison_type = request.query_params.get('comparison_type', 'MoM')
             client_name = request.query_params.get('client_name', '')
+            export_detailed = request.query_params.get('export', 'false').lower() == 'true'
             
             # Calculate date ranges
             end_date = timezone.now()
@@ -601,6 +602,11 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
                 'popChange': pop_changes,
                 'unclassifiedData': unclassified_data
             }
+            
+            # Add detailed orders for export if requested
+            if export_detailed:
+                detailed_orders = self._get_detailed_orders_for_export(current_orders)
+                response_data['orders'] = detailed_orders
             
             return Response(response_data)
             
@@ -2003,6 +2009,41 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
                 {'error': f'Failed to debug orders: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    def _get_detailed_orders_for_export(self, orders_queryset):
+        """Get detailed order data for CSV export with channel classification"""
+        # Get all active classification rules
+        classifications = ChannelClassification.objects.filter(is_active=True)
+        classification_map = {
+            (rule.source.lower(), rule.medium.lower()): rule for rule in classifications
+        }
+        
+        orders_data = []
+        
+        for order in orders_queryset.select_related().order_by('-order_date'):
+            # Extract source/medium from order metadata, referrer, or UTM parameters
+            source, medium = self._extract_traffic_source(order)
+            
+            # Find matching classification (case-insensitive)
+            classification = classification_map.get((source.lower(), medium.lower()))
+            
+            # Use classification or default to 'Direct'
+            channel_type = classification.channel_type if classification else 'Direct'
+            
+            orders_data.append({
+                'order_id': order.order_id,
+                'order_date': order.order_date.strftime('%Y-%m-%d %H:%M:%S') if order.order_date else '',
+                'order_total': float(order.order_total) if order.order_total else 0.0,
+                'attribution_utm_source': order.attribution_utm_source or '',
+                'attribution_source_type': order.attribution_source_type or '',
+                'channel_type': channel_type,
+                'billing_email': order.billing_email or '',
+                'status': order.status or '',
+                'currency': order.currency or '',
+                'client_name': order.client_name or ''
+            })
+        
+        return orders_data
 
 
 class WooCommerceSyncLogViewSet(viewsets.ReadOnlyModelViewSet):
