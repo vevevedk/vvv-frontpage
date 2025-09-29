@@ -40,9 +40,19 @@ export default async function handler(
         path: '/',
       }));
 
+      // Return token payloads as the frontend expects, while also keeping the HttpOnly cookie above
       return res.status(200).json({
         success: true,
-        message: 'Login successful'
+        message: 'Login successful',
+        access_token: token,
+        // No refresh token flow implemented yet; reuse access token to satisfy client shape
+        refresh_token: token,
+        user: {
+          id: 0,
+          email,
+          role: 'admin',
+          email_verified: true,
+        }
       });
     }
 
