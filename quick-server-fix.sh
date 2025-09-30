@@ -87,3 +87,4 @@ echo "⚡ IF STILL SLOW:"
 echo "- Run: sudo swapoff -a && sudo swapon -a  # Reset swap"
 echo "- Run: sudo systemctl restart nginx       # Restart web server"
 echo "- Run: docker-compose restart             # Restart containers"
+

@@ -143,3 +143,4 @@ echo "If issues persist, run:"
 echo "- docker-compose down && docker-compose up -d"
 echo "- Check system resources: top, df -h, free -h"
 echo "- Check Nginx config: sudo nginx -t"
+

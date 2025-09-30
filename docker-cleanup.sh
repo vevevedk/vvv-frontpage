@@ -116,3 +116,4 @@ echo "3. If issues persist: ./diagnose-app-status.sh"
 echo ""
 echo "💾 SPACE SAVED:"
 echo "Check the 'Docker usage after cleanup' section above to see space freed"
+
