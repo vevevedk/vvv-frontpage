@@ -69,7 +69,8 @@ class LoginView(APIView):
                 'user': {
                     'id': user.id,
                     'email': user.email,
-                    'role': user.role
+                    'role': user.role,
+                    'email_verified': user.email_verified
                 }
             })
         except Exception as e:
@@ -190,7 +191,8 @@ class TokenRefreshView(APIView):
                     'user': {
                         'id': user.id,
                         'email': user.email,
-                        'role': user.role
+                        'role': user.role,
+                        'email_verified': user.email_verified
                     }
                 })
             except Exception as e:
