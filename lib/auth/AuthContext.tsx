@@ -82,28 +82,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Check for stored tokens on mount
-    if (typeof window !== 'undefined') {
-      const storedAccessToken = localStorage.getItem('accessToken');
-      const storedRefreshToken = localStorage.getItem('refreshToken');
-      const storedUser = localStorage.getItem('user');
+    // Check for stored tokens on mount and validate them
+    const initializeAuth = async () => {
+      if (typeof window !== 'undefined') {
+        const storedAccessToken = localStorage.getItem('accessToken');
+        const storedRefreshToken = localStorage.getItem('refreshToken');
+        const storedUser = localStorage.getItem('user');
 
-      if (storedAccessToken && storedRefreshToken && storedUser) {
-        setAccessToken(storedAccessToken);
-        setRefreshToken(storedRefreshToken);
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (error) {
-          console.error('Failed to parse stored user data:', error);
-          // Clear invalid stored data
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
+        if (storedAccessToken && storedRefreshToken && storedUser) {
+          setAccessToken(storedAccessToken);
+          setRefreshToken(storedRefreshToken);
+          api.setTokens(storedAccessToken, storedRefreshToken);
+          
+          try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            
+            // Validate tokens by trying to get current user
+            try {
+              await api.get('/users/me/');
+              // If successful, tokens are valid
+            } catch (error) {
+              console.log('Tokens are invalid, clearing auth data');
+              // Tokens are invalid, clear everything
+              setUser(null);
+              setAccessToken(null);
+              setRefreshToken(null);
+              api.clearTokens();
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+              localStorage.removeItem('user');
+            }
+          } catch (error) {
+            console.error('Failed to parse stored user data:', error);
+            // Clear invalid stored data
+            setUser(null);
+            setAccessToken(null);
+            setRefreshToken(null);
+            api.clearTokens();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+          }
         }
-        api.setTokens(storedAccessToken, storedRefreshToken);
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const updateUserData = (userData: User) => {
