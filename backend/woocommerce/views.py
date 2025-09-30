@@ -243,185 +243,175 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def analytics(self, request):
         """Get comprehensive analytics dashboard data"""
-        try:
-            client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
-            period = int(request.GET.get('period', 30) if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('period', 30))  # days
-            
-            queryset = self.get_queryset()
-            if client_name:
-                queryset = queryset.filter(client_name=client_name)
-            
-            # Date range for analysis
-            end_date = timezone.now()
-            start_date = end_date - timedelta(days=period)
-            period_orders = queryset.filter(date_created__gte=start_date)
-            
-            # Basic metrics
-            total_orders = period_orders.count()
-            total_revenue = period_orders.aggregate(Sum('total'))['total__sum'] or 0
-            avg_order_value = period_orders.aggregate(Avg('total'))['total__avg'] or 0
-            
-            # Initialize growth metrics
-            revenue_growth = 0
-            order_growth = 0
-            
-            # Growth comparison (previous period) - only if we have orders
-            if total_orders > 0:
-                prev_start = start_date - timedelta(days=period)
-                prev_orders = queryset.filter(date_created__gte=prev_start, date_created__lt=start_date)
-                prev_revenue = prev_orders.aggregate(Sum('total'))['total__sum'] or 0
-                prev_count = prev_orders.count()
-                
-                revenue_growth = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
-                order_growth = ((total_orders - prev_count) / prev_count * 100) if prev_count > 0 else 0
+        client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
+        period = int(request.GET.get('period', 30) if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('period', 30))  # days
         
-        # Daily trends
-        daily_trends = period_orders.annotate(
-            date=TruncDate('date_created')
-        ).values('date').annotate(
+        queryset = self.get_queryset()
+        if client_name:
+            queryset = queryset.filter(client_name=client_name)
+        
+        # Date range for analysis
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=period)
+        period_orders = queryset.filter(date_created__gte=start_date)
+        
+        # Basic metrics
+        total_orders = period_orders.count()
+        total_revenue = period_orders.aggregate(Sum('total'))['total__sum'] or 0
+        avg_order_value = period_orders.aggregate(Avg('total'))['total__avg'] or 0
+        
+        # Initialize growth metrics
+        revenue_growth = 0
+        order_growth = 0
+        
+        # Growth comparison (previous period) - only if we have orders
+        if total_orders > 0:
+            prev_start = start_date - timedelta(days=period)
+            prev_orders = queryset.filter(date_created__gte=prev_start, date_created__lt=start_date)
+            prev_revenue = prev_orders.aggregate(Sum('total'))['total__sum'] or 0
+            prev_count = prev_orders.count()
+            
+            revenue_growth = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
+            order_growth = ((total_orders - prev_count) / prev_count * 100) if prev_count > 0 else 0
+    
+    # Daily trends
+    daily_trends = period_orders.annotate(
+        date=TruncDate('date_created')
+    ).values('date').annotate(
+        orders=Count('id'),
+        revenue=Sum('total')
+    ).order_by('date')
+    
+    # Orders by status
+    status_breakdown = period_orders.values('status').annotate(
+        count=Count('id'),
+        revenue=Sum('total')
+    ).order_by('-count')
+    
+    # Payment methods
+    payment_methods = period_orders.exclude(
+        payment_method__isnull=True
+    ).values('payment_method').annotate(
+        count=Count('id'),
+        revenue=Sum('total')
+    ).order_by('-count')[:10]
+    
+    # Top customers by revenue
+    top_customers = period_orders.exclude(
+        billing_email__isnull=True
+    ).values(
+        'billing_email', 'billing_first_name', 'billing_last_name'
+    ).annotate(
+        order_count=Count('id'),
+        total_spent=Sum('total')
+    ).order_by('-total_spent')[:10]
+    
+    # Monthly trends (for longer periods)
+    if period > 60:
+        monthly_trends = period_orders.annotate(
+            month=TruncMonth('date_created')
+        ).values('month').annotate(
             orders=Count('id'),
             revenue=Sum('total')
-        ).order_by('date')
-        
-        # Orders by status
-        status_breakdown = period_orders.values('status').annotate(
-            count=Count('id'),
-            revenue=Sum('total')
-        ).order_by('-count')
-        
-        # Payment methods
-        payment_methods = period_orders.exclude(
-            payment_method__isnull=True
-        ).values('payment_method').annotate(
-            count=Count('id'),
-            revenue=Sum('total')
-        ).order_by('-count')[:10]
-        
-        # Top customers by revenue
-        top_customers = period_orders.exclude(
-            billing_email__isnull=True
-        ).values(
-            'billing_email', 'billing_first_name', 'billing_last_name'
-        ).annotate(
-            order_count=Count('id'),
-            total_spent=Sum('total')
-        ).order_by('-total_spent')[:10]
-        
-        # Monthly trends (for longer periods)
-        if period > 60:
-            monthly_trends = period_orders.annotate(
-                month=TruncMonth('date_created')
-            ).values('month').annotate(
-                orders=Count('id'),
-                revenue=Sum('total')
-            ).order_by('month')
-        else:
-            monthly_trends = []
-        
-        # Order completion rate
-        completed_orders = period_orders.filter(
-            status__in=['completed', 'processing']
-        ).count()
-        completion_rate = (completed_orders / total_orders * 100) if total_orders > 0 else 0
-        
-        # Average time to completion (for completed orders) - simplified for now
-        completed_orders_count = period_orders.filter(date_completed__isnull=False).count()
-        avg_completion_hours = 24.0  # Default placeholder value
-        
-        # Customer insights
-        unique_customers = period_orders.exclude(
-            billing_email__isnull=True
-        ).values('billing_email').distinct().count()
-        
-        # Payment method breakdown with revenue
-        payment_methods = period_orders.exclude(
-            payment_method__isnull=True
-        ).values('payment_method').annotate(
-            count=Count('id'),
-            revenue=Sum('total')
-        ).order_by('-count')[:10]
-        
-        return Response({
-            'period': period,
-            'date_range': {
-                'start': start_date.isoformat(),
-                'end': end_date.isoformat()
-            },
-            'overview': {
-                'total_orders': total_orders,
-                'total_revenue': float(total_revenue),
-                'avg_order_value': float(avg_order_value),
-                'completion_rate': round(completion_rate, 1),
-                'avg_completion_hours': round(avg_completion_hours, 1),
-                'unique_customers': unique_customers
-            },
-            'growth': {
-                'revenue_growth': round(revenue_growth, 1),
-                'order_growth': round(order_growth, 1),
-                'previous_period': {
-                    'orders': prev_count,
-                    'revenue': float(prev_revenue)
-                }
-            },
-            'trends': {
-                'daily': [
-                    {
-                        'date': trend['date'].isoformat(),
-                        'orders': trend['orders'],
-                        'revenue': float(trend['revenue'] or 0)
-                    }
-                    for trend in daily_trends
-                ],
-                'monthly': [
-                    {
-                        'month': trend['month'].isoformat(),
-                        'orders': trend['orders'],
-                        'revenue': float(trend['revenue'] or 0)
-                    }
-                    for trend in monthly_trends
-                ] if monthly_trends else []
-            },
-            'breakdowns': {
-                'status': [
-                    {
-                        'status': item['status'],
-                        'count': item['count'],
-                        'revenue': float(item['revenue'] or 0),
-                        'percentage': round(item['count'] / total_orders * 100, 1) if total_orders > 0 else 0
-                    }
-                    for item in status_breakdown
-                ],
-                'payment_methods': [
-                    {
-                        'method': item['payment_method'],
-                        'count': item['count'],
-                        'revenue': float(item['revenue'] or 0),
-                        'percentage': round(item['count'] / total_orders * 100, 1) if total_orders > 0 else 0
-                    }
-                    for item in payment_methods
-                ]
-            },
-            'customers': {
-                'top_customers': [
-                    {
-                        'email': customer['billing_email'],
-                        'name': f"{customer['billing_first_name'] or ''} {customer['billing_last_name'] or ''}".strip(),
-                        'orders': customer['order_count'],
-                        'total_spent': float(customer['total_spent'])
-                    }
-                    for customer in top_customers
-                ]
+        ).order_by('month')
+    else:
+        monthly_trends = []
+    
+    # Order completion rate
+    completed_orders = period_orders.filter(
+        status__in=['completed', 'processing']
+    ).count()
+    completion_rate = (completed_orders / total_orders * 100) if total_orders > 0 else 0
+    
+    # Average time to completion (for completed orders) - simplified for now
+    completed_orders_count = period_orders.filter(date_completed__isnull=False).count()
+    avg_completion_hours = 24.0  # Default placeholder value
+    
+    # Customer insights
+    unique_customers = period_orders.exclude(
+        billing_email__isnull=True
+    ).values('billing_email').distinct().count()
+    
+    # Payment method breakdown with revenue
+    payment_methods = period_orders.exclude(
+        payment_method__isnull=True
+    ).values('payment_method').annotate(
+        count=Count('id'),
+        revenue=Sum('total')
+    ).order_by('-count')[:10]
+    
+    return Response({
+        'period': period,
+        'date_range': {
+            'start': start_date.isoformat(),
+            'end': end_date.isoformat()
+        },
+        'overview': {
+            'total_orders': total_orders,
+            'total_revenue': float(total_revenue),
+            'avg_order_value': float(avg_order_value),
+            'completion_rate': round(completion_rate, 1),
+            'avg_completion_hours': round(avg_completion_hours, 1),
+            'unique_customers': unique_customers
+        },
+        'growth': {
+            'revenue_growth': round(revenue_growth, 1),
+            'order_growth': round(order_growth, 1),
+            'previous_period': {
+                'orders': prev_count,
+                'revenue': float(prev_revenue)
             }
-        })
-        
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Analytics endpoint error: {str(e)}")
-            return Response(
-                {'error': f'Analytics generation failed: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        },
+        'trends': {
+            'daily': [
+                {
+                    'date': trend['date'].isoformat(),
+                    'orders': trend['orders'],
+                    'revenue': float(trend['revenue'] or 0)
+                }
+                for trend in daily_trends
+            ],
+            'monthly': [
+                {
+                    'month': trend['month'].isoformat(),
+                    'orders': trend['orders'],
+                    'revenue': float(trend['revenue'] or 0)
+                }
+                for trend in monthly_trends
+            ] if monthly_trends else []
+        },
+        'breakdowns': {
+            'status': [
+                {
+                    'status': item['status'],
+                    'count': item['count'],
+                    'revenue': float(item['revenue'] or 0),
+                    'percentage': round(item['count'] / total_orders * 100, 1) if total_orders > 0 else 0
+                }
+                for item in status_breakdown
+            ],
+            'payment_methods': [
+                {
+                    'method': item['payment_method'],
+                    'count': item['count'],
+                    'revenue': float(item['revenue'] or 0),
+                    'percentage': round(item['count'] / total_orders * 100, 1) if total_orders > 0 else 0
+                }
+                for item in payment_methods
+            ]
+        },
+        'customers': {
+            'top_customers': [
+                {
+                    'email': customer['billing_email'],
+                    'name': f"{customer['billing_first_name'] or ''} {customer['billing_last_name'] or ''}".strip(),
+                    'orders': customer['order_count'],
+                    'total_spent': float(customer['total_spent'])
+                }
+                for customer in top_customers
+            ]
+        }
+    })
     
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
