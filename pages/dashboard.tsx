@@ -79,8 +79,13 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    // Only fetch data if user is authenticated
+    if (authUser) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [authUser]);
 
   const handleDeleteAccount = async () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
