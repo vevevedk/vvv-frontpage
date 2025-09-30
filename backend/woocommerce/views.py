@@ -299,9 +299,9 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         
         # Top customers by revenue
         top_customers = period_orders.exclude(
-            customer_email__isnull=True
+            billing_email__isnull=True
         ).values(
-            'customer_email', 'customer_first_name', 'customer_last_name'
+            'billing_email', 'billing_first_name', 'billing_last_name'
         ).annotate(
             order_count=Count('id'),
             total_spent=Sum('total')
@@ -330,8 +330,8 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         
         # Customer insights
         unique_customers = period_orders.exclude(
-            customer_email__isnull=True
-        ).values('customer_email').distinct().count()
+            billing_email__isnull=True
+        ).values('billing_email').distinct().count()
         
         # Payment method breakdown with revenue
         payment_methods = period_orders.exclude(
@@ -404,8 +404,8 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             'customers': {
                 'top_customers': [
                     {
-                        'email': customer['customer_email'],
-                        'name': f"{customer['customer_first_name'] or ''} {customer['customer_last_name'] or ''}".strip(),
+                        'email': customer['billing_email'],
+                        'name': f"{customer['billing_first_name'] or ''} {customer['billing_last_name'] or ''}".strip(),
                         'orders': customer['order_count'],
                         'total_spent': float(customer['total_spent'])
                     }
@@ -1138,13 +1138,13 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             
             # Customer metrics
             unique_customers = period_orders.exclude(
-                customer_email__isnull=True
-            ).values('customer_email').distinct().count()
+                billing_email__isnull=True
+            ).values('billing_email').distinct().count()
             
             # Repeat customer analysis
             customer_order_counts = period_orders.exclude(
-                customer_email__isnull=True
-            ).values('customer_email').annotate(
+                billing_email__isnull=True
+            ).values('billing_email').annotate(
                 order_count=Count('id')
             )
             
@@ -1421,8 +1421,8 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             
             # Customer analysis
             customer_data = period_orders.exclude(
-                customer_email__isnull=True
-            ).values('customer_email').annotate(
+                billing_email__isnull=True
+            ).values('billing_email').annotate(
                 order_count=Count('id'),
                 total_spent=Sum('total'),
                 first_order=Min('date_created'),
@@ -1446,7 +1446,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
                 
                 for customer in customer_data:
                     customer_info = {
-                        'email': customer['customer_email'],
+                        'email': customer['billing_email'],
                         'order_count': customer['order_count'],
                         'total_spent': float(customer['total_spent'] or 0),
                         'avg_order_value': float(customer['avg_order_value'] or 0),
@@ -1494,7 +1494,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
                     lifetime_days = (customer['last_order'] - customer['first_order']).days
                     if lifetime_days > 0:
                         customer_lifetime_values.append({
-                            'email': customer['customer_email'],
+                            'email': customer['billing_email'],
                             'lifetime_days': lifetime_days,
                             'total_spent': float(customer['total_spent'] or 0),
                             'daily_value': float(customer['total_spent'] or 0) / lifetime_days
@@ -1830,7 +1830,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             ).values('year_month').annotate(
                 orders=Count('id'),
                 revenue=Sum('total'),
-                customers=Count('customer_email', distinct=True)
+                customers=Count('billing_email', distinct=True)
             ).order_by('year_month')
             
             # Convert to list for easier processing
