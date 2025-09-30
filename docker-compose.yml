@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: vvv_database
       POSTGRES_USER: vvv_user
-      POSTGRES_PASSWORD: vvv_password
+      POSTGRES_PASSWORD: Yo6g/LhuoAvQHd24QwhhmiQ5q7TGPc1HfA7Y7RB3gUE=
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
