@@ -12,9 +12,9 @@ const nextConfig = {
     DB_PORT: process.env.DB_PORT || '5432',
   },
   // Add error handling and static file optimization
-  experimental: {
-    optimizeCss: true,
-  },
+  // experimental: {
+  //   optimizeCss: true,
+  // },
   // Ensure proper handling of static assets
   assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
   // Add compression and caching headers

@@ -11,6 +11,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV NEXT_BUILD_SKIP_VALIDATION=1
 RUN npx prisma generate
 RUN npm run build
 
