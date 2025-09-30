@@ -1,10 +1,5 @@
 // pages/api/auth/login.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import jwt from 'jsonwebtoken';
-import { serialize } from 'cookie';
-
-// In production, this should be a secure environment variable
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secure-secret-key';
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,47 +13,31 @@ export default async function handler(
   try {
     const { email, password } = req.body;
 
-    // In production, validate against a database
-    // For now, using hardcoded credentials
-    if (email === 'andreas@veveve.dk' && password === 'avxzVvv2k25!!') {
-      // Create JWT token
-      const token = jwt.sign(
-        {
-          email,
-          role: 'admin'
-        },
-        JWT_SECRET,
-        { expiresIn: '8h' }
-      );
+    // Forward the login request to the Django backend
+    const djangoApiUrl = process.env.DJANGO_API_URL || 'http://localhost:8001/api';
+    
+    const response = await fetch(`${djangoApiUrl}/auth/login/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-      // Set HTTP-only cookie
-      res.setHeader('Set-Cookie', serialize('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 8 * 60 * 60, // 8 hours
-        path: '/',
-      }));
-
-      // Return token payloads as the frontend expects, while also keeping the HttpOnly cookie above
-      return res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        access_token: token,
-        // No refresh token flow implemented yet; reuse access token to satisfy client shape
-        refresh_token: token,
-        user: {
-          id: 0,
-          email,
-          role: 'admin',
-          email_verified: true,
-        }
+    if (!response.ok) {
+      const errorData = await response.json();
+      return res.status(response.status).json({
+        success: false,
+        message: errorData.detail || 'Login failed'
       });
     }
 
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid credentials'
+    const data = await response.json();
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      ...data  // Forward the actual backend response with real user data
     });
 
   } catch (error) {
