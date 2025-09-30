@@ -243,31 +243,37 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def analytics(self, request):
         """Get comprehensive analytics dashboard data"""
-        client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
-        period = int(request.GET.get('period', 30) if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('period', 30))  # days
-        
-        queryset = self.get_queryset()
-        if client_name:
-            queryset = queryset.filter(client_name=client_name)
-        
-        # Date range for analysis
-        end_date = timezone.now()
-        start_date = end_date - timedelta(days=period)
-        period_orders = queryset.filter(date_created__gte=start_date)
-        
-        # Basic metrics
-        total_orders = period_orders.count()
-        total_revenue = period_orders.aggregate(Sum('total'))['total__sum'] or 0
-        avg_order_value = period_orders.aggregate(Avg('total'))['total__avg'] or 0
-        
-        # Growth comparison (previous period)
-        prev_start = start_date - timedelta(days=period)
-        prev_orders = queryset.filter(date_created__gte=prev_start, date_created__lt=start_date)
-        prev_revenue = prev_orders.aggregate(Sum('total'))['total__sum'] or 0
-        prev_count = prev_orders.count()
-        
-        revenue_growth = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
-        order_growth = ((total_orders - prev_count) / prev_count * 100) if prev_count > 0 else 0
+        try:
+            client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
+            period = int(request.GET.get('period', 30) if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('period', 30))  # days
+            
+            queryset = self.get_queryset()
+            if client_name:
+                queryset = queryset.filter(client_name=client_name)
+            
+            # Date range for analysis
+            end_date = timezone.now()
+            start_date = end_date - timedelta(days=period)
+            period_orders = queryset.filter(date_created__gte=start_date)
+            
+            # Basic metrics
+            total_orders = period_orders.count()
+            total_revenue = period_orders.aggregate(Sum('total'))['total__sum'] or 0
+            avg_order_value = period_orders.aggregate(Avg('total'))['total__avg'] or 0
+            
+            # Initialize growth metrics
+            revenue_growth = 0
+            order_growth = 0
+            
+            # Growth comparison (previous period) - only if we have orders
+            if total_orders > 0:
+                prev_start = start_date - timedelta(days=period)
+                prev_orders = queryset.filter(date_created__gte=prev_start, date_created__lt=start_date)
+                prev_revenue = prev_orders.aggregate(Sum('total'))['total__sum'] or 0
+                prev_count = prev_orders.count()
+                
+                revenue_growth = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
+                order_growth = ((total_orders - prev_count) / prev_count * 100) if prev_count > 0 else 0
         
         # Daily trends
         daily_trends = period_orders.annotate(
@@ -407,6 +413,15 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
                 ]
             }
         })
+        
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Analytics endpoint error: {str(e)}")
+            return Response(
+                {'error': f'Analytics generation failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
