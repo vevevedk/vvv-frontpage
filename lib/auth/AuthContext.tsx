@@ -91,7 +91,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedAccessToken && storedRefreshToken && storedUser) {
         setAccessToken(storedAccessToken);
         setRefreshToken(storedRefreshToken);
-        setUser(JSON.parse(storedUser));
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (error) {
+          console.error('Failed to parse stored user data:', error);
+          // Clear invalid stored data
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+        }
         api.setTokens(storedAccessToken, storedRefreshToken);
       }
     }

@@ -249,9 +249,14 @@ export default function DataSourceManagement() {
       
       let data;
       try {
+        // Check if responseText is valid before parsing
+        if (!responseText || responseText.trim() === '' || responseText === 'undefined') {
+          throw new Error('Empty or undefined response');
+        }
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('Failed to parse JSON response:', parseError);
+        console.error('Response text:', responseText);
         throw new Error(`Invalid JSON response: ${responseText}`);
       }
       console.log('Sync response data:', data); // Debug log

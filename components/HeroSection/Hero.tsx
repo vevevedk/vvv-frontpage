@@ -19,8 +19,17 @@ const Hero: React.FC<HeroProps> = ({ title, subtitle, videoUrl = '/videos/hero.m
         loop
         autoPlay
         muted
+        playsInline
         src={videoUrl}
-        onError={(e) => console.error('Video error:', e)}
+        onError={(e) => {
+          console.error('Video loading error:', e);
+          // Fallback: hide video and show background
+          if (videoRef.current) {
+            videoRef.current.style.display = 'none';
+          }
+        }}
+        onLoadStart={() => console.log('Video loading started')}
+        onCanPlay={() => console.log('Video can play')}
       />
       <div className="absolute top-1/2 left-1/2 text-white text-center z-20 w-[90%] max-w-[800px] -translate-x-1/2 -translate-y-1/2">
         <h2 className="text-4xl md:text-5xl font-bold m-0 drop-shadow-lg leading-tight">{title}</h2>
