@@ -15,7 +15,8 @@ docker image rm vvv-frontend:latest vvv-backend:latest || true
 
 # Build new images
 echo "🏗️ Building new images..."
-docker-compose build --no-cache
+docker build -f frontend.Dockerfile -t vvv-frontend:latest .
+docker build -f backend/Dockerfile -t vvv-backend:latest .
 
 # Start services
 echo "🚀 Starting services..."
