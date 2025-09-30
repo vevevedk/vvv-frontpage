@@ -100,8 +100,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             // Validate tokens by trying to get current user
             try {
-              await api.get('/users/me/');
-              // If successful, tokens are valid
+              const response = await api.get('/users/me/');
+              // If successful, tokens are valid - update localStorage with fresh data
+              if (response.data) {
+                setUser(response.data);
+                localStorage.setItem('user', JSON.stringify(response.data));
+                console.log('Updated localStorage with fresh user data from backend');
+              }
             } catch (error) {
               console.log('Tokens are invalid, clearing auth data');
               // Tokens are invalid, clear everything
