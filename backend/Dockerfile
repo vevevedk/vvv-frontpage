@@ -21,6 +21,6 @@ COPY backend/ /app/
 # Create logs directory
 RUN mkdir -p /app/logs
 
-# Expose port and default run command
+# Expose port - let docker-compose handle the command
 EXPOSE 8000
-CMD ["gunicorn", "api.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# CMD removed to allow docker-compose to override with custom timeout settings
