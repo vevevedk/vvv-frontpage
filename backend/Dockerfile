@@ -16,7 +16,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # App code
-COPY backend/ /app/
+COPY . /app/
 
 # Create logs directory
 RUN mkdir -p /app/logs
