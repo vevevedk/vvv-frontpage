@@ -20,7 +20,7 @@ services:
       - vvv_network
 
   backend:
-    image: vvv-backend:latest
+    build: ./backend
     command: gunicorn api.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300 --keep-alive 2
     env_file:
       - ./env/backend.env
@@ -35,7 +35,7 @@ services:
       - vvv_network
 
   worker:
-    image: vvv-backend:latest
+    build: ./backend
     command: celery -A api worker -l info
     env_file:
       - ./env/backend.env
@@ -46,7 +46,7 @@ services:
       - vvv_network
 
   beat:
-    image: vvv-backend:latest
+    build: ./backend
     command: celery -A api beat -l info
     env_file:
       - ./env/backend.env
@@ -57,7 +57,9 @@ services:
       - vvv_network
 
   frontend:
-    image: vvv-frontend:latest
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
     env_file:
       - ./env/frontend.env
     environment:
