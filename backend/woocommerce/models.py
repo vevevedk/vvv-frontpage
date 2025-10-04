@@ -49,7 +49,7 @@ class WooCommerceOrder(models.Model):
     client_name = models.CharField(max_length=255, default='Unknown')  # Store account name instead of foreign key
     order_id = models.CharField(max_length=50)
     order_number = models.CharField(max_length=50)
-    order_date = models.DateTimeField()  # order_date from export
+    order_date = models.DateTimeField(null=True, blank=True)  # order_date from export
     paid_date = models.DateTimeField(null=True, blank=True)  # paid_date from export
     status = models.CharField(max_length=50)
     
