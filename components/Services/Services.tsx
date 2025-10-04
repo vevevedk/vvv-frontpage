@@ -1,4 +1,4 @@
- doimport React from "react";
+import React from "react";
 import { FaSearch, FaShareSquare, FaChartLine } from 'react-icons/fa';
 
 const Services: React.FC = () => {
