@@ -119,7 +119,10 @@ const DEFAULT_CHANNEL_CLASSIFICATIONS: ChannelClassification[] = [
   { source: 'chatgpt.com', medium: 'utm', sourceMedium: 'chatgpt.com/utm', channel: 'chatgpt / utm', channelType: 'ChatGpt' },
   { source: 'google', medium: 'utm', sourceMedium: 'google/utm', channel: 'google / utm', channelType: 'Paid Search' },
   { source: 'bing.com', medium: 'referral', sourceMedium: 'bing.com/referral', channel: 'bing / referal', channelType: 'Organic Search' },
-  { source: 'crmcredorax.lightning.force.com', medium: 'referral', sourceMedium: 'crmcredorax.lightning.force.com/referral', channel: 'test / test', channelType: 'Test' }
+  { source: 'crmcredorax.lightning.force.com', medium: 'referral', sourceMedium: 'crmcredorax.lightning.force.com/referral', channel: 'test / test', channelType: 'Test' },
+  { source: 'dk.search.yahoo.com', medium: 'referral', sourceMedium: 'dk.search.yahoo.com/referral', channel: 'yahoo / referral', channelType: 'Referral' },
+  { source: 'trustpilot', medium: 'utm', sourceMedium: 'trustpilot/utm', channel: 'trustpilot / utm', channelType: 'Referral' },
+  { source: 'google,google', medium: 'utm', sourceMedium: 'google,google/utm', channel: 'google,google / utm', channelType: 'ChannelNotFound' }
 ];
 
 export default function ChannelReport() {

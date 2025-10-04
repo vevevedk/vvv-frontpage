@@ -106,7 +106,7 @@ def sync_woocommerce_config(config_id, job_type='daily_sync', start_date=None, e
 
         if not start_date:
             if job_type == 'daily_sync':
-                start_date = timezone.now() - timedelta(days=7)
+                start_date = timezone.now() - timedelta(days=30)  # Extended to 30 days to catch more historical data
             else:
                 start_date = timezone.now() - timedelta(days=365)  # Last year for backfill
         
@@ -401,14 +401,38 @@ def process_woocommerce_order(config, order_data):
                 elif key == '_wc_order_attribution_utm_source':
                     attribution_data['attribution_utm_source'] = value
     
+    # Helper to parse timestamps to timezone-aware UTC datetimes
+    from django.utils import dateparse
+
+    def parse_aware(dt_value):
+        """Convert various datetime representations to aware UTC datetime or None."""
+        if not dt_value:
+            return None
+        if isinstance(dt_value, datetime):
+            dt = dt_value
+        else:
+            # Try Django parser first
+            dt = dateparse.parse_datetime(dt_value)
+            if dt is None:
+                # Fallback to fromisoformat with 'Z' handling
+                try:
+                    dt = datetime.fromisoformat(str(dt_value).replace('Z', '+00:00'))
+                except Exception:
+                    return None
+        try:
+            return dt if timezone.is_aware(dt) else timezone.make_aware(dt, timezone.utc)
+        except Exception:
+            # As a last resort, return naive parsed value
+            return dt
+
     # Check if order already exists
     order, created = WooCommerceOrder.objects.get_or_create(
         client_name=config.account.name,  # Store account name for backward compatibility
         order_id=order_id,
         defaults={
             'order_number': order_data.get('number', order_id),
-            'order_date': datetime.fromisoformat(order_data['date_created'].replace('Z', '+00:00')),
-            'paid_date': datetime.fromisoformat(order_data['date_paid'].replace('Z', '+00:00')) if order_data.get('date_paid') else None,
+            'order_date': parse_aware(order_data.get('date_created')),
+            'paid_date': parse_aware(order_data.get('date_paid')),
             'status': order_data.get('status', ''),
             
             # Financial fields
@@ -477,7 +501,7 @@ def process_woocommerce_order(config, order_data):
             'attribution_session_count': attribution_data.get('attribution_session_count'),
             'attribution_session_entry': attribution_data.get('attribution_session_entry'),
             'attribution_session_pages': attribution_data.get('attribution_session_pages'),
-            'attribution_session_start_time': attribution_data.get('attribution_session_start_time'),
+            'attribution_session_start_time': parse_aware(attribution_data.get('attribution_session_start_time')),
             'attribution_source_type': attribution_data.get('attribution_source_type'),
             'attribution_user_agent': attribution_data.get('attribution_user_agent'),
             'attribution_utm_source': attribution_data.get('attribution_utm_source'),
@@ -487,9 +511,9 @@ def process_woocommerce_order(config, order_data):
             'currency': order_data.get('currency', 'USD'),
             'billing_address': order_data.get('billing', {}),
             'shipping_address': order_data.get('shipping', {}),
-            'date_created': datetime.fromisoformat(order_data['date_created'].replace('Z', '+00:00')),
-            'date_modified': datetime.fromisoformat(order_data['date_modified'].replace('Z', '+00:00')),
-            'date_completed': datetime.fromisoformat(order_data['date_completed'].replace('Z', '+00:00')) if order_data.get('date_completed') else None,
+            'date_created': parse_aware(order_data.get('date_created')),
+            'date_modified': parse_aware(order_data.get('date_modified')),
+            'date_completed': parse_aware(order_data.get('date_completed')),
             'raw_data': order_data
         }
     )
@@ -505,7 +529,7 @@ def process_woocommerce_order(config, order_data):
         # Update existing order with new data
         order.status = order_data.get('status', '')
         order.order_total = order_data.get('total', '0.00')
-        order.order_date = datetime.fromisoformat(order_data['date_modified'].replace('Z', '+00:00'))
+        order.order_date = parse_aware(order_data.get('date_modified'))
         order.raw_data = order_data
         order.save()
     else:

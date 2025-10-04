@@ -1088,6 +1088,8 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             return 'organic'
         elif 'cpc' in medium or 'paid' in medium or 'ppc' in medium:
             return 'cpc'
+        elif 'utm' in medium:
+            return 'utm'  # Keep utm as utm for Paid Search classification
         elif 'social' in medium:
             return 'social'
         elif 'email' in medium:
@@ -2049,6 +2051,85 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             })
         
         return orders_data
+
+    @action(detail=False, methods=['get'])
+    def validate_data_coverage(self, request):
+        """Validate data coverage and detect missing orders or channels"""
+        client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
+        
+        queryset = self.get_queryset()
+        if client_name:
+            queryset = queryset.filter(client_name=client_name)
+        
+        # Check date coverage
+        date_stats = queryset.aggregate(
+            earliest_order=Min('date_created'),
+            latest_order=Max('date_created'),
+            total_orders=Count('id')
+        )
+        
+        # Check for gaps in daily data (last 30 days)
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=30)
+        
+        daily_counts = queryset.filter(
+            date_created__gte=start_date
+        ).annotate(
+            date=TruncDate('date_created')
+        ).values('date').annotate(
+            order_count=Count('id')
+        ).order_by('date')
+        
+        # Check channel coverage
+        channel_stats = queryset.filter(
+            date_created__gte=start_date
+        ).values('attribution_utm_source', 'attribution_source_type').annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
+        # Check for missing Paid Search orders (google + utm)
+        paid_search_count = queryset.filter(
+            attribution_utm_source='google',
+            attribution_source_type='utm',
+            date_created__gte=start_date
+        ).count()
+        
+        # Check for unclassified orders (no attribution data)
+        unclassified_count = queryset.filter(
+            date_created__gte=start_date
+        ).filter(
+            Q(attribution_utm_source__isnull=True) | Q(attribution_utm_source='') |
+            Q(attribution_source_type__isnull=True) | Q(attribution_source_type='')
+        ).count()
+        
+        warnings = []
+        if paid_search_count == 0:
+            warnings.append("⚠️ No Paid Search orders found in the last 30 days")
+        
+        if unclassified_count > 0:
+            warnings.append(f"⚠️ {unclassified_count} orders have no attribution data")
+        
+        # Check for data gaps
+        expected_days = 30
+        actual_days = daily_counts.count()
+        if actual_days < expected_days:
+            warnings.append(f"⚠️ Only {actual_days} days have data in the last {expected_days} days")
+        
+        return Response({
+            'date_coverage': {
+                'earliest_order': date_stats['earliest_order'],
+                'latest_order': date_stats['latest_order'],
+                'total_orders': date_stats['total_orders'],
+                'days_with_data': actual_days
+            },
+            'channel_coverage': {
+                'paid_search_orders': paid_search_count,
+                'unclassified_orders': unclassified_count,
+                'top_sources': list(channel_stats[:10])
+            },
+            'warnings': warnings,
+            'daily_breakdown': list(daily_counts)
+        })
 
 
 class WooCommerceSyncLogViewSet(viewsets.ReadOnlyModelViewSet):

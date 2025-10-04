@@ -49,12 +49,16 @@ def seed_channel_classifications():
         
         # Referrals
         {"source": "trustpilot", "medium": "utm", "channel": "trustpilot / utm", "channel_type": "Referal"},
+        {"source": "trustpilot", "medium": "referral", "channel": "trustpilot / referral", "channel_type": "Referal"},
         {"source": "bing.com", "medium": "referral", "channel": "bing / referral", "channel_type": "Bing"},
         {"source": "dk.search.yahoo.com", "medium": "referral", "channel": "yahoo / referral", "channel_type": "Referral"},
         
         # ChatGPT
         {"source": "chatgpt.com", "medium": "utm", "channel": "chatgpt / utm", "channel_type": "ChatGpt"},
         {"source": "chatgpt", "medium": "referral", "channel": "chatgpt / referral", "channel_type": "ChatGpt"},
+        
+        # Handle malformed data
+        {"source": "google,google", "medium": "utm", "channel": "google,google / utm", "channel_type": "ChannelNotFound"},
     ]
     
     for classification in classifications:

@@ -210,11 +210,13 @@ class ChannelClassification(models.Model):
         ('Organic Social', 'Organic Social'),
         ('Email', 'Email'),
         ('Referal', 'Referal'),
+        ('Referral', 'Referral'),
         ('ChatGpt', 'ChatGpt'),
         ('Paid Social', 'Paid Social'),
         ('Paid Search', 'Paid Search'),
         ('Organic Search', 'Organic Search'),
         ('Test', 'Test'),
+        ('ChannelNotFound', 'ChannelNotFound'),
     ]
     
     source = models.CharField(max_length=255, help_text="Traffic source (e.g., google, (direct), fb)")

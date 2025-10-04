@@ -1,0 +1,113 @@
+order_id,order_date,ChannelType,meta:_wc_order_attribution_utm_source,meta:_wc_order_attribution_source_type,Sessions,Orders,Order Total
+54344,2025-08-30 11:25:40,Paid Search,google,utm,4,1,52.5
+54345,2025-08-30 13:19:38,SEO,google,organic,66,1,1881.5
+54346,2025-08-30 21:00:28,Paid Search,google,utm,10,1,596
+54347,2025-08-31 8:58:10,Paid Search,google,utm,7,1,98
+54348,2025-08-31 12:44:00,Direct,(direct),typein,7,1,106
+54349,2025-08-31 15:36:04,Direct,(direct),typein,9,1,193
+54350,2025-08-31 18:10:25,Paid Search,google,utm,4,1,657
+54351,2025-09-01 16:25:48,SEO,google,organic,5,1,167
+54352,2025-09-01 21:55:58,Direct,(direct),typein,6,1,1435
+54353,2025-09-02 7:32:42,Direct,(direct),typein,7,1,603.25
+54354,2025-09-02 12:04:09,Direct,(direct),typein,11,1,575
+54355,2025-09-02 14:02:21,Direct,(direct),typein,11,1,1469
+54356,2025-09-02 16:37:23,Direct,(direct),typein,23,1,2872.5
+54357,2025-09-02 21:00:33,SEO,google,organic,9,1,1563.75
+54358,2025-09-02 21:17:56,SEO,google,organic,4,1,917
+54359,2025-09-03 0:26:18,Paid Search,google,utm,6,1,31.5
+54361,2025-09-03 9:06:03,SEO,google,organic,5,1,31
+54363,2025-09-03 10:40:42,SEO,google,organic,12,1,784
+54365,2025-09-03 13:12:46,SEO,google,organic,26,1,730
+54366,2025-09-03 14:50:15,Paid Search,google,utm,6,1,186.75
+54367,2025-09-04 14:41:59,SEO,google,organic,23,1,778.5
+54368,2025-09-04 19:07:24,SEO,google,organic,5,1,721.5
+54369,2025-09-04 19:42:32,SEO,google,organic,6,1,165
+54370,2025-09-05 10:11:57,SEO,google,organic,71,1,2107.25
+54371,2025-09-06 6:57:59,Direct,(direct),typein,6,1,196
+54372,2025-09-06 6:58:59,Direct,(direct),typein,7,1,212
+54373,2025-09-06 13:22:28,SEO,google,organic,28,1,229.5
+54374,2025-09-06 22:34:06,SEO,google,organic,14,1,59
+54375,2025-09-07 17:04:20,Paid Search,google,utm,6,1,508.25
+54376,2025-09-07 17:36:53,Paid Search,google,utm,4,1,143.25
+54377,2025-09-07 19:30:25,SEO,google,organic,7,1,119
+54378,2025-09-07 19:34:53,SEO,google,organic,5,1,229
+54379,2025-09-08 8:06:04,Direct,(direct),typein,21,1,4898.75
+54380,2025-09-08 15:43:56,Direct,(direct),typein,14,1,854
+54381,2025-09-08 17:10:02,SEO,google,organic,4,1,568.5
+54382,2025-09-08 22:21:06,SEO,google,organic,4,1,1340
+54383,2025-09-09 13:19:23,SEO,google,organic,6,1,258
+54384,2025-09-09 15:36:14,SEO,google,organic,4,1,461.25
+54385,2025-09-09 17:57:14,Paid Search,google,utm,18,1,378.5
+54386,2025-09-09 21:08:28,Paid Search,google,utm,20,1,96
+54387,2025-09-10 8:50:24,SEO,google,organic,8,1,795
+54388,2025-09-10 10:01:54,SEO,google,organic,5,1,1114.5
+54398,2025-09-10 11:49:44,Direct,(direct),typein,8,1,591
+54433,2025-09-10 18:57:08,ChanelNotFound,"google,google",utm,4,1,39.7
+54434,2025-09-10 20:37:21,SEO,google,organic,8,1,1051.25
+54435,2025-09-10 23:10:15,SEO,google,organic,5,1,1261.5
+54436,2025-09-10 23:11:38,Direct,(direct),typein,23,1,940.5
+54437,2025-09-11 17:46:54,SEO,google,organic,6,1,290
+54439,2025-09-12 13:38:45,Direct,(direct),typein,6,1,169
+54440,2025-09-12 15:13:21,SEO,google,organic,4,1,38.75
+54441,2025-09-12 16:57:12,SEO,google,organic,13,1,201
+54442,2025-09-14 12:28:01,SEO,google,organic,1,1,2462.31
+54443,2025-09-14 12:41:18,SEO,google,organic,91,1,14454.25
+54444,2025-09-14 13:05:38,SEO,google,organic,115,1,453.25
+54445,2025-09-14 13:48:31,SEO,google,organic,4,1,480
+54446,2025-09-14 16:55:37,SEO,google,organic,14,1,2148.75
+54447,2025-09-14 17:29:28,SEO,google,organic,39,1,1237
+54448,2025-09-15 9:00:20,Direct,(direct),typein,12,1,697
+54449,2025-09-15 9:49:22,Direct,(direct),typein,18,1,526
+54450,2025-09-15 11:17:22,Paid Search,google,utm,9,1,90
+54452,2025-09-15 17:25:48,SEO,google,organic,29,1,1569
+54453,2025-09-15 20:52:04,ChatGpt,chatgpt.com,utm,5,1,189
+54455,2025-09-16 9:58:10,SEO,google,organic,6,1,409.75
+54456,2025-09-16 11:58:11,SEO,google,organic,4,1,772.5
+54459,2025-09-16 17:32:19,SEO,google,organic,18,1,400.5
+54460,2025-09-16 20:04:17,Direct,(direct),typein,28,1,2695.75
+54461,2025-09-16 21:12:09,Direct,(direct),typein,9,1,229
+54462,2025-09-17 9:10:55,Paid Search,google,utm,4,1,92.5
+54463,2025-09-18 11:25:00,Direct,(direct),typein,9,1,977.75
+54464,2025-09-18 12:09:56,SEO,google,organic,32,1,916
+54465,2025-09-18 16:24:27,SEO,google,organic,5,1,859
+54466,2025-09-18 16:36:37,SEO,google,organic,15,1,2813
+54467,2025-09-18 22:15:33,Referral,dk.search.yahoo.com,referral,3,1,120
+54468,2025-09-19 7:10:08,Paid Search,google,utm,24,1,2503
+54469,2025-09-19 11:37:09,SEO,google,organic,14,1,720
+54470,2025-09-19 11:53:42,SEO,google,organic,25,1,303.5
+54471,2025-09-19 12:53:02,SEO,google,organic,7,1,345
+54472,2025-09-19 13:14:14,Paid Search,google,utm,33,1,65.5
+54473,2025-09-19 14:24:22,SEO,google,organic,2,1,2832.75
+54474,2025-09-20 7:23:20,Paid Search,google,utm,5,1,85
+54475,2025-09-21 16:37:36,SEO,google,organic,7,1,54
+54476,2025-09-21 21:03:51,Paid Search,google,utm,5,1,160
+54477,2025-09-22 11:20:50,Paid Search,google,utm,13,1,141
+54478,2025-09-22 12:41:08,Direct,(direct),typein,3,1,46
+54479,2025-09-22 13:27:29,Paid Search,google,utm,16,1,1353
+54480,2025-09-22 16:09:28,Direct,(direct),typein,62,1,1320.5
+54481,2025-09-22 19:55:09,Paid Search,google,utm,4,1,100
+54482,2025-09-22 20:56:27,Paid Search,google,utm,6,1,112.5
+54483,2025-09-23 9:27:48,SEO,google,organic,19,1,229
+54484,2025-09-23 13:35:23,Paid Search,google,utm,13,1,43
+54485,2025-09-23 13:47:55,Direct,(direct),typein,9,1,200
+54486,2025-09-23 15:51:37,Direct,(direct),typein,3,1,129
+54487,2025-09-23 21:07:16,SEO,google,organic,13,1,612.5
+54488,2025-09-24 7:09:10,Direct,(direct),typein,24,1,5038.75
+54490,2025-09-24 14:27:32,SEO,google,organic,1,1,410.5
+54491,2025-09-24 19:11:55,SEO,duckduckgo.com,referral,4,1,93
+54492,2025-09-24 20:22:11,SEO,google,organic,14,1,483
+54494,2025-09-25 10:34:40,Direct,(direct),typein,7,1,1462
+54495,2025-09-25 15:21:49,Paid Search,google,utm,4,1,73
+54496,2025-09-25 16:58:40,SEO,google,organic,6,1,153
+54497,2025-09-25 19:03:39,SEO,google,organic,13,1,77.5
+54498,2025-09-25 20:57:16,SEO,google,organic,5,1,321
+54499,2025-09-26 23:06:42,Direct,(direct),typein,21,1,227
+54500,2025-09-27 17:26:45,SEO,google,organic,6,1,313
+54501,2025-09-27 20:03:37,SEO,google,organic,11,1,257
+54502,2025-09-27 21:37:51,Direct,(direct),typein,5,1,80
+54503,2025-09-28 9:14:27,SEO,google,organic,5,1,80
+54504,2025-09-28 11:41:13,Paid Search,google,utm,9,1,111
+54505,2025-09-28 16:47:06,Paid Search,google,utm,25,1,1497.25
+54506,2025-09-28 17:05:44,Paid Search,google,utm,25,1,64
+54507,2025-09-28 19:37:04,SEO,google,organic,22,1,1569
+54508,2025-09-28 20:15:01,Paid Search,google,utm,9,1,169
