@@ -434,6 +434,8 @@ def process_woocommerce_order(config, order_data):
             'order_date': parse_aware(order_data.get('date_created')),
             'paid_date': parse_aware(order_data.get('date_paid')),
             'status': order_data.get('status', ''),
+            'date_created': parse_aware(order_data.get('date_created')),
+            'date_modified': parse_aware(order_data.get('date_modified', order_data.get('date_created'))),
             
             # Financial fields
             'shipping_total': order_data.get('shipping_total', '0.00'),
@@ -511,9 +513,8 @@ def process_woocommerce_order(config, order_data):
             'currency': order_data.get('currency', 'USD'),
             'billing_address': order_data.get('billing', {}),
             'shipping_address': order_data.get('shipping', {}),
-            'date_created': parse_aware(order_data.get('date_created')),
-            'date_modified': parse_aware(order_data.get('date_modified')),
             'date_completed': parse_aware(order_data.get('date_completed')),
+            'is_new_customer': True,  # Default to True, will be updated below if needed
             'raw_data': order_data
         }
     )
