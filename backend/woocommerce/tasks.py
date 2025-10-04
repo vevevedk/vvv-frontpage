@@ -88,13 +88,19 @@ def sync_woocommerce_config(config_id, job_type='daily_sync', start_date=None, e
             scheduled_at=timezone.now()
         )
         
-        # Log start
+        # Log start with date range
         WooCommerceSyncLog.objects.create(
             client_name=config.account.name,  # Store account name for backward compatibility
             job=job,
             level='INFO',
             message=f'Starting {job_type} for {config.account.name} ({config.name})',
-            details={'job_id': job.id, 'config_id': config.id}
+            details={
+                'job_id': job.id, 
+                'config_id': config.id,
+                'start_date': start_date.isoformat() if start_date else None,
+                'end_date': end_date.isoformat() if end_date else None,
+                'date_range_days': (end_date - start_date).days if start_date and end_date else None
+            }
         )
         
         # Determine date range
@@ -111,7 +117,8 @@ def sync_woocommerce_config(config_id, job_type='daily_sync', start_date=None, e
                 start_date = timezone.now() - timedelta(days=365)  # Last year for backfill
         
         if not end_date:
-            end_date = timezone.now()
+            # Add 5 minutes buffer to ensure we capture orders created during sync
+            end_date = timezone.now() + timedelta(minutes=5)
         
         # Fetch orders from WooCommerce API
         def log(level, message, details=None):
@@ -124,6 +131,14 @@ def sync_woocommerce_config(config_id, job_type='daily_sync', start_date=None, e
             )
 
         orders_data = fetch_woocommerce_orders(config, start_date, end_date, log=log)
+        
+        # Log sync summary
+        if log:
+            log('INFO', f'Fetched {len(orders_data)} orders from WooCommerce API', {
+                'orders_fetched': len(orders_data),
+                'date_range': f'{start_date} to {end_date}',
+                'client': config.account.name
+            })
         
         # Process orders
         orders_processed = 0
