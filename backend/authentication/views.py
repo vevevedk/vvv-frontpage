@@ -15,11 +15,14 @@ from .errors import (
 from .throttling import LoginRateThrottle, RegisterRateThrottle, TokenRefreshRateThrottle
 from core.security import SecurityEventLogger
 import logging
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger('authentication')
 
 # Create your views here.
 
+@method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
     permission_classes = []
     throttle_classes = [LoginRateThrottle]

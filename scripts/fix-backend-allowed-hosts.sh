@@ -53,11 +53,14 @@ fi
 
 echo "Updated ALLOWED_HOSTS: $(grep '^ALLOWED_HOSTS=' "$ENV_FILE" | cut -d= -f2-)"
 
-# Recreate django service with docker compose or docker-compose
-if command -v docker compose >/dev/null 2>&1; then
+# Recreate django service with docker-compose (preferred) or docker compose
+if command -v docker-compose >/dev/null 2>&1; then
+  docker-compose up -d --force-recreate django
+elif docker --help 2>/dev/null | grep -q " compose "; then
   docker compose up -d --force-recreate django
 else
-  docker-compose up -d --force-recreate django
+  echo "Neither docker-compose nor docker compose found. Please install one of them."
+  exit 4
 fi
 
 # Verify
