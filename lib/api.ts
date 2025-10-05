@@ -2,6 +2,14 @@ import { useAuth } from './auth/AuthContext';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()!.split(';').shift() || null;
+  return null;
+}
+
 interface ApiError {
   message: string;
   code: number;
@@ -100,6 +108,12 @@ class ApiClient {
       ...(options.headers as Record<string, string> || {}),
     });
 
+    // Attach CSRF header when available (browser context)
+    const csrfToken = getCookie('csrftoken');
+    if (csrfToken && !headers.has('X-CSRFToken')) {
+      headers.set('X-CSRFToken', csrfToken);
+    }
+
     if (this.accessToken) {
       headers.set('Authorization', `Bearer ${this.accessToken}`);
     }
@@ -108,6 +122,7 @@ class ApiClient {
       let response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
+        credentials: 'same-origin',
       });
 
       // If unauthorized and we have a refresh token, try to refresh
@@ -119,6 +134,7 @@ class ApiClient {
           response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
             headers,
+            credentials: 'same-origin',
           });
         }
       }
