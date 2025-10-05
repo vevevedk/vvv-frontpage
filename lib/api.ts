@@ -139,20 +139,41 @@ class ApiClient {
         }
       }
 
-      const data = await response.json();
+      // Safely parse JSON only when present and correct content-type
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
+      let data: any = null;
+      try {
+        if (isJson) {
+          data = await response.json();
+        } else {
+          const text = await response.text();
+          if (text && text.trim().startsWith('{')) {
+            data = JSON.parse(text);
+          }
+        }
+      } catch (_) {
+        // Ignore JSON parse errors; will fall back to status-based message
+      }
 
       if (!response.ok) {
+        const fallbackMsg = response.status === 405
+          ? 'Method not allowed'
+          : response.status === 403
+            ? 'Forbidden (CSRF or permissions)'
+            : response.statusText || 'Request failed';
+
         return {
           error: {
-            message: data.error?.message || 'Request failed',
-            code: data.error?.code || response.status,
-            category: data.error?.category || 'unknown',
-            details: data.error?.details,
+            message: data?.error?.message || fallbackMsg,
+            code: data?.error?.code || response.status,
+            category: data?.error?.category || 'http',
+            details: data?.error?.details || undefined,
           },
         };
       }
 
-      return { data };
+      return { data: (data as T) };
     } catch (error) {
       return {
         error: {
