@@ -124,14 +124,23 @@ REST_FRAMEWORK = {
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React development server
+    # Local development
+    "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:3001",  # React development server on port 3001
+    "http://localhost:3001",
     "http://127.0.0.1:3001",
-    "http://localhost:8000",  # Django development server
+    "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "http://localhost:8001",  # Django development server on port 8001
+    "http://localhost:8001",
     "http://127.0.0.1:8001",
+
+    # Production domains
+    "https://veveve.dk",
+    "https://www.veveve.dk",
+    "https://invest.veveve.dk",
+    "https://www.invest.veveve.dk",
+    "https://smagalagellerup.dk",
+    "https://www.smagalagellerup.dk",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

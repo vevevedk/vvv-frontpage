@@ -70,3 +70,82 @@ If terminating TLS on the server:
 - JWT: Ensure `NEXT_PUBLIC_API_URL` matches the proxied `/api`
 - DB: Confirm Postgres up and credentials correct
 
+
+## Standardized Multi-App Deployment (Single Droplet)
+
+To avoid port collisions and config drift when hosting multiple apps on one server, follow this standard.
+
+### Fixed Ports and Services
+- veveve frontend (Next.js): port 3000, systemd service `vvv-frontpage.service`
+- smagalagellerup frontend (Next.js): port 3001, systemd service `smagalagellerup.service`
+- invest backend (Django/Gunicorn/Uvicorn): port 8002, existing service/container
+
+### Nginx Upstreams (define once)
+```
+upstream veveve_frontend { server 127.0.0.1:3000; }
+upstream smagalagellerup_frontend { server 127.0.0.1:3001; }
+upstream invest_backend { server 127.0.0.1:8002; }
+```
+Reference upstream names in vhosts and keep a `/health` route in each.
+
+### Systemd Templates (frontends)
+`/etc/systemd/system/vvv-frontpage.service`
+```
+[Unit]
+Description=VVV Frontpage (Next.js) on port 3000
+After=network.target
+
+[Service]
+Type=simple
+User=avxz
+WorkingDirectory=/opt/vvv-frontpage
+Environment=PORT=3000
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`/etc/systemd/system/smagalagellerup.service`
+```
+[Unit]
+Description=Smag a la Gellerup (Next.js) on port 3001
+After=network.target
+
+[Service]
+Type=simple
+User=avxz
+WorkingDirectory=/opt/smagalagellerup
+Environment=PORT=3001
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable:
+```
+sudo systemctl daemon-reload
+sudo systemctl enable --now vvv-frontpage.service
+sudo systemctl enable --now smagalagellerup.service
+```
+
+### Backend CORS and Frontend API Base
+- Backend `CORS_ALLOWED_ORIGINS` must include production hosts.
+- Frontend `.env.production` should set `NEXT_PUBLIC_API_URL` to the correct backend domain.
+
+### Post-Deploy Verification
+Use the script below to verify that upstreams and vhosts are correct.
+```
+./scripts/post-deploy-verify.sh
+```
+
+### Rollback
+- Keep a backup of nginx site files; if verification fails, restore and reload.
+
