@@ -36,6 +36,7 @@ from authentication.views import (
     LoginView, RegisterView, TokenRefreshView
 )
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
 def test_connection(request):
     """Simple test endpoint to verify backend connectivity"""
@@ -44,6 +45,41 @@ def test_connection(request):
         'message': 'Django backend is running and accessible',
         'timestamp': '2025-08-20T12:00:00Z'
     })
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def simple_login(request):
+    """Simple login endpoint that bypasses CSRF completely"""
+    from django.contrib.auth import authenticate
+    from rest_framework_simplejwt.tokens import RefreshToken
+    from django.http import JsonResponse
+    import json
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return JsonResponse({'error': 'Email and password required'}, status=400)
+        
+        user = authenticate(username=email, password=password)
+        if not user:
+            return JsonResponse({'error': 'Invalid credentials'}, status=401)
+        
+        refresh = RefreshToken.for_user(user)
+        return JsonResponse({
+            'access_token': str(refresh.access_token),
+            'refresh_token': str(refresh),
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'role': user.role,
+                'email_verified': user.email_verified
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 router = DefaultRouter()
 
@@ -76,6 +112,9 @@ urlpatterns = [
     path('api/auth/login/', csrf_exempt(LoginView.as_view()), name='auth-login'),
     path('api/auth/register/', csrf_exempt(RegisterView.as_view()), name='auth-register'),
     path('api/auth/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='auth-refresh'),
+    
+    # Simple login endpoint (bypasses CSRF completely)
+    path('api/simple-login/', simple_login, name='simple-login'),
     
     path('api/test/', test_connection, name='test_connection'),
 ]
