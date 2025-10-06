@@ -26,10 +26,6 @@ class LoginView(APIView):
     permission_classes = []
     throttle_classes = [LoginRateThrottle]
     
-    @method_decorator(csrf_exempt)
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
-    
     def post(self, request):
         try:
             serializer = LoginSerializer(data=request.data)
@@ -90,10 +86,6 @@ class LoginView(APIView):
 class RegisterView(APIView):
     permission_classes = []
     throttle_classes = [RegisterRateThrottle]
-    
-    @method_decorator(csrf_exempt)
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
     
     def post(self, request):
         try:
@@ -177,10 +169,6 @@ class RegisterView(APIView):
 class TokenRefreshView(APIView):
     permission_classes = []
     throttle_classes = [TokenRefreshRateThrottle]
-    
-    @method_decorator(csrf_exempt)
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
     
     def post(self, request):
         try:

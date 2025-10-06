@@ -35,6 +35,7 @@ from pipelines.views import (
 from authentication.views import (
     LoginView, RegisterView, TokenRefreshView
 )
+from django.views.decorators.csrf import csrf_exempt
 
 def test_connection(request):
     """Simple test endpoint to verify backend connectivity"""
@@ -72,9 +73,9 @@ urlpatterns = [
     path('api/', include(router.urls)),
     
     # Authentication endpoints
-    path('api/auth/login/', LoginView.as_view(), name='auth-login'),
-    path('api/auth/register/', RegisterView.as_view(), name='auth-register'),
-    path('api/auth/refresh/', TokenRefreshView.as_view(), name='auth-refresh'),
+    path('api/auth/login/', csrf_exempt(LoginView.as_view()), name='auth-login'),
+    path('api/auth/register/', csrf_exempt(RegisterView.as_view()), name='auth-register'),
+    path('api/auth/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='auth-refresh'),
     
     path('api/test/', test_connection, name='test_connection'),
 ]
