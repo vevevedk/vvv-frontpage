@@ -18,8 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # App code
 COPY . /app/
 
-# Create logs directory
-RUN mkdir -p /app/logs
+# Create logs directory matching Django LOGGING path (BASE_DIR/logs => /app/backend/logs)
+RUN mkdir -p /app/backend/logs
 
 # Expose port - let docker-compose handle the command
 EXPOSE 8000
