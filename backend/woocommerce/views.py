@@ -417,6 +417,199 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
     def dashboard(self, request):
         """Get comprehensive analytics dashboard data - alias for analytics endpoint"""
         return self.analytics(request)
+    
+    @action(detail=False, methods=['get'])
+    def customer_acquisition(self, request):
+        """Get customer acquisition analytics with CAC (Customer Acquisition Cost)"""
+        client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
+        period = int(request.GET.get('period', 30) if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('period', 30))  # days
+        new_customer_window = int(request.GET.get('new_customer_window', 365) if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('new_customer_window', 365))  # days
+        
+        queryset = self.get_queryset()
+        if client_name:
+            queryset = queryset.filter(client_name=client_name)
+        
+        # Date range for analysis
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=period)
+        period_orders = queryset.filter(date_created__gte=start_date)
+        
+        # Identify new customers
+        # A customer is "new" if they haven't ordered in the last {new_customer_window} days before their current order
+        new_customers_data = []
+        returning_customers_data = []
+        
+        for order in period_orders.exclude(billing_email__isnull=True):
+            customer_email = order.billing_email
+            order_date = order.date_created
+            
+            # Look for previous orders from this customer
+            previous_order_date = queryset.filter(
+                billing_email=customer_email,
+                date_created__lt=order_date
+            ).aggregate(Max('date_created'))['date_created__max']
+            
+            # Determine if this is a new customer
+            if previous_order_date is None:
+                # First time customer ever
+                is_new = True
+            else:
+                # Check if they haven't ordered within the window
+                days_since_last_order = (order_date - previous_order_date).days
+                is_new = days_since_last_order >= new_customer_window
+            
+            if is_new:
+                new_customers_data.append({
+                    'order_id': order.order_id,
+                    'email': customer_email,
+                    'order_date': order_date,
+                    'total': float(order.total),
+                    'previous_order_date': previous_order_date
+                })
+            else:
+                returning_customers_data.append({
+                    'order_id': order.order_id,
+                    'email': customer_email,
+                    'order_date': order_date,
+                    'total': float(order.total),
+                    'days_since_last_order': days_since_last_order if previous_order_date else None
+                })
+        
+        # Count unique new customers
+        unique_new_customer_emails = set([c['email'] for c in new_customers_data])
+        new_customers_count = len(unique_new_customer_emails)
+        
+        # Count unique returning customers
+        unique_returning_customer_emails = set([c['email'] for c in returning_customers_data])
+        returning_customers_count = len(unique_returning_customer_emails)
+        
+        # Total unique customers in period
+        total_unique_customers = period_orders.exclude(
+            billing_email__isnull=True
+        ).values('billing_email').distinct().count()
+        
+        # Revenue breakdown
+        new_customer_revenue = sum([c['total'] for c in new_customers_data])
+        returning_customer_revenue = sum([c['total'] for c in returning_customers_data])
+        total_revenue = period_orders.aggregate(Sum('total'))['total__sum'] or 0
+        
+        # Calculate CAC (Customer Acquisition Cost)
+        # Note: We'll need marketing spend data to calculate actual CAC
+        # For now, we'll provide placeholders and structure
+        # TODO: Integrate with ad spend data from GA4/Facebook/Google Ads
+        
+        total_marketing_spend = 0  # Placeholder - integrate with ad platforms
+        cac = (total_marketing_spend / new_customers_count) if new_customers_count > 0 else 0
+        
+        # Average order value for new vs returning
+        avg_new_customer_order_value = (new_customer_revenue / len(new_customers_data)) if new_customers_data else 0
+        avg_returning_customer_order_value = (returning_customer_revenue / len(returning_customers_data)) if returning_customers_data else 0
+        
+        # Daily new customer trends
+        daily_new_customers = {}
+        for customer in new_customers_data:
+            date_str = customer['order_date'].date().isoformat()
+            if date_str not in daily_new_customers:
+                daily_new_customers[date_str] = {
+                    'date': date_str,
+                    'new_customers': 0,
+                    'revenue': 0,
+                    'orders': 0
+                }
+            daily_new_customers[date_str]['new_customers'] += 1
+            daily_new_customers[date_str]['revenue'] += customer['total']
+            daily_new_customers[date_str]['orders'] += 1
+        
+        daily_trends = sorted(daily_new_customers.values(), key=lambda x: x['date'])
+        
+        # Top new customers by spend
+        new_customer_spend = {}
+        for customer in new_customers_data:
+            email = customer['email']
+            if email not in new_customer_spend:
+                new_customer_spend[email] = {
+                    'email': email,
+                    'total_spent': 0,
+                    'orders': 0,
+                    'first_order_date': customer['order_date']
+                }
+            new_customer_spend[email]['total_spent'] += customer['total']
+            new_customer_spend[email]['orders'] += 1
+        
+        top_new_customers = sorted(
+            new_customer_spend.values(),
+            key=lambda x: x['total_spent'],
+            reverse=True
+        )[:10]
+        
+        # Format dates for JSON serialization
+        for customer in top_new_customers:
+            customer['first_order_date'] = customer['first_order_date'].isoformat()
+        
+        # Previous period comparison
+        prev_start = start_date - timedelta(days=period)
+        prev_period_orders = queryset.filter(date_created__gte=prev_start, date_created__lt=start_date)
+        
+        # Calculate previous period new customers (simplified)
+        prev_new_customers_count = 0
+        for order in prev_period_orders.exclude(billing_email__isnull=True):
+            customer_email = order.billing_email
+            order_date = order.date_created
+            
+            previous_order_date = queryset.filter(
+                billing_email=customer_email,
+                date_created__lt=order_date
+            ).aggregate(Max('date_created'))['date_created__max']
+            
+            if previous_order_date is None:
+                prev_new_customers_count += 1
+            else:
+                days_since_last = (order_date - previous_order_date).days
+                if days_since_last >= new_customer_window:
+                    prev_new_customers_count += 1
+        
+        # Growth metrics
+        new_customer_growth = ((new_customers_count - prev_new_customers_count) / prev_new_customers_count * 100) if prev_new_customers_count > 0 else 0
+        
+        return Response({
+            'period': period,
+            'new_customer_window': new_customer_window,
+            'date_range': {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat()
+            },
+            'overview': {
+                'new_customers': new_customers_count,
+                'returning_customers': returning_customers_count,
+                'total_unique_customers': total_unique_customers,
+                'new_customer_percentage': round((new_customers_count / total_unique_customers * 100), 1) if total_unique_customers > 0 else 0,
+                'new_customer_revenue': float(new_customer_revenue),
+                'returning_customer_revenue': float(returning_customer_revenue),
+                'total_revenue': float(total_revenue),
+                'new_customer_revenue_percentage': round((new_customer_revenue / total_revenue * 100), 1) if total_revenue > 0 else 0,
+                'avg_new_customer_order_value': round(avg_new_customer_order_value, 2),
+                'avg_returning_customer_order_value': round(avg_returning_customer_order_value, 2),
+                'total_new_customer_orders': len(new_customers_data),
+                'total_returning_customer_orders': len(returning_customers_data)
+            },
+            'cac_metrics': {
+                'total_marketing_spend': float(total_marketing_spend),
+                'customer_acquisition_cost': round(cac, 2),
+                'revenue_per_new_customer': round((new_customer_revenue / new_customers_count), 2) if new_customers_count > 0 else 0,
+                'cac_payback_ratio': round((new_customer_revenue / total_marketing_spend), 2) if total_marketing_spend > 0 else 0,
+                'note': 'Marketing spend data needs to be integrated from ad platforms'
+            },
+            'growth': {
+                'new_customer_growth': round(new_customer_growth, 1),
+                'previous_period': {
+                    'new_customers': prev_new_customers_count
+                }
+            },
+            'trends': {
+                'daily': daily_trends
+            },
+            'top_new_customers': top_new_customers
+        })
 
     @action(detail=False, methods=['get'])
     def traffic_sources_discovery(self, request):

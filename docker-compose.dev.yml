@@ -1,0 +1,198 @@
+version: '3.8'
+
+# Development Docker Compose Configuration
+# Optimized for local development with hot reload and debugging
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: vvv_database_dev
+      POSTGRES_USER: vvv_user
+      POSTGRES_PASSWORD: dev_password_change_me
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts with local postgres
+    networks:
+      - vvv_network_dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vvv_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data_dev:/data
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    networks:
+      - vvv_network_dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: development  # Use development stage if multi-stage build
+    working_dir: /app/backend
+    # Use development server with auto-reload
+    command: python manage.py runserver 0.0.0.0:8000
+    env_file:
+      - ./env/backend.dev.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=api.settings.dev
+      - DEBUG=True
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+    volumes:
+      # Mount source code for hot reload
+      - ./backend:/app/backend
+      - backend_static_dev:/app/backend/static
+      - backend_media_dev:/app/backend/media
+    networks:
+      - vvv_network_dev
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: development
+    working_dir: /app/backend
+    command: celery -A api worker -l debug --concurrency=2
+    env_file:
+      - ./env/backend.dev.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=api.settings.dev
+      - DEBUG=True
+    depends_on:
+      - backend
+      - redis
+    volumes:
+      - ./backend:/app/backend
+    networks:
+      - vvv_network_dev
+
+  beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: development
+    working_dir: /app/backend
+    command: celery -A api beat -l debug
+    env_file:
+      - ./env/backend.dev.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=api.settings.dev
+      - DEBUG=True
+    depends_on:
+      - backend
+      - redis
+    volumes:
+      - ./backend:/app/backend
+    networks:
+      - vvv_network_dev
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+      target: development
+    env_file:
+      - ./env/frontend.dev.env
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8001/api
+      - DJANGO_API_URL=http://backend:8000/api
+      - WATCHPACK_POLLING=true  # Enable polling for Docker
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reload
+      - ./pages:/app/pages
+      - ./components:/app/components
+      - ./lib:/app/lib
+      - ./styles:/app/styles
+      - ./public:/app/public
+      # Exclude node_modules from mount to avoid performance issues
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - vvv_network_dev
+    stdin_open: true
+    tty: true
+
+  # Optional: Add mailhog for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - vvv_network_dev
+
+  # Optional: Add adminer for database management
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    networks:
+      - vvv_network_dev
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+  backend_static_dev:
+  backend_media_dev:
+
+networks:
+  vvv_network_dev:
+    driver: bridge
+
+# Development helper commands:
+# 
+# Start all services:
+#   docker-compose -f docker-compose.dev.yml up
+# 
+# Start in detached mode:
+#   docker-compose -f docker-compose.dev.yml up -d
+#
+# View logs:
+#   docker-compose -f docker-compose.dev.yml logs -f
+#
+# Run migrations:
+#   docker-compose -f docker-compose.dev.yml exec backend python manage.py migrate
+#
+# Create superuser:
+#   docker-compose -f docker-compose.dev.yml exec backend python manage.py createsuperuser
+#
+# Run tests:
+#   docker-compose -f docker-compose.dev.yml exec backend python manage.py test
+#   docker-compose -f docker-compose.dev.yml exec frontend npm test
+#
+# Access database:
+#   docker-compose -f docker-compose.dev.yml exec postgres psql -U vvv_user -d vvv_database_dev
+#
+# Stop all services:
+#   docker-compose -f docker-compose.dev.yml down
+#
+# Stop and remove volumes:
+#   docker-compose -f docker-compose.dev.yml down -v
+
+

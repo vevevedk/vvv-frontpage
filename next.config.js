@@ -1,9 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  
+  // Enable TypeScript strict mode - DO NOT ignore build errors
   typescript: {
-    ignoreBuildErrors: true,
+    // Only ignore during incremental development, should be false for production
+    ignoreBuildErrors: process.env.NEXT_PUBLIC_IGNORE_BUILD_ERRORS === 'true',
   },
+
+  // ESLint configuration
+  eslint: {
+    // Only ignore during incremental development
+    ignoreDuringBuilds: process.env.NEXT_PUBLIC_IGNORE_LINT_ERRORS === 'true',
+  },
+
+  // Environment variables for client-side
   env: {
     DB_HOST: process.env.DB_HOST || 'localhost',
     DB_USER: process.env.DB_USER || 'postgres',
@@ -11,13 +22,23 @@ const nextConfig = {
     DB_NAME: process.env.DB_NAME || 'marketing_analytics',
     DB_PORT: process.env.DB_PORT || '5432',
   },
-  // Add error handling and static file optimization
-  // experimental: {
-  //   optimizeCss: true,
-  // },
-  // Ensure proper handling of static assets
-  assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
-  // Add compression and caching headers
+
+  // Performance optimizations
+  swcMinify: true, // Use SWC for faster minification
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+
+  // Image optimization
+  images: {
+    domains: ['localhost', 'veveve.dk', 'www.veveve.dk'],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
+  },
+
+  // Compression and caching headers
   async headers() {
     return [
       {
@@ -25,12 +46,65 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=86400, s-maxage=86400',
+            value: 'public, max-age=86400, s-maxage=86400, stale-while-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate',
           },
         ],
       },
     ];
   },
+
+  // Webpack optimizations
+  webpack: (config, { dev, isServer }) => {
+    // Production optimizations
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        usedExports: true,
+        sideEffects: false,
+      };
+    }
+
+    return config;
+  },
+
+  // Enable experimental features for better performance
+  experimental: {
+    optimizeCss: true,
+    scrollRestoration: true,
+  },
+
+  // Output configuration
+  output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+
+  // Disable x-powered-by header for security
+  poweredByHeader: false,
 }
 
 module.exports = nextConfig

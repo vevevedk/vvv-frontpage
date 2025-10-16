@@ -10,7 +10,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   PlayIcon,
-  ListBulletIcon
+  ListBulletIcon,
+  UserPlusIcon
 } from '@heroicons/react/24/outline';
 import ClientManagement from './ClientManagement';
 import JobMonitoring from './JobMonitoring';
@@ -18,6 +19,7 @@ import OrderAnalytics from './OrderAnalytics';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import AdvancedAnalytics from './AdvancedAnalytics';
 import EnhancedAnalytics from './EnhancedAnalytics';
+import CustomerAcquisition from './CustomerAcquisition';
 import ChannelReport from './ChannelReport';
 import SyncLogs from './SyncLogs';
 import AddClientModal from './AddClientModal';
@@ -73,6 +75,12 @@ export default function WooCommerceDashboard() {
       icon: ChartBarIcon,
       component: EnhancedAnalytics,
       description: 'Comprehensive analytics with customer segmentation and real-time insights'
+    },
+    {
+      name: 'New Customers',
+      icon: UserPlusIcon,
+      component: CustomerAcquisition,
+      description: 'Customer acquisition analytics with CAC tracking'
     },
     {
       name: 'Orders',
