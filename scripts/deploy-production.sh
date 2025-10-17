@@ -157,6 +157,31 @@ run_migrations() {
     print_success "Migrations completed"
 }
 
+# Configure nginx
+configure_nginx() {
+    print_header "Configuring Nginx"
+    
+    local nginx_conf_src="deploy/veveve.dk.conf"
+    local nginx_conf_dst="/etc/nginx/sites-available/veveve.dk"
+    
+    if [[ -f "$nginx_conf_src" ]]; then
+        print_info "Installing nginx configuration..."
+        sudo cp "$nginx_conf_src" "$nginx_conf_dst"
+        sudo ln -sf "$nginx_conf_dst" /etc/nginx/sites-enabled/veveve.dk
+        
+        # Test nginx configuration
+        if sudo nginx -t; then
+            print_success "Nginx configuration is valid"
+        else
+            print_error "Nginx configuration test failed!"
+            return 1
+        fi
+    else
+        print_error "Nginx configuration file not found: $nginx_conf_src"
+        return 1
+    fi
+}
+
 # Deploy new version
 deploy() {
     print_header "Deploying New Version"
@@ -164,10 +189,19 @@ deploy() {
     print_info "Stopping old containers..."
     docker-compose down --remove-orphans
     
+    # Clean up any conflicting processes on ports
+    print_info "Cleaning up port conflicts..."
+    sudo pkill -f ":3000" || true
+    sudo pkill -f ":8001" || true
+    sleep 2
+    
     print_info "Starting new containers..."
     docker-compose up -d
     
     print_success "Containers started"
+    
+    # Configure nginx after containers are running
+    configure_nginx
 }
 
 # Health check
@@ -198,6 +232,8 @@ health_check() {
         # Both healthy?
         if $backend_healthy && $frontend_healthy; then
             print_success "All services are healthy!"
+            print_info "Reloading nginx..."
+            sudo systemctl reload nginx
             return 0
         fi
         
