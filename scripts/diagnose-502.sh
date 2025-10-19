@@ -1,9 +1,12 @@
 #!/bin/bash
 
-# Diagnose 502 Bad Gateway errors
-# Quick diagnostic script to identify the root cause
+# Diagnose 502 Bad Gateway errors for veveve.dk ONLY
+# This script ONLY checks veveve.dk and will NOT affect other applications
 
 set -e
+
+# SAFETY: Only work with veveve.dk
+TARGET_DOMAIN="veveve.dk"
 
 # Colors for output
 RED='\033[0;31m'
@@ -28,8 +31,11 @@ print_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
-echo "🔍 Diagnosing 502 Bad Gateway Errors"
-echo "====================================="
+echo "🔍 Diagnosing 502 Bad Gateway Errors for veveve.dk ONLY"
+echo "======================================================="
+echo "⚠️  This script will ONLY check veveve.dk"
+echo "⚠️  Other applications will NOT be affected"
+echo ""
 
 # Check if we're on the production server
 if [[ ! -f "docker-compose.yml" ]]; then
@@ -118,11 +124,11 @@ else
 fi
 
 echo ""
-print_info "8. Testing external connectivity..."
-if curl -f -s --max-time 10 https://veveve.dk > /dev/null; then
-    print_status "veveve.dk is accessible externally"
+print_info "8. Testing external connectivity for veveve.dk..."
+if curl -f -s --max-time 10 https://$TARGET_DOMAIN > /dev/null; then
+    print_status "$TARGET_DOMAIN is accessible externally"
 else
-    print_error "veveve.dk is NOT accessible externally"
+    print_error "$TARGET_DOMAIN is NOT accessible externally"
 fi
 
 echo ""
@@ -168,3 +174,8 @@ else
 fi
 
 echo ""
+
+
+
+
+
