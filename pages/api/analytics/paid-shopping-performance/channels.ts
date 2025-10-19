@@ -1,6 +1,6 @@
 // pages/api/analytics/paid-shopping-performance/channels.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import { pool } from '../../../../lib/db';
+import { pool } from '@/lib/db';
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<{ channelPerformance: any[] } | { message: string }>

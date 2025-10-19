@@ -1,6 +1,6 @@
 // pages/api/analytics/paid-shopping-performance/products.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import { pool } from '../../../../lib/db';
+import { pool } from '@/lib/db';
 // import { PaidShoppingProductData } from '../../../../types/analytics';
 
 export default async function handler(
