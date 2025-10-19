@@ -304,7 +304,7 @@ export default function ChannelReport() {
 
       // Convert to CSV string
       const csvContent = csvData.map(row => 
-        row.map(field => `"${field}"`).join(',')
+        row.map((field: any) => `"${field}"`).join(',')
       ).join('\n');
 
       // Create and download file
