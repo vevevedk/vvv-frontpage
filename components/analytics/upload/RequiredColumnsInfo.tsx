@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from '@/styles/analytics/Analytics.module.css';
-import { validateCsv } from '../../../../lib/utils/csvValidation';
+import { validateCsv } from '@/lib/utils/csvValidation';
 
 interface Props {
   dataType: string;
