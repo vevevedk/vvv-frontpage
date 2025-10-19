@@ -5,24 +5,22 @@ import PipelineDashboard from '../../components/pipelines/PipelineDashboard';
 import { useAuth } from '../../lib/auth/AuthContext';
 
 export default function PipelinesPage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.push('/login');
-      } else if (!(user.role === 'super_admin' || user.role === 'agency_admin')) {
-        // Non-admins should not access pipelines page; redirect to analytics
-        router.replace('/woocommerce');
-      } else {
-        // Redirect admins to the admin pipelines tab for consistency
-        router.replace('/admin?tab=pipelines');
-      }
+    if (!user) {
+      router.push('/login');
+    } else if (!(user.role === 'super_admin' || user.role === 'agency_admin')) {
+      // Non-admins should not access pipelines page; redirect to analytics
+      router.replace('/woocommerce');
+    } else {
+      // Redirect admins to the admin pipelines tab for consistency
+      router.replace('/admin?tab=pipelines');
     }
-  }, [user, loading, router]);
+  }, [user, router]);
 
-  if (loading) {
+  if (!user) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-screen">
@@ -32,9 +30,6 @@ export default function PipelinesPage() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
 
   return (
     <Layout>

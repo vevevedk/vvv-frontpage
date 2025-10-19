@@ -18,7 +18,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const { first_name, last_name, phone, company } = validatedData;
 
       const updatedUser = await prisma.user.update({
-        where: { id: session.user.id },
+        where: { email: session.user?.email || undefined },
         data: {
           first_name,
           last_name,
@@ -39,8 +39,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
       return res.status(200).json({ user: updatedUser });
     } catch (error) {
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ error: error.errors });
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: (error as any).errors });
       }
       console.error('Profile update error:', error);
       return res.status(500).json({ error: 'Failed to update profile' });

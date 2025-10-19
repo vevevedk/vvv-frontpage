@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { ServicesData } from "../../components/model/CardDataModel";
+import { ServicesData } from "@/components/model/CardDataModel";
 
 const servicesData: ServicesData[] = [
   {

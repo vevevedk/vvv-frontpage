@@ -19,7 +19,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const { current_password, new_password } = validatedData;
 
       const user = await prisma.user.findUnique({
-        where: { id: session.user?.id },
+        where: { email: session.user?.email || undefined },
         select: { password: true },
       });
 
@@ -36,14 +36,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const hashedPassword = await bcrypt.hash(new_password, 10);
 
       await prisma.user.update({
-        where: { id: session.user.id },
+        where: { email: session.user?.email || undefined },
         data: { password: hashedPassword },
       });
 
       return res.status(200).json({ message: 'Password updated successfully' });
     } catch (error) {
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ error: error.errors });
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: (error as any).errors });
       }
       console.error('Password change error:', error);
       return res.status(500).json({ error: 'Failed to change password' });

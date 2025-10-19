@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
-import { GMCClient } from '../lib/gmc/client';
-import { GMCConfig, TokenResponse } from '../lib/gmc/types';
+import { GMCClient } from '@/lib/gmc/client';
+import { GMCConfig, TokenResponse } from '@/lib/gmc/types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 

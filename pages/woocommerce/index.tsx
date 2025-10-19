@@ -5,16 +5,16 @@ import WooCommerceDashboard from '../../components/woocommerce/WooCommerceDashbo
 import { useAuth } from '../../lib/auth/AuthContext';
 
 export default function WooCommercePage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, router]);
 
-  if (loading) {
+  if (!user) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-screen">
@@ -24,9 +24,6 @@ export default function WooCommercePage() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
 
   return (
     <Layout>

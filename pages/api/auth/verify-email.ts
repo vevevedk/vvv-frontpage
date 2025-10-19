@@ -17,7 +17,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
 
       const user = await prisma.user.update({
-        where: { id: decoded.userId },
+        where: { id: decoded.userId.toString() },
         data: { email_verified: true },
         include: {
           company: true,
@@ -26,8 +26,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
       return res.status(200).json({ user });
     } catch (error) {
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ error: error.errors });
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({ error: (error as any).errors });
       }
       console.error('Email verification error:', error);
       return res.status(500).json({ error: 'Failed to verify email' });

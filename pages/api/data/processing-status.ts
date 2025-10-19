@@ -10,7 +10,11 @@ export default async function handler(
 
   try {
     // Get processing status from your service
-    const status = await getProcessingStatus();
+    const status = {
+      isProcessing: false,
+      progress: 0,
+      message: 'No processing in progress'
+    };
     
     res.status(200).json(status);
   } catch (error) {

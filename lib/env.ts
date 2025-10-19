@@ -12,6 +12,7 @@ const clientSchema = z.object({
   NEXT_PUBLIC_API_URL: z.string().url().default('/api'),
   NEXT_PUBLIC_IGNORE_BUILD_ERRORS: z.enum(['true', 'false']).optional(),
   NEXT_PUBLIC_IGNORE_LINT_ERRORS: z.enum(['true', 'false']).optional(),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 
 // Server-side environment variables (Node.js only)
@@ -70,8 +71,8 @@ export function getApiUrl(): string {
     // Client-side
     return env.NEXT_PUBLIC_API_URL;
   }
-  // Server-side
-  return env.DJANGO_API_URL || 'http://backend:8000/api';
+  // Server-side - use process.env directly since we're on the server
+  return process.env.DJANGO_API_URL || 'http://backend:8000/api';
 }
 
 

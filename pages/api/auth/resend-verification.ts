@@ -16,7 +16,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
       const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { email: session.user?.email || undefined },
       });
 
       if (!user) {
@@ -28,7 +28,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
 
       const token = generateToken({
-        userId: user.id,
+        userId: parseInt(user.id.toString()),
         email: user.email,
         type: 'verification',
       });

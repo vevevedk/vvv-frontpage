@@ -54,7 +54,7 @@ export default async function handler(
                 // Insert locations if provided
                 if (locations?.length > 0) {
                     const locationValues = locations
-                        .map((_, i) => `($1, $${i + 2})`)
+                        .map((_: any, i: number) => `($1, $${i + 2})`)
                         .join(',');
                     
                     await client.query(

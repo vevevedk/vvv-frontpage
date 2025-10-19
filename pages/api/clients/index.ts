@@ -1,7 +1,7 @@
 // pages/api/clients/index.ts
 import { NextApiRequest, NextApiResponse } from 'next';
 import { pool } from '../../../lib/db';
-import { Client } from '../../../types/clients';
+import { Client } from '@/lib/types/clients';
 
 export default async function handler(
     req: NextApiRequest,

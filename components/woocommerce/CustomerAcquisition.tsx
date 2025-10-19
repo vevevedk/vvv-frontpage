@@ -364,30 +364,31 @@ export default function CustomerAcquisition() {
         <StatsCard
           title="New Customers"
           value={data.overview.new_customers.toString()}
-          icon={UserPlusIcon}
-          trend={data.growth.new_customer_growth > 0 ? 'up' : 'down'}
-          trendValue={`${Math.abs(data.growth.new_customer_growth).toFixed(1)}%`}
-          trendLabel="vs previous period"
+          icon={<UserPlusIcon className="h-6 w-6" />}
+          trend={{
+            value: Math.abs(data.growth.new_customer_growth),
+            isPositive: data.growth.new_customer_growth > 0
+          }}
         />
         
         <StatsCard
           title="New Customer Revenue"
           value={formatCurrency(data.overview.new_customer_revenue)}
-          icon={CurrencyDollarIcon}
+          icon={<CurrencyDollarIcon className="h-6 w-6" />}
           description={`${data.overview.new_customer_revenue_percentage.toFixed(1)}% of total`}
         />
 
         <StatsCard
           title="Avg New Customer Value"
           value={formatCurrency(data.overview.avg_new_customer_order_value)}
-          icon={ChartBarIcon}
+          icon={<ChartBarIcon className="h-6 w-6" />}
           description={`${data.overview.total_new_customer_orders} orders`}
         />
 
         <StatsCard
           title="New vs Returning"
           value={`${data.overview.new_customer_percentage.toFixed(1)}%`}
-          icon={UsersIcon}
+          icon={<UsersIcon className="h-6 w-6" />}
           description={`${data.overview.new_customers} new / ${data.overview.returning_customers} returning`}
         />
       </div>

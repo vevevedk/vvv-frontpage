@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { CustomerCasesData } from "../../components/model/CustomerCasesModel";
+import { CustomerCasesData } from "@/components/model/CustomerCasesModel";
 
 export default function handler(
   req: NextApiRequest,

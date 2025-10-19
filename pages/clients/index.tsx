@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../../styles/analytics/Clients.module.css';
-import { Client, ClientAccount } from '../../types/clients';
+import { Client, ClientAccount } from '@/lib/types/clients';
 
 const ClientsManagement = () => {
     const [clients, setClients] = useState<Client[]>([]);

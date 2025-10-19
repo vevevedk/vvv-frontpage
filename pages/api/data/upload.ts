@@ -356,7 +356,7 @@ router.post(async (req, res) => {
 
           // Calculate CTR if needed
           if (mappedRecord.clicks && mappedRecord.impressions) {
-            mappedRecord.ctr = Number(mappedRecord.clicks) / Number(mappedRecord.impressions);
+            (mappedRecord as any).ctr = Number(mappedRecord.clicks) / Number(mappedRecord.impressions);
           }
 
           // Format date correctly
@@ -519,8 +519,7 @@ router.post(async (req, res) => {
 
         // Log sample records for debugging
         if (processed < 5) {
-          log('Sample record:');
-          log(JSON.stringify(mappedRecord, null, 2));
+          log('Sample record processed');
         }
 
       } catch (e) {

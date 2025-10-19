@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const response = await api.get('/users/me/');
               // If successful, tokens are valid - update localStorage with fresh data
               if (response.data) {
-                setUser(response.data);
+                setUser(response.data as User);
                 localStorage.setItem('user', JSON.stringify(response.data));
                 console.log('Updated localStorage with fresh user data from backend');
               }

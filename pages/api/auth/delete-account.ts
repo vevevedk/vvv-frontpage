@@ -13,14 +13,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (req.method === 'DELETE') {
     try {
+      // First find the user by email to get the id
+      const user = await prisma.user.findUnique({
+        where: { email: session.user?.email || undefined },
+        select: { id: true },
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
       // Delete user's company first (if it exists)
       await prisma.company.deleteMany({
-        where: { userId: session.user.id },
+        where: { userId: user.id },
       });
 
       // Delete the user
       await prisma.user.delete({
-        where: { id: session.user.id },
+        where: { id: user.id },
       });
 
       return res.status(200).json({ message: 'Account deleted successfully' });
