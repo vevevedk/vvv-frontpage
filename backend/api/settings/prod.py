@@ -19,8 +19,7 @@ DATABASES = {
 }
 
 # Security settings
-# Disable SSL redirect for internal requests (handled by Nginx)
-SECURE_SSL_REDIRECT = False
+SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
@@ -29,6 +28,7 @@ X_FRAME_OPTIONS = 'DENY'
 
 # Trust X-Forwarded-Proto from reverse proxy (e.g., Nginx)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_PROXY_SSL_HOST = True
 
 # Honor X-Forwarded-Host if present
 USE_X_FORWARDED_HOST = True
