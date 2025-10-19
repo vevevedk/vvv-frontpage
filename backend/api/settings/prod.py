@@ -19,7 +19,8 @@ DATABASES = {
 }
 
 # Security settings
-SECURE_SSL_REDIRECT = True
+# Disable SSL redirect for internal requests (handled by Nginx)
+SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
