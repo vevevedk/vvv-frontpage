@@ -107,7 +107,8 @@ fi
 
 # Step 7: Build and start services
 print_status "Building and starting Docker services..."
-$DC="docker-compose"
+
+# Determine docker-compose command
 if command -v docker-compose >/dev/null 2>&1; then
     DC="docker-compose"
 elif docker compose version >/dev/null 2>&1; then
@@ -116,6 +117,8 @@ else
     print_error "docker-compose or docker compose is required"
     exit 1
 fi
+
+print_info "Using Docker Compose command: $DC"
 
 # Build services
 $DC build --no-cache backend frontend
