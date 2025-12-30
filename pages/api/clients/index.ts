@@ -1,16 +1,37 @@
 // pages/api/clients/index.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import { pool } from '../../../lib/db';
-import { Client } from '@/lib/types/clients';
+import { queryWithRetry } from '../../../lib/db';
+import { ClientWithAccounts } from '@/lib/types/clients';
+import { sendSuccessResponse, sendErrorResponse, cachePresets } from '../../../lib/api-response-helpers';
+import { createRateLimiter, RateLimitError } from '@/lib/rate-limit';
+
+const rateLimiter = createRateLimiter({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    limit: 300,
+});
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
+    try {
+        await rateLimiter.check(req, res);
+    } catch (error) {
+        if (error instanceof RateLimitError) {
+            return sendErrorResponse(
+                res,
+                error.message,
+                error.statusCode,
+                error
+            );
+        }
+        throw error;
+    }
+
     switch (req.method) {
         case 'GET':
             try {
-                const result = await pool.query(`
+                const result = await queryWithRetry(`
                     SELECT 
                         c.*,
                         json_agg(
@@ -35,29 +56,32 @@ export default async function handler(
                     ORDER BY c.created_at DESC
                 `);
 
-                const clients = result.rows.map(client => ({
+                const clients: ClientWithAccounts[] = result.rows.map((client: any) => ({
                     ...client,
-                    accounts: client.accounts || []
+                    accounts: Array.isArray(client.accounts) ? client.accounts : [],
                 }));
 
-                res.status(200).json(clients);
+                return sendSuccessResponse(res, clients, 200, {
+                    ...cachePresets.userData,
+                    maxAge: 60 // 1 minute cache for user data
+                });
             } catch (error) {
                 console.error('Error fetching clients:', error);
-                res.status(500).json({ message: 'Error fetching clients' });
+                return sendErrorResponse(res, 'Error fetching clients', 500, error);
             }
             break;
 
         case 'POST':
             try {
                 const { name } = req.body;
-                const result = await pool.query(
+                const result = await queryWithRetry(
                     'INSERT INTO clients (name) VALUES ($1) RETURNING *',
                     [name]
                 );
-                res.status(201).json(result.rows[0]);
+                return sendSuccessResponse(res, result.rows[0], 201, cachePresets.realtime);
             } catch (error) {
                 console.error('Error creating client:', error);
-                res.status(500).json({ message: 'Error creating client' });
+                return sendErrorResponse(res, 'Error creating client', 500, error);
             }
             break;
 

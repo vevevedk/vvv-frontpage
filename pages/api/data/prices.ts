@@ -1,10 +1,31 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { PriceData } from "@/components/model/PrisDataModel";
+import { sendSuccessResponse, sendErrorResponse, cachePresets } from "@/lib/api-response-helpers";
+import { createRateLimiter, RateLimitError } from "@/lib/rate-limit";
 
-export default function handler(
+const rateLimiter = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  limit: 120,
+});
+
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PriceData[]>
 ) {
+  try {
+    await rateLimiter.check(req, res);
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return sendErrorResponse(
+        res,
+        error.message,
+        error.statusCode,
+        error
+      );
+    }
+    throw error;
+  }
+
   const prices: PriceData[] = [
     {
       id: 1,
@@ -42,5 +63,8 @@ export default function handler(
     }
   ];
 
-  res.status(200).json(prices);
+  return sendSuccessResponse(res, prices, 200, {
+    ...cachePresets.static,
+    maxAge: 3600 // 1 hour cache for pricing data
+  });
 } 

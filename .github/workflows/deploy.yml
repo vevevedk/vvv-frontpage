@@ -1,0 +1,216 @@
+name: Deploy to Production
+
+# Server Configuration (vvv-app-web-v02):
+# - SSH_HOST: 143.198.105.78
+# - SSH_USER: vvv-web-deploy
+# - SSH_PRIVATE_KEY: Content of vvv_web_deploy_key (set in GitHub Secrets)
+# - SSH_PORT: 22 (default)
+# - DEPLOY_DIR: /var/www/vvv-frontpage
+# See SERVER_MIGRATION_V02.md for complete setup details
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      skip_build:
+        description: 'Skip Docker build (use existing images)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/vvv-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/vvv-frontend
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      backend-tag: ${{ steps.meta-backend.outputs.tags }}
+      frontend-tag: ${{ steps.meta-frontend.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BACKEND_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=ref,event=branch
+            type=sha
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push backend image
+        if: github.event.inputs.skip_build != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.FRONTEND_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=ref,event=branch
+            type=sha
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push frontend image
+        if: github.event.inputs.skip_build != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./frontend.Dockerfile
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            
+            # Navigate to project directory (new server: /var/www/vvv-frontpage)
+            DEPLOY_DIR="/var/www/vvv-frontpage"
+            
+            # Clone repository if it doesn't exist (initial setup)
+            if [ ! -d "$DEPLOY_DIR/.git" ]; then
+              echo "📦 Initial setup: Cloning repository..."
+              sudo mkdir -p "$DEPLOY_DIR"
+              sudo chown $(whoami):$(whoami) "$DEPLOY_DIR"
+              git clone https://github.com/${{ github.repository }}.git "$DEPLOY_DIR"
+              cd "$DEPLOY_DIR"
+              
+              # Create environment files from examples if they don't exist
+              if [ ! -f "env/backend.env" ] && [ -f "env/backend.env.example" ]; then
+                echo "⚠️  Creating env/backend.env from example - PLEASE UPDATE WITH REAL VALUES!"
+                cp env/backend.env.example env/backend.env
+              fi
+              if [ ! -f "env/frontend.env" ] && [ -f "env/frontend.env.example" ]; then
+                echo "⚠️  Creating env/frontend.env from example - PLEASE UPDATE WITH REAL VALUES!"
+                cp env/frontend.env.example env/frontend.env
+              fi
+              
+              # Setup Nginx if not already configured
+              if [ ! -f "/etc/nginx/sites-available/vvv-frontpage" ]; then
+                echo "📝 Setting up Nginx configuration..."
+                sudo cp "$DEPLOY_DIR/deploy/vvv-frontpage-v02.conf" /etc/nginx/sites-available/vvv-frontpage || true
+                sudo ln -sf /etc/nginx/sites-available/vvv-frontpage /etc/nginx/sites-enabled/ || true
+                sudo nginx -t && sudo systemctl reload nginx || true
+              fi
+            else
+              cd "$DEPLOY_DIR"
+              # Pull latest code
+              git pull origin main || true
+            fi
+            
+            # Pull latest Docker images from GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin || true
+            docker pull ${{ env.BACKEND_IMAGE }}:latest || true
+            docker pull ${{ env.FRONTEND_IMAGE }}:latest || true
+            
+            # Stop services
+            docker-compose down || true
+            
+            # Start services with new images
+            docker-compose up -d
+            
+            # Wait for services to be ready
+            sleep 15
+            
+            # Run database migrations (if needed)
+            docker-compose exec -T backend python manage.py migrate --noinput || true
+            
+            # Collect static files (if needed)
+            docker-compose exec -T backend python manage.py collectstatic --noinput || true
+            
+            # Reload Nginx (using sudo as configured for vvv-web-deploy)
+            sudo nginx -t && sudo systemctl reload nginx || true
+            
+            # Check service health
+            docker-compose ps
+            
+            echo "✅ Deployment completed successfully!"
+
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Wait for services to start
+        run: sleep 30
+
+      - name: Check frontend health
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://veveve.dk/ || echo "000")
+          if [ "$status" != "200" ]; then
+            echo "⚠️ Frontend health check failed (HTTP $status)"
+            exit 1
+          fi
+          echo "✅ Frontend is healthy"
+
+      - name: Check API health
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://veveve.dk/api/health || echo "000")
+          if [ "$status" != "200" ]; then
+            echo "⚠️ API health check failed (HTTP $status)"
+            exit 1
+          fi
+          echo "✅ API is healthy"
+

@@ -1,5 +1,6 @@
 // lib/db.ts
 import { Pool } from 'pg';
+import { retryWithBackoff, isTransientPgError } from './retry';
 
 // Debug logging
 console.log('Process ENV:', {
@@ -40,10 +41,94 @@ if (!config.host || !config.user || !config.database || !config.port) {
     throw new Error('Database configuration not complete');
 }
 
-export const pool = new Pool(config);
+// Enhanced connection pool configuration for better performance and reliability
+export const pool = new Pool({
+    ...config,
+    // Connection pool settings
+    max: 20,                        // Maximum number of clients in the pool
+    min: 5,                         // Minimum number of clients in the pool
+    idleTimeoutMillis: 30000,       // Close idle clients after 30 seconds
+    connectionTimeoutMillis: 5000,  // How long to wait for connection (5 seconds)
+    
+    // Query timeout (via statement_timeout - set on connection)
+    statement_timeout: 10000,       // 10 second query timeout
+    
+    // Connection validation
+    allowExitOnIdle: false,         // Keep pool alive even when idle
+});
+
+export interface QueryOptions {
+    retries?: number;
+    timeoutMs?: number;
+}
+
+export async function queryWithRetry<T = any>(
+    text: string,
+    params?: any[],
+    options: QueryOptions = {}
+) {
+    const { retries = 3, timeoutMs } = options;
+
+    const controller = timeoutMs ? new AbortController() : undefined;
+    const signal = controller?.signal;
+
+    let timeoutRef: ReturnType<typeof setTimeout> | undefined;
+    if (timeoutMs) {
+        timeoutRef = setTimeout(() => controller?.abort(), timeoutMs);
+        if (typeof (timeoutRef as any).unref === 'function') {
+            (timeoutRef as NodeJS.Timeout).unref();
+        }
+    }
+
+    try {
+        return await retryWithBackoff(
+            async () => pool.query<T>(text, params),
+            {
+                retries,
+                signal,
+                shouldRetry: (error) => isTransientPgError(error),
+                onRetry: (error, attempt, delay) => {
+                    if (process.env.NODE_ENV !== 'test') {
+                        console.warn(
+                            `Retrying query (attempt ${attempt}/${retries}) in ${delay}ms due to error:`,
+                            error
+                        );
+                    }
+                },
+            }
+        );
+    } finally {
+        if (timeoutRef) {
+            clearTimeout(timeoutRef);
+        }
+    }
+}
 
 // Add error handler
 pool.on('error', (err) => {
     console.error('Unexpected error on idle client', err);
-    process.exit(-1);
+    // Don't exit process - let it handle errors gracefully
+    // process.exit(-1);
 });
+
+// Add connection event handlers for monitoring
+pool.on('connect', (client) => {
+    // Set statement timeout for this connection
+    client.query('SET statement_timeout = 10000').catch(err => {
+        console.warn('Failed to set statement timeout:', err);
+    });
+});
+
+// Log pool statistics (useful for debugging)
+if (process.env.NODE_ENV === 'development') {
+    setInterval(() => {
+        const poolStats = {
+            totalCount: pool.totalCount,
+            idleCount: pool.idleCount,
+            waitingCount: pool.waitingCount,
+        };
+        if (poolStats.totalCount > 0) {
+            console.log('Pool stats:', poolStats);
+        }
+    }, 60000); // Log every minute
+}
