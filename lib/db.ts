@@ -55,7 +55,7 @@ export const pool = new Pool({
     
     // Connection validation
     allowExitOnIdle: false,         // Keep pool alive even when idle
-} as Parameters<typeof Pool>[0]); // Type assertion for pool config
+} as any); // Type assertion needed as pg types don't include all pool options
 
 export interface QueryOptions {
     retries?: number;
