@@ -1,5 +1,5 @@
 // lib/db.ts
-import { Pool } from 'pg';
+import { Pool, PoolConfig } from 'pg';
 import { retryWithBackoff, isTransientPgError } from './retry';
 
 // Debug logging
@@ -42,20 +42,15 @@ if (!config.host || !config.user || !config.database || !config.port) {
 }
 
 // Enhanced connection pool configuration for better performance and reliability
-// Note: Using type assertion as pg PoolConfig types may not include all valid options
-export const pool = new Pool({
+const poolConfig: PoolConfig = {
     ...config,
     // Connection pool settings
     max: 20,                        // Maximum number of clients in the pool
     idleTimeoutMillis: 30000,       // Close idle clients after 30 seconds
     connectionTimeoutMillis: 5000,  // How long to wait for connection (5 seconds)
-    
-    // Query timeout (via statement_timeout - set on connection)
-    statement_timeout: 10000,       // 10 second query timeout
-    
-    // Connection validation
-    allowExitOnIdle: false,         // Keep pool alive even when idle
-} as any); // Type assertion needed as pg types don't include all pool options
+};
+
+export const pool = new Pool(poolConfig);
 
 export interface QueryOptions {
     retries?: number;
