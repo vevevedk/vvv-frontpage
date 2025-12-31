@@ -42,11 +42,11 @@ if (!config.host || !config.user || !config.database || !config.port) {
 }
 
 // Enhanced connection pool configuration for better performance and reliability
+// Note: Using type assertion as pg PoolConfig types may not include all valid options
 export const pool = new Pool({
     ...config,
     // Connection pool settings
     max: 20,                        // Maximum number of clients in the pool
-    min: 5,                         // Minimum number of clients in the pool
     idleTimeoutMillis: 30000,       // Close idle clients after 30 seconds
     connectionTimeoutMillis: 5000,  // How long to wait for connection (5 seconds)
     
@@ -55,7 +55,7 @@ export const pool = new Pool({
     
     // Connection validation
     allowExitOnIdle: false,         // Keep pool alive even when idle
-});
+} as Parameters<typeof Pool>[0]); // Type assertion for pool config
 
 export interface QueryOptions {
     retries?: number;
