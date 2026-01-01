@@ -17,13 +17,14 @@ declare module 'pg' {
     query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>>;
     end(): Promise<void>;
     on(event: 'error', listener: (err: Error) => void): this;
+    on(event: 'connect', listener: (client: Client) => void): this;
     totalCount: number;
     idleCount: number;
     waitingCount: number;
   }
 
   export class Client {
-    query(text: string, params?: any[]): Promise<QueryResult>;
+    query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>>;
     release(): void;
   }
 
