@@ -14,9 +14,12 @@ declare module 'pg' {
   export class Pool {
     constructor(config?: PoolConfig);
     connect(): Promise<Client>;
-    query(text: string, params?: any[]): Promise<QueryResult>;
+    query<T = any>(text: string, params?: any[]): Promise<QueryResult<T>>;
     end(): Promise<void>;
     on(event: 'error', listener: (err: Error) => void): this;
+    totalCount: number;
+    idleCount: number;
+    waitingCount: number;
   }
 
   export class Client {
@@ -24,8 +27,8 @@ declare module 'pg' {
     release(): void;
   }
 
-  export interface QueryResult {
-    rows: any[];
+  export interface QueryResult<T = any> {
+    rows: T[];
     rowCount: number;
     command: string;
   }
