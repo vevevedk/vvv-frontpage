@@ -6,6 +6,9 @@ declare module 'pg' {
     password?: string;
     port?: number;
     ssl?: boolean | object;
+    max?: number;
+    idleTimeoutMillis?: number;
+    connectionTimeoutMillis?: number;
   }
 
   export class Pool {
