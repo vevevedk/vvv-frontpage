@@ -48,7 +48,7 @@ export class CircuitBreaker {
         }, timeoutMs);
       });
 
-      const result = await Promise.race([action(), timeoutPromise]) as Awaited<ReturnType<typeof action>>;
+      const result = await Promise.race([action(), timeoutPromise]);
 
       if (timeout) {
         clearTimeout(timeout);
