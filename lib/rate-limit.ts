@@ -97,4 +97,33 @@ if (typeof global !== 'undefined') {
       globalWithCleanup.__vvvRateLimitCleanup.unref();
     }
   }
+}
+
+// Default rate limiter for withRateLimit wrapper
+const defaultRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // 100 requests per window
+});
+
+/**
+ * Wrapper function for backward compatibility
+ * Wraps an API handler with rate limiting
+ */
+export function withRateLimit(
+  handler: (req: NextApiRequest, res: NextApiResponse) => Promise<any>
+) {
+  return async function rateLimitedHandler(req: NextApiRequest, res: NextApiResponse) {
+    try {
+      await defaultRateLimiter.check(req, res);
+      return handler(req, res);
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          retryAfter: error.retryAfter,
+        });
+      }
+      throw error;
+    }
+  };
 } 
