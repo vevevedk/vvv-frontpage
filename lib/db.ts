@@ -1,5 +1,5 @@
 // lib/db.ts
-import { Pool, PoolConfig } from 'pg';
+import { Pool, PoolConfig, QueryResult } from 'pg';
 import { retryWithBackoff, isTransientPgError } from './retry';
 
 // Debug logging
@@ -61,7 +61,7 @@ export async function queryWithRetry<T = any>(
     text: string,
     params?: any[],
     options: QueryOptions = {}
-) {
+): Promise<QueryResult<T>> {
     const { retries = 3, timeoutMs } = options;
 
     const controller = timeoutMs ? new AbortController() : undefined;
