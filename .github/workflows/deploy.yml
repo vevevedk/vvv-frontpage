@@ -130,8 +130,13 @@ jobs:
             # Clone repository if it doesn't exist (initial setup)
             if [ ! -d "$DEPLOY_DIR/.git" ]; then
               echo "📦 Initial setup: Cloning repository..."
-              sudo mkdir -p "$DEPLOY_DIR"
-              sudo chown $(whoami):$(whoami) "$DEPLOY_DIR"
+              # Directory should already exist and be owned by deploy user (set up manually)
+              if [ ! -d "$DEPLOY_DIR" ]; then
+                echo "❌ Error: $DEPLOY_DIR does not exist. Please create it manually as root:"
+                echo "   sudo mkdir -p $DEPLOY_DIR"
+                echo "   sudo chown vvv-web-deploy:vvv-web-deploy $DEPLOY_DIR"
+                exit 1
+              fi
               git clone https://github.com/${{ github.repository }}.git "$DEPLOY_DIR"
               cd "$DEPLOY_DIR"
               
@@ -145,12 +150,11 @@ jobs:
                 cp env/frontend.env.example env/frontend.env
               fi
               
-              # Setup Nginx if not already configured
+              # Setup Nginx if not already configured (requires manual setup or passwordless sudo)
               if [ ! -f "/etc/nginx/sites-available/vvv-frontpage" ]; then
-                echo "📝 Setting up Nginx configuration..."
-                sudo cp "$DEPLOY_DIR/deploy/vvv-frontpage-v02.conf" /etc/nginx/sites-available/vvv-frontpage || true
-                sudo ln -sf /etc/nginx/sites-available/vvv-frontpage /etc/nginx/sites-enabled/ || true
-                sudo nginx -t && sudo systemctl reload nginx || true
+                echo "⚠️  Nginx configuration not found. Please set it up manually or configure passwordless sudo."
+                echo "   Manual setup: sudo cp $DEPLOY_DIR/deploy/vvv-frontpage-v02.conf /etc/nginx/sites-available/vvv-frontpage"
+                echo "   Then: sudo ln -sf /etc/nginx/sites-available/vvv-frontpage /etc/nginx/sites-enabled/"
               fi
             else
               cd "$DEPLOY_DIR"
@@ -178,8 +182,13 @@ jobs:
             # Collect static files (if needed)
             docker-compose exec -T backend python manage.py collectstatic --noinput || true
             
-            # Reload Nginx (using sudo as configured for vvv-web-deploy)
-            sudo nginx -t && sudo systemctl reload nginx || true
+            # Reload Nginx (skip if sudo not configured - requires manual setup)
+            # Note: Configure passwordless sudo or reload manually: sudo systemctl reload nginx
+            if sudo -n true 2>/dev/null; then
+              sudo nginx -t && sudo systemctl reload nginx || true
+            else
+              echo "⚠️  Skipping Nginx reload (sudo not configured). Reload manually if needed."
+            fi
             
             # Check service health
             docker-compose ps
