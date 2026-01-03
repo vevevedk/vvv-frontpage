@@ -110,12 +110,12 @@ const defaultRateLimiter = createRateLimiter({
  * Wraps an API handler with rate limiting
  */
 export function withRateLimit(
-  handler: (req: NextApiRequest, res: NextApiResponse) => Promise<any>
+  handler: (req: NextApiRequest, res: NextApiResponse) => Promise<any> | any
 ) {
-  return async function rateLimitedHandler(req: NextApiRequest, res: NextApiResponse) {
+  return async function rateLimitedHandler(req: NextApiRequest, res: NextApiResponse): Promise<any> {
     try {
       await defaultRateLimiter.check(req, res);
-      return handler(req, res);
+      return await handler(req, res);
     } catch (error) {
       if (error instanceof RateLimitError) {
         return res.status(error.statusCode).json({
