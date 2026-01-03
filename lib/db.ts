@@ -1,6 +1,13 @@
 // lib/db.ts
-import { Pool, PoolConfig, QueryResult } from 'pg';
+import { Pool, PoolConfig } from 'pg';
 import { retryWithBackoff, isTransientPgError } from './retry';
+
+// QueryResult type from pg module (defined in types/pg.d.ts)
+type QueryResult<T = any> = {
+  rows: T[];
+  rowCount: number;
+  command: string;
+};
 
 // Debug logging
 console.log('Process ENV:', {
