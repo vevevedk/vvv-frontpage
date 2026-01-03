@@ -79,7 +79,8 @@ export function createRateLimiter(options: RateLimitOptions) {
 
 export function cleanupRateLimitStore() {
   const now = Date.now();
-  for (const [key, value] of stores.entries()) {
+  // Use Array.from to convert iterator to array for ES5 compatibility
+  for (const [key, value] of Array.from(stores.entries())) {
     if (value.reset <= now) {
       stores.delete(key);
     }
