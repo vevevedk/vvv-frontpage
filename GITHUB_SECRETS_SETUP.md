@@ -16,17 +16,12 @@ Click **"New repository secret"** button and add these secrets:
 
 ### 3. SSH_PRIVATE_KEY
 - **Name**: `SSH_PRIVATE_KEY`
-- **Value**: (Content of `vvv_web_deploy_key` from secure vault)
-- **Description**: SSH private key for authentication
+- **Value**: (Content of the SSH private key - see generation instructions below)
+- **Description**: SSH private key for authentication (should be generated without passphrase for CI/CD)
 - **Note**: Paste the entire private key including `-----BEGIN OPENSSH PRIVATE KEY-----` and `-----END OPENSSH PRIVATE KEY-----`
+- **Important**: For CI/CD, use a key **without a passphrase** (see generation instructions below)
 
-### 4. SSH_PASSPHRASE (Required if key is passphrase-protected)
-- **Name**: `SSH_PASSPHRASE`
-- **Value**: (The passphrase for the SSH private key)
-- **Description**: Passphrase for the SSH private key (if the key is encrypted)
-- **Note**: Only add this if your SSH key has a passphrase. If the key doesn't have a passphrase, you can skip this secret.
-
-### 5. SSH_PORT (Optional)
+### 4. SSH_PORT (Optional)
 - **Name**: `SSH_PORT`
 - **Value**: `22`
 - **Description**: SSH port (default is 22, only add if different)
@@ -43,17 +38,55 @@ Click **"New repository secret"** button and add these secrets:
 
 ---
 
+## 🔑 Generate SSH Key (No Passphrase)
+
+**For CI/CD, generate a new SSH key without a passphrase:**
+
+```bash
+# Generate a new ED25519 key without a passphrase
+ssh-keygen -t ed25519 -f ~/.ssh/vvv_web_deploy_key -N ""
+
+# Display the private key (to copy to GitHub Secrets)
+cat ~/.ssh/vvv_web_deploy_key
+
+# Display the public key (to add to server)
+cat ~/.ssh/vvv_web_deploy_key.pub
+```
+
+**Then on the server (as root or vvv-web-deploy user):**
+```bash
+# Add the public key to authorized_keys
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+echo "PASTE_PUBLIC_KEY_HERE" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+**Or if you need to overwrite an existing key:**
+```bash
+# Generate new key (will overwrite existing)
+ssh-keygen -t ed25519 -f ~/.ssh/vvv_web_deploy_key -N "" -y
+
+# Then add the new public key to the server's authorized_keys
+```
+
 ## 📝 Step-by-Step Instructions
 
-1. **Click "New repository secret"** (green button)
+1. **Generate SSH key** (see instructions above) if you haven't already
 
-2. **For each secret above:**
+2. **Add public key to server:**
+   - SSH to the server: `ssh vvv-web-deploy@143.198.105.78`
+   - Add the public key to `~/.ssh/authorized_keys`
+
+3. **Click "New repository secret"** (green button in GitHub)
+
+4. **For each secret above:**
    - Enter the **Name** exactly as shown
    - Paste the **Value** (be careful with SSH_PRIVATE_KEY - include full key)
    - Click **"Add secret"**
 
-3. **Verify all secrets are added:**
-   - You should see 5-7 secrets listed under "Repository secrets"
+5. **Verify all secrets are added:**
+   - You should see 4-6 secrets listed under "Repository secrets"
    - Secrets are masked (shown as `••••••••`)
 
 ---
@@ -88,11 +121,12 @@ After adding secrets, you can test the connection by:
 ### "Permission denied (publickey)" error
 - Verify `SSH_PRIVATE_KEY` includes the full key (begin/end markers)
 - Ensure the corresponding public key is in `~/.ssh/authorized_keys` on the server
-- If key is passphrase-protected, ensure `SSH_PASSPHRASE` secret is set correctly
+- Check file permissions on server: `chmod 600 ~/.ssh/authorized_keys` and `chmod 700 ~/.ssh`
 
 ### "ssh: this private key is passphrase protected" error
-- Add the `SSH_PASSPHRASE` secret with the correct passphrase
-- Or generate a new SSH key without a passphrase for CI/CD (recommended for automation)
+- Generate a new SSH key without a passphrase: `ssh-keygen -t ed25519 -f ~/.ssh/vvv_web_deploy_key -N ""`
+- Update the `SSH_PRIVATE_KEY` secret with the new key
+- Add the new public key to the server's `~/.ssh/authorized_keys`
 
 ### "Connection refused" error
 - Verify `SSH_HOST` is correct: `143.198.105.78`
