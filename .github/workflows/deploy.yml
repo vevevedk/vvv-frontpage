@@ -182,10 +182,10 @@ jobs:
             # Collect static files (if needed)
             docker-compose exec -T backend python manage.py collectstatic --noinput || true
             
-            # Reload Nginx (skip if sudo not configured - requires manual setup)
-            # Note: Configure passwordless sudo or reload manually: sudo systemctl reload nginx
+            # Reload Nginx (using full path since sudo doesn't preserve PATH)
+            # Note: Using /usr/sbin/nginx for full path (common location)
             if sudo -n true 2>/dev/null; then
-              sudo nginx -t && sudo systemctl reload nginx || true
+              sudo /usr/sbin/nginx -t && sudo systemctl reload nginx || sudo /usr/bin/nginx -t && sudo systemctl reload nginx || true
             else
               echo "⚠️  Skipping Nginx reload (sudo not configured). Reload manually if needed."
             fi
