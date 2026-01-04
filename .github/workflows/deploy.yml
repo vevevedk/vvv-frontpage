@@ -162,6 +162,15 @@ jobs:
               git pull origin main || true
             fi
             
+            # Check if Docker is available
+            if ! command -v docker &> /dev/null; then
+              echo "❌ Error: Docker is not installed or not in PATH"
+              echo "   Please install Docker on the server:"
+              echo "   sudo apt update && sudo apt install -y docker.io docker-compose"
+              echo "   sudo usermod -aG docker vvv-web-deploy"
+              exit 1
+            fi
+            
             # Pull latest Docker images from GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin || true
             docker pull ${{ env.BACKEND_IMAGE }}:latest || true
