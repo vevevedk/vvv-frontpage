@@ -20,9 +20,18 @@ DATABASES = {
 
 # Security settings
 # Allow overriding SSL redirect for HTTP testing (set SECURE_SSL_REDIRECT=False in env)
-SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default='True', cast=bool)
-SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default='True', cast=bool)
-CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default='True', cast=bool)
+# Use Csv() to properly handle boolean strings, or use a lambda to convert
+def str_to_bool(value):
+    """Convert string to boolean, handling 'False', 'false', '0', etc."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ('true', '1', 'yes', 'on')
+    return bool(value)
+
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default='True', cast=str_to_bool)
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default='True', cast=str_to_bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default='True', cast=str_to_bool)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
