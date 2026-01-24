@@ -1,0 +1,32 @@
+# Next.js Frontend Production Environment Template
+# Copy this to env/frontend.env and fill in the values
+
+# Public URLs
+NEXT_PUBLIC_APP_URL=https://veveve.dk
+NEXT_PUBLIC_API_URL=https://veveve.dk/api
+
+# Node Environment
+NODE_ENV=production
+
+# Database (for Next.js API routes)
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=vvv_database
+DB_USER=vvv_user
+DB_PASSWORD=<same-as-backend-DATABASE_PASSWORD>
+
+# JWT Secret (for Next API routes)
+JWT_SECRET=<generate-with-openssl-rand-base64-32>
+
+# SMTP for invite emails - Optional
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=apikey
+SMTP_PASS=change-me
+SMTP_FROM="VEVEVE <noreply@veveve.dk>"
+
+# Backend proxy to Django (for Next API routes)
+DJANGO_API_URL=https://veveve.dk/api
+
+

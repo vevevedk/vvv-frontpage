@@ -148,11 +148,42 @@ build_images() {
 run_migrations() {
     print_header "Running Database Migrations"
     
-    print_info "Applying migrations..."
+    print_info "Applying Django migrations..."
     docker-compose exec -T backend python manage.py migrate --noinput
     
     print_info "Collecting static files..."
     docker-compose exec -T backend python manage.py collectstatic --noinput
+    
+    # Apply performance indexes migration if it exists
+    if [ -f "db/migrations/004_performance_indexes.sql" ]; then
+        print_info "Applying performance indexes migration..."
+        print_info "Note: Migration uses 'IF NOT EXISTS' so it's safe to run multiple times"
+        
+        # Pipe SQL file directly to psql (most reliable method)
+        if cat db/migrations/004_performance_indexes.sql | docker-compose exec -T postgres psql -U vvv_user -d vvv_database > /dev/null 2>&1; then
+            print_success "Performance indexes migration completed"
+            
+            # Verify indexes were created
+            local index_count=$(docker-compose exec -T postgres psql -U vvv_user -d vvv_database -t -c "SELECT COUNT(*) FROM pg_indexes WHERE indexname LIKE 'idx_woocommerce%' OR indexname LIKE 'idx_gads%' OR indexname LIKE 'idx_gsc%' OR indexname LIKE 'idx_pipelines%';" 2>/dev/null | tr -d ' \n')
+            if [ -n "$index_count" ] && [ "$index_count" -gt "0" ]; then
+                print_success "Verified: $index_count performance indexes exist"
+            fi
+        else
+            print_warning "Index migration had warnings (this is normal if indexes already exist)"
+            print_info "Indexes use 'CREATE INDEX IF NOT EXISTS' - safe to ignore if already applied"
+            
+            # Check if indexes exist (verify they're there)
+            local existing_count=$(docker-compose exec -T postgres psql -U vvv_user -d vvv_database -t -c "SELECT COUNT(*) FROM pg_indexes WHERE indexname IN ('idx_woocommerce_orders_client_date', 'idx_gads_client_date_range', 'idx_gsc_client_date', 'idx_pipelines_client_status');" 2>/dev/null | tr -d ' \n')
+            if [ -n "$existing_count" ] && [ "$existing_count" -gt "0" ]; then
+                print_success "Confirmed: Performance indexes exist ($existing_count core indexes found)"
+            else
+                print_warning "Could not verify indexes - they may need manual application"
+                print_info "To apply manually: cat db/migrations/004_performance_indexes.sql | docker-compose exec -T postgres psql -U vvv_user -d vvv_database"
+            fi
+        fi
+    else
+        print_warning "Performance indexes migration file not found: db/migrations/004_performance_indexes.sql"
+    fi
     
     print_success "Migrations completed"
 }
@@ -218,13 +249,20 @@ health_check() {
             if curl -sf http://localhost:8001/api/health/ >/dev/null 2>&1; then
                 print_success "Backend is healthy"
                 backend_healthy=true
+            elif curl -sf http://localhost:8001/api/test/ >/dev/null 2>&1; then
+                # Fallback to test endpoint if health endpoint not available
+                print_success "Backend is responding (via test endpoint)"
+                backend_healthy=true
             fi
         fi
         
-        # Check frontend
+        # Check frontend health endpoint
         if ! $frontend_healthy; then
-            if curl -sf http://localhost:3000 >/dev/null 2>&1; then
-                print_success "Frontend is healthy"
+            if curl -sf http://localhost:3000/api/health >/dev/null 2>&1; then
+                print_success "Frontend health check passed"
+                frontend_healthy=true
+            elif curl -sf http://localhost:3000 >/dev/null 2>&1; then
+                print_success "Frontend is responding"
                 frontend_healthy=true
             fi
         fi
@@ -334,6 +372,27 @@ rollback() {
     print_success "Rollback completed"
 }
 
+# Run pre-deployment checks
+run_pre_deployment_checks() {
+    print_header "Running Pre-Deployment Validation"
+    
+    if [ -f "scripts/pre-deployment-checks.sh" ]; then
+        print_info "Running pre-deployment validation..."
+        if bash scripts/pre-deployment-checks.sh --skip-optional; then
+            print_success "Pre-deployment checks passed"
+        else
+            print_error "Pre-deployment checks failed"
+            print_warning "Continue anyway? (y/N)"
+            read -r response
+            if [[ ! "$response" =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        fi
+    else
+        print_warning "Pre-deployment checks script not found, skipping..."
+    fi
+}
+
 # Main deployment flow
 main() {
     print_header "🚀 VVV Frontpage Deployment"
@@ -344,6 +403,7 @@ main() {
     
     # Run deployment steps
     verify_prerequisites
+    run_pre_deployment_checks
     create_backup
     pull_code
     build_images

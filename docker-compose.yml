@@ -69,9 +69,11 @@ services:
     build:
       context: .
       dockerfile: frontend.Dockerfile
+    command: sh -lc "npm run dev"
     env_file:
       - ./env/frontend.env
     environment:
+      - NODE_ENV=development
       - DJANGO_API_URL=http://backend:8000/api
     ports:
       - "3000:3000"  # Expose frontend on port 3000 for system nginx

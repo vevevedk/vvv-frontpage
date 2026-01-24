@@ -33,7 +33,7 @@ const nextConfig = {
 
   // Image optimization
   images: {
-    domains: ['localhost', 'veveve.dk', 'www.veveve.dk'],
+    domains: ['localhost', 'veveve.dk', 'www.veveve.dk', 'veveve.io', 'www.veveve.io'],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
   },
@@ -74,6 +74,24 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'no-store, must-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/api/data/prices',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=3600, stale-while-revalidate=7200',
+          },
+        ],
+      },
+      {
+        source: '/api/content/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=86400, stale-while-revalidate=172800',
           },
         ],
       },

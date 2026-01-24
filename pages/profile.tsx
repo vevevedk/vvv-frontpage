@@ -5,6 +5,7 @@ import ErrorMessage from '../components/ErrorMessage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useRouter } from 'next/router';
 import SuccessMessage from '../components/SuccessMessage';
+import { useToast } from '../components/ui/Toast';
 
 interface ProfileFormData {
   first_name: string;
@@ -27,6 +28,7 @@ interface PasswordFormData {
 export default function Profile() {
   const { user, isLoading: authLoading, updateProfile, changePassword, deleteAccount } = useAuth();
   const router = useRouter();
+  const { showSuccess, showError, showWarning } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -85,9 +87,14 @@ export default function Profile() {
     try {
       await updateProfile(formData);
       setSuccess('Profile updated successfully');
-      router.push('/dashboard');
+      showSuccess('Profile Updated', 'Your profile information has been saved successfully.');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while updating profile');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while updating profile';
+      setError(errorMessage);
+      showError('Update Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +107,9 @@ export default function Profile() {
     setIsLoading(true);
 
     if (passwordData.new_password !== passwordData.confirm_password) {
-      setError('New passwords do not match');
+      const errorMsg = 'New passwords do not match';
+      setError(errorMsg);
+      showWarning('Password Mismatch', errorMsg);
       setIsLoading(false);
       return;
     }
@@ -108,13 +117,16 @@ export default function Profile() {
     try {
       await changePassword(passwordData);
       setSuccess('Password changed successfully');
+      showSuccess('Password Changed', 'Your password has been updated successfully.');
       setPasswordData({
         current_password: '',
         new_password: '',
         confirm_password: '',
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while changing password');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while changing password';
+      setError(errorMessage);
+      showError('Password Change Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -122,7 +134,9 @@ export default function Profile() {
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmation !== 'DELETE') {
-      setError('Please type DELETE to confirm account deletion');
+      const errorMsg = 'Please type DELETE to confirm account deletion';
+      setError(errorMsg);
+      showWarning('Confirmation Required', errorMsg);
       return;
     }
 
@@ -130,8 +144,11 @@ export default function Profile() {
       setIsLoading(true);
       setError(null);
       await deleteAccount();
+      showSuccess('Account Deleted', 'Your account has been permanently deleted.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while deleting account');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while deleting account';
+      setError(errorMessage);
+      showError('Deletion Failed', errorMessage);
       setIsLoading(false);
     }
   };

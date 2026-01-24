@@ -30,8 +30,7 @@ def analyze_orders(df):
     # Group by ChannelType
     channel_analysis = df.groupby('ChannelType').agg({
         'order_id': 'count',
-        'order_total': 'sum',
-        'order_total': 'mean'
+        'order_total': ['sum', 'mean']
     }).round(2)
     
     channel_analysis.columns = ['Orders', 'Total_Revenue', 'Avg_Order_Value']

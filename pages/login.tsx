@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '../lib/auth/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import { useToast } from '../components/ui/Toast';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -11,6 +12,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const { login, isLoading } = useAuth();
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,9 +20,12 @@ export default function Login() {
 
     try {
       await login(email, password);
+      showSuccess('Welcome back!', 'You have successfully signed in.');
       // Login function already handles redirect to /dashboard
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during login');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during login';
+      setError(errorMessage);
+      showError('Login Failed', errorMessage);
     }
   };
 
@@ -135,7 +140,7 @@ export default function Login() {
 
             <div className="text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link
                   href="/register"
                   className="font-medium text-primary hover:text-primary-dark transition-colors duration-200"

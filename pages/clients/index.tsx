@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../../styles/analytics/Clients.module.css';
 import { Client, ClientAccount } from '@/lib/types/clients';
+import { useToast } from '../../components/ui/Toast';
 
 const ClientsManagement = () => {
+    const { showSuccess, showError } = useToast();
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -38,10 +40,13 @@ const ClientsManagement = () => {
             });
             if (!res.ok) throw new Error('Failed to create client');
             
+            showSuccess('Client Created', `Client "${newClientName}" created successfully!`);
             await fetchClients();
             setNewClientName('');
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+            showError('Create Failed', errorMessage);
+            setError(errorMessage);
         }
     };
 
@@ -57,10 +62,13 @@ const ClientsManagement = () => {
             });
             if (!res.ok) throw new Error('Failed to update client');
             
+            showSuccess('Client Updated', `Client updated successfully!`);
             await fetchClients();
             setEditingClient(null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+            showError('Update Failed', errorMessage);
+            setError(errorMessage);
         }
     };
 
@@ -73,9 +81,12 @@ const ClientsManagement = () => {
             });
             if (!res.ok) throw new Error('Failed to delete client');
             
+            showSuccess('Client Deleted', 'Client deleted successfully!');
             await fetchClients();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+            showError('Delete Failed', errorMessage);
+            setError(errorMessage);
         }
     };
 

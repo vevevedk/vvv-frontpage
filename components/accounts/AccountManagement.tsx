@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../lib/auth/AuthContext';
 import { api } from '../../lib/api';
+import { useToast } from '../ui/Toast';
 
 interface Account {
   id: number;
@@ -85,6 +86,7 @@ const CONFIG_FIELDS = {
 
 export default function AccountManagement() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,9 +151,12 @@ export default function AccountManagement() {
         company_id: '',
         is_active: true,
       });
+      showSuccess('Account Created', `Account "${accountForm.name}" created successfully!`);
       fetchAccounts();
     } catch (err) {
-      setError('Failed to create account');
+      const errorMessage = 'Failed to create account';
+      showError('Create Failed', errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -168,9 +173,12 @@ export default function AccountManagement() {
         company_id: '',
         is_active: true,
       });
+      showSuccess('Account Updated', 'Account updated successfully!');
       fetchAccounts();
     } catch (err) {
-      setError('Failed to update account');
+      const errorMessage = 'Failed to update account';
+      showError('Update Failed', errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -179,9 +187,12 @@ export default function AccountManagement() {
     
     try {
       await api.delete(`/accounts/${accountId}/`);
+      showSuccess('Account Deleted', 'Account deleted successfully!');
       fetchAccounts();
     } catch (err) {
-      setError('Failed to delete account');
+      const errorMessage = 'Failed to delete account';
+      showError('Delete Failed', errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -197,9 +208,12 @@ export default function AccountManagement() {
         is_active: true,
         config_data: {},
       });
+      showSuccess('Configuration Created', 'Configuration created successfully!');
       fetchAccounts();
     } catch (err) {
-      setError('Failed to create configuration');
+      const errorMessage = 'Failed to create configuration';
+      showError('Create Failed', errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -218,10 +232,12 @@ export default function AccountManagement() {
         is_active: true,
         config_data: {},
       });
+      showSuccess('Configuration Updated', 'Configuration updated successfully!');
       fetchAccounts();
     } catch (err: any) {
       console.error('Update config error:', err);
       const errorMessage = err.response?.data?.message || err.response?.data?.detail || err.message || 'Failed to update configuration';
+      showError('Update Failed', errorMessage);
       setError(errorMessage);
     }
   };
@@ -231,9 +247,12 @@ export default function AccountManagement() {
     
     try {
       await api.delete(`/account-configurations/${configId}/`);
+      showSuccess('Configuration Deleted', 'Configuration deleted successfully!');
       fetchAccounts();
     } catch (err) {
-      setError('Failed to delete configuration');
+      const errorMessage = 'Failed to delete configuration';
+      showError('Delete Failed', errorMessage);
+      setError(errorMessage);
     }
   };
 

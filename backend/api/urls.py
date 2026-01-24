@@ -37,6 +37,7 @@ from authentication.views import (
 )
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from api.health_view import health_check
 
 def test_connection(request):
     """Simple test endpoint to verify backend connectivity"""
@@ -107,6 +108,9 @@ router.register(r'pipeline-analytics', PipelineAnalyticsViewSet, basename='pipel
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+    
+    # Health check endpoint (no auth required)
+    path('api/health/', health_check, name='health-check'),
     
     # Authentication endpoints
     path('api/auth/login/', csrf_exempt(LoginView.as_view()), name='auth-login'),

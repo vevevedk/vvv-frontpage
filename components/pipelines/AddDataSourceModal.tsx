@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   XMarkIcon, 
   ServerIcon,
@@ -76,6 +77,7 @@ export default function AddDataSourceModal({ isOpen, onClose }: AddDataSourceMod
   });
 
   const [availableConfigurations, setAvailableConfigurations] = useState<AccountConfiguration[]>([]);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (isOpen) {
@@ -182,6 +184,7 @@ export default function AddDataSourceModal({ isOpen, onClose }: AddDataSourceMod
 
   const handleInputChange = (field: keyof PipelineFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setTouched(prev => ({ ...prev, [field]: true }));
   };
 
   if (!isOpen) return null;
@@ -287,16 +290,16 @@ export default function AddDataSourceModal({ isOpen, onClose }: AddDataSourceMod
             </div>
 
             {/* Account Configuration */}
-            {availableConfigurations.length > 0 && (
-              <div>
-                <label htmlFor="configuration" className="block text-sm font-medium text-gray-700 mb-2">
-                  Configuration *
-                </label>
+            <div>
+              <label htmlFor="configuration" className="block text-sm font-medium text-gray-700 mb-2">
+                Connection / Configuration *
+              </label>
+              {availableConfigurations.length > 0 ? (
                 <select
                   id="configuration"
                   value={formData.account_configuration_id}
                   onChange={(e) => handleInputChange('account_configuration_id', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${touched.account_configuration_id && !formData.account_configuration_id ? 'border-red-300' : 'border-gray-300'}`}
                   required
                 >
                   <option value={0}>Select configuration</option>
@@ -306,8 +309,21 @@ export default function AddDataSourceModal({ isOpen, onClose }: AddDataSourceMod
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
+              ) : (
+                <div className="p-3 border border-yellow-200 bg-yellow-50 rounded-md text-sm text-yellow-900">
+                  No connection found for this account and type.
+                  <div className="mt-2">
+                    <Link href={`/admin?tab=accounts`} className="inline-flex items-center px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+                      Create connection
+                    </Link>
+                    <p className="mt-2 text-xs text-yellow-800">After creating a connection, return here and select it.</p>
+                  </div>
+                </div>
+              )}
+              {touched.account_configuration_id && !formData.account_configuration_id && availableConfigurations.length > 0 && (
+                <p className="mt-1 text-xs text-red-600">Please select a connection/configuration</p>
+              )}
+            </div>
 
             {/* Schedule */}
             <div>
@@ -413,7 +429,7 @@ export default function AddDataSourceModal({ isOpen, onClose }: AddDataSourceMod
               </button>
               <button
                 type="submit"
-                disabled={submitting || loading}
+                disabled={submitting || loading || !formData.name || !formData.account_id || !formData.pipeline_type || !formData.account_configuration_id}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (

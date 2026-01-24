@@ -85,7 +85,11 @@ def create_sample_orders():
             'attribution_utm_source': 'google',
             'attribution_source_type': 'utm',
             'billing_email': 'test1@example.com',
-            'client_name': 'Porsa DK'
+            'client_name': 'Porsa DK',
+            'total': 134.0,
+            'currency': 'DKK',
+            'date_created': datetime(2025, 8, 24, 10, 11, 26),
+            'date_modified': datetime(2025, 8, 24, 10, 11, 26)
         },
         {
             'order_id': '54331',

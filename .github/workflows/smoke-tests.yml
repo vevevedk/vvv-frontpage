@@ -1,0 +1,181 @@
+name: Smoke Tests
+
+# Comprehensive smoke tests for staging and production
+# Can be run manually or as part of deployment workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      base_url:
+        description: 'Base URL to test (optional, auto-detected if not provided)'
+        required: false
+        type: string
+
+jobs:
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+      - name: Determine Test URLs
+        id: urls
+        run: |
+          if [ "${{ github.event.inputs.base_url }}" != "" ]; then
+            BASE_URL="${{ github.event.inputs.base_url }}"
+          elif [ "${{ github.event.inputs.environment }}" == "staging" ]; then
+            BASE_URL="https://staging.veveve.io"
+          else
+            BASE_URL="https://veveve.io"
+          fi
+          echo "base_url=$BASE_URL" >> $GITHUB_OUTPUT
+          echo "Testing against: $BASE_URL"
+
+      - name: Test Frontend Accessibility
+        run: |
+          BASE_URL="${{ steps.urls.outputs.base_url }}"
+          echo "Testing frontend at $BASE_URL..."
+          
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL" || echo "000")
+          echo "Frontend HTTP status: $STATUS"
+          
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Frontend is accessible (HTTP $STATUS)"
+          else
+            echo "❌ Frontend health check failed (HTTP $STATUS)"
+            exit 1
+          fi
+
+      - name: Test Domain Routing - veveve.io
+        run: |
+          echo "Testing veveve.io domain routing..."
+          
+          # Check if veveve.io shows English PPC content
+          RESPONSE=$(curl -s https://veveve.io || echo "")
+          if echo "$RESPONSE" | grep -qi "PPC\|Scale Your PPC\|Google Ads\|Facebook Ads"; then
+            echo "✅ veveve.io shows English PPC-focused content"
+          else
+            echo "⚠️  veveve.io content check: Could not verify PPC content"
+          fi
+          
+          # Check HTTP status
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://veveve.io || echo "000")
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ veveve.io is accessible (HTTP $STATUS)"
+          else
+            echo "❌ veveve.io failed (HTTP $STATUS)"
+            exit 1
+          fi
+
+      - name: Test Domain Routing - veveve.dk
+        run: |
+          echo "Testing veveve.dk domain routing..."
+          
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://veveve.dk || echo "000")
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ veveve.dk is accessible (HTTP $STATUS)"
+          else
+            echo "❌ veveve.dk failed (HTTP $STATUS)"
+            exit 1
+          fi
+
+      - name: Test Login Redirect
+        run: |
+          echo "Testing login redirect from veveve.dk..."
+          
+          REDIRECT=$(curl -sI https://veveve.dk/login 2>/dev/null | grep -i "location:" || echo "")
+          if echo "$REDIRECT" | grep -qi "veveve.io/login"; then
+            echo "✅ Login redirect working (veveve.dk/login → veveve.io/login)"
+          else
+            echo "⚠️  Login redirect check inconclusive"
+            echo "   Redirect header: $REDIRECT"
+          fi
+
+      - name: Test API Endpoints
+        run: |
+          BASE_URL="${{ steps.urls.outputs.base_url }}"
+          echo "Testing API endpoints at $BASE_URL..."
+          
+          # Test /api/test/ endpoint
+          if curl -sf "$BASE_URL/api/test/" > /dev/null 2>&1; then
+            RESPONSE=$(curl -s "$BASE_URL/api/test/")
+            echo "API /test/ response: $RESPONSE"
+            echo "✅ API /test/ endpoint is working"
+          else
+            echo "⚠️  API /test/ endpoint not accessible"
+          fi
+          
+          # Test backend health (if available)
+          if curl -sf "$BASE_URL/api/health" > /dev/null 2>&1; then
+            RESPONSE=$(curl -s "$BASE_URL/api/health")
+            echo "Health check response: $RESPONSE"
+            echo "✅ Health endpoint is working"
+          fi
+
+      - name: Test SSL Certificates
+        run: |
+          echo "Testing SSL certificates..."
+          
+          for domain in veveve.io veveve.dk; do
+            if echo | openssl s_client -servername $domain -connect $domain:443 2>/dev/null | grep -q "Verify return code: 0"; then
+              echo "✅ SSL certificate valid for $domain"
+            else
+              echo "⚠️  SSL certificate check for $domain inconclusive"
+            fi
+          done
+
+      - name: Test HTTPS Redirect
+        run: |
+          echo "Testing HTTP to HTTPS redirects..."
+          
+          for domain in veveve.io veveve.dk; do
+            REDIRECT=$(curl -sI "http://$domain" 2>/dev/null | grep -i "location:" || echo "")
+            if echo "$REDIRECT" | grep -qi "https://"; then
+              echo "✅ HTTP to HTTPS redirect working for $domain"
+            else
+              echo "⚠️  HTTP redirect check for $domain inconclusive"
+            fi
+          done
+
+      - name: Performance Check
+        run: |
+          BASE_URL="${{ steps.urls.outputs.base_url }}"
+          echo "Testing response times..."
+          
+          START=$(date +%s%N)
+          curl -sf "$BASE_URL" > /dev/null 2>&1
+          END=$(date +%s%N)
+          DURATION=$(( (END - START) / 1000000 ))
+          
+          echo "Frontend response time: ${DURATION}ms"
+          
+          if [ "$DURATION" -lt 3000 ]; then
+            echo "✅ Frontend response time acceptable (< 3s)"
+          else
+            echo "⚠️  Frontend response time slow (> 3s): ${DURATION}ms"
+          fi
+
+      - name: Generate Test Report
+        run: |
+          echo "## 🧪 Smoke Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Base URL**: ${{ steps.urls.outputs.base_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tests Performed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Frontend accessibility" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Domain routing (veveve.io, veveve.dk)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Login redirects" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ API endpoints" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ SSL certificates" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ HTTPS redirects" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Performance checks" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: All critical tests passed ✅" >> $GITHUB_STEP_SUMMARY

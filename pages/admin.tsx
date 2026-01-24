@@ -10,6 +10,7 @@ import { CheckCircleIcon, PencilIcon, TrashIcon, PlusIcon, XCircleIcon, Building
 import { useRouter } from 'next/router';
 import AccountManagement from '../components/accounts/AccountManagement';
 import PipelineDashboard from '../components/pipelines/PipelineDashboard';
+import { useToast } from '../components/ui/Toast';
 
 interface Agency {
   id: number;
@@ -87,6 +88,7 @@ function Modal({ open, onClose, children, title }: { open: boolean, onClose: () 
 export default function AdminPage() {
   const { user: authUser } = useAuth();
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const [activeTab, setActiveTab] = useState('agencies');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,12 +169,16 @@ export default function AdminPage() {
       }
       
       if (response?.data) {
+        const itemType = activeTab.slice(0, -1);
+        showSuccess(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} Created`, `${itemType} created successfully!`);
         setSuccess(`${activeTab.slice(0, -1)} created successfully!`);
         setShowCreateForm(false);
         fetchData();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create item');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create item';
+      showError('Create Failed', errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -192,12 +198,16 @@ export default function AdminPage() {
       }
       
       if (response?.data) {
+        const itemType = activeTab.slice(0, -1);
+        showSuccess(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} Updated`, `${itemType} updated successfully!`);
         setSuccess(`${activeTab.slice(0, -1)} updated successfully!`);
         setEditingItem(null);
         fetchData();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update item');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update item';
+      showError('Update Failed', errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -222,14 +232,20 @@ export default function AdminPage() {
       
       // For delete operations, success means no error was returned
       if (!response?.error) {
+        const itemType = activeTab.slice(0, -1);
+        showSuccess(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} Deleted`, `${itemType} deleted successfully!`);
         setSuccess(`${activeTab.slice(0, -1)} deleted successfully!`);
         // Refresh the data to show updated list
         await fetchData();
       } else {
-        setError(response.error.message || 'Failed to delete item');
+        const errorMessage = response.error.message || 'Failed to delete item';
+        showError('Delete Failed', errorMessage);
+        setError(errorMessage);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete item');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete item';
+      showError('Delete Failed', errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -397,12 +413,15 @@ export default function AdminPage() {
                         body: JSON.stringify({ email: inviteEmail, companyName: inviteCompany })
                       });
                       if (!resp.ok) throw new Error('Failed to send invite');
+                      showSuccess('Invite Sent', `Invitation sent to ${inviteEmail}`);
                       setSuccess('Invitation sent');
                       setInviteOpen(false);
                       setInviteEmail('');
                       setInviteCompany('');
                     } catch (err: any) {
-                      setError(err.message || 'Failed to send invite');
+                      const errorMessage = err.message || 'Failed to send invite';
+                      showError('Invite Failed', errorMessage);
+                      setError(errorMessage);
                     }
                   }}
                   className="space-y-4"

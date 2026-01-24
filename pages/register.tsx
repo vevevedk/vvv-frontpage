@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '../lib/auth/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import { useToast } from '../components/ui/Toast';
 
 interface RegisterFormData {
   email: string;
@@ -38,6 +39,7 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null);
   const { register, isLoading } = useAuth();
   const router = useRouter();
+  const { showSuccess, showError, showWarning } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -64,14 +66,18 @@ export default function Register() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      const errorMsg = 'Passwords do not match';
+      setError(errorMsg);
+      showWarning('Validation Error', errorMsg);
       return;
     }
 
     // Validate password strength
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(formData.password)) {
-      setError('Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character');
+      const errorMsg = 'Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character';
+      setError(errorMsg);
+      showWarning('Password Requirements', errorMsg);
       return;
     }
 
@@ -84,9 +90,14 @@ export default function Register() {
         ...registerData,
         role,
       });
-      router.push('/dashboard');
+      showSuccess('Account Created!', 'Your account has been successfully created. Redirecting to dashboard...');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during registration');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during registration';
+      setError(errorMessage);
+      showError('Registration Failed', errorMessage);
     }
   };
 

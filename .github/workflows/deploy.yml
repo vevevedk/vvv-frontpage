@@ -109,6 +109,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://veveve.io
     
     steps:
       - name: Checkout code
@@ -209,33 +212,54 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy
     if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
     continue-on-error: true  # Don't fail the workflow if health check fails
     
     steps:
       - name: Wait for services to start
         run: sleep 30
 
-      - name: Check frontend health
+      - name: Check veveve.io frontend health
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://veveve.io/ 2>/dev/null || echo "000")
+          if [ "$status" = "200" ]; then
+            echo "✅ veveve.io frontend is healthy (HTTP $status)"
+          else
+            echo "⚠️ veveve.io frontend health check failed (HTTP $status)"
+            exit 0  # Don't fail, just warn
+          fi
+
+      - name: Check veveve.dk frontend health
         run: |
           status=$(curl -s -o /dev/null -w "%{http_code}" https://veveve.dk/ 2>/dev/null || echo "000")
           if [ "$status" = "200" ]; then
-            echo "✅ Frontend is healthy (HTTP $status)"
+            echo "✅ veveve.dk frontend is healthy (HTTP $status)"
           else
-            echo "⚠️ Frontend health check failed (HTTP $status)"
-            echo "   This is expected if DNS/SSL isn't configured yet"
-            echo "   Check services on server: docker-compose ps"
+            echo "⚠️ veveve.dk frontend health check failed (HTTP $status)"
             exit 0  # Don't fail, just warn
           fi
 
       - name: Check API health
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" https://veveve.dk/api/health 2>/dev/null || echo "000")
+          status=$(curl -s -o /dev/null -w "%{http_code}" https://veveve.io/api/test/ 2>/dev/null || echo "000")
           if [ "$status" = "200" ]; then
             echo "✅ API is healthy (HTTP $status)"
           else
             echo "⚠️ API health check failed (HTTP $status)"
-            echo "   This is expected if DNS/SSL isn't configured yet"
-            echo "   Check services on server: docker-compose ps"
             exit 0  # Don't fail, just warn
           fi
 
+      - name: Check domain routing
+        run: |
+          # Check veveve.io shows English content
+          if curl -sf https://veveve.io | grep -qi "PPC\|Scale Your PPC"; then
+            echo "✅ veveve.io shows English PPC content"
+          else
+            echo "⚠️ veveve.io content check inconclusive"
+          fi
+          
+          # Check veveve.dk is accessible
+          if curl -sf https://veveve.dk > /dev/null; then
+            echo "✅ veveve.dk is accessible"
+          fi
