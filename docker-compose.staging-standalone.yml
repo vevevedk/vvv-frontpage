@@ -1,0 +1,86 @@
+version: '3.8'
+
+# Standalone staging docker-compose - completely isolated from production
+# Uses different ports, volumes, and network to avoid conflicts
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: vvv_database_staging
+      POSTGRES_USER: vvv_user
+      POSTGRES_PASSWORD: Yo6g/LhuoAvQHd24QwhhmiQ5q7TGPc1HfA7Y7RB3gUE=
+    volumes:
+      - staging_postgres_data:/var/lib/postgresql/data
+    networks:
+      - staging_network
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - staging_redis_data:/data
+    networks:
+      - staging_network
+
+  backend:
+    image: ghcr.io/vevevedk/vvv-backend:staging-latest
+    working_dir: /app/backend
+    command: gunicorn api.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300 --keep-alive 2
+    env_file:
+      - ./env/backend.staging.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=api.settings.prod
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8002:8000"  # Staging backend on port 8002
+    networks:
+      - staging_network
+
+  worker:
+    image: ghcr.io/vevevedk/vvv-backend:staging-latest
+    working_dir: /app/backend
+    command: celery -A api worker -l info
+    env_file:
+      - ./env/backend.staging.env
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - staging_network
+
+  beat:
+    image: ghcr.io/vevevedk/vvv-backend:staging-latest
+    working_dir: /app/backend
+    command: celery -A api beat -l info
+    env_file:
+      - ./env/backend.staging.env
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - staging_network
+
+  frontend:
+    image: ghcr.io/vevevedk/vvv-frontend:staging-latest
+    env_file:
+      - ./env/frontend.staging.env
+    environment:
+      - NODE_ENV=production
+      - DJANGO_API_URL=http://backend:8000/api
+    depends_on:
+      - backend
+      - redis
+    ports:
+      - "3001:3000"  # Staging frontend on port 3001
+    networks:
+      - staging_network
+
+volumes:
+  staging_postgres_data:
+  staging_redis_data:
+
+networks:
+  staging_network:
+    driver: bridge
