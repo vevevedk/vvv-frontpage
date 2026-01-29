@@ -94,4 +94,8 @@ model Conversion {
   page_view   PageView @relation(fields: [pageViewId], references: [id])
   pageViewId  String
   created_at  DateTime @default(now())
-} 
+}
+
+// Boutique agency lead capture (veveve.dk)
+// NOTE: Leads are stored via `lib/db.ts` in a dedicated `leads` table (see `db/migrations/007_create_leads_table.sql`).
+// We intentionally do NOT manage it via Prisma because this project shares a database with Django tables in many setups.

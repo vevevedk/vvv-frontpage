@@ -1,93 +1,37 @@
-import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import IoLayout from "../../components/io/IoLayout";
+import { appHref } from "../../lib/io/appLinks";
 
 /**
  * veveve.io - English Frontpage
  * International platform for scaling paid marketing efforts
  */
 export default function VeveveIOHome() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
-    <>
-      <Head>
-        <title>Veveve - Scale Your PPC Ads Globally | International PPC Agency</title>
-        <meta 
-          name="description" 
-          content="Scale your PPC ads globally without scaling your team. Expert Google Ads, Facebook Ads, and LinkedIn Ads management. AI-powered optimization and automation for international campaigns." 
-        />
-        <meta 
-          name="keywords" 
-          content="PPC ads, Google Ads, Facebook Ads, LinkedIn Ads, PPC management, PPC agency, scale PPC, PPC optimization, paid search, international PPC" 
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta property="og:title" content="Veveve - Scale Your PPC Ads Globally | International PPC Agency" />
-        <meta property="og:description" content="Scale your PPC ads globally without scaling your team. Expert Google Ads, Facebook Ads, and LinkedIn Ads management." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://veveve.io" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <div className="min-h-screen bg-white">
-        {/* Navigation */}
-        <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <span className="text-2xl font-bold" style={{ color: '#0066CC' }}>
-                  veveve
-                </span>
-                <span className="text-sm text-gray-500 ml-1">.io</span>
-              </div>
-              <div className="hidden md:flex items-center space-x-8">
-                <a href="#features" className="text-gray-700 hover:text-blue-600 transition-colors">
-                  Features
-                </a>
-                <a href="#benefits" className="text-gray-700 hover:text-blue-600 transition-colors">
-                  Benefits
-                </a>
-                <Link 
-                  href="/login" 
-                  className="text-gray-700 hover:text-blue-600 transition-colors"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Start Free Trial
-                </Link>
-              </div>
-            </div>
-          </div>
-        </nav>
-
+    <IoLayout
+      title="Veveve — Scale Your PPC Ads Globally | Agentic PPC Automation"
+      description="Scale PPC internationally without scaling headcount. Agentic AI systems for autonomous optimization with human-in-the-loop controls."
+    >
         {/* Hero Section */}
         <section className="relative bg-gradient-to-br from-blue-50 via-white to-teal-50 py-20 lg:py-32">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-                Scale Your PPC Ads Globally
+                Scale PPC globally
                 <br />
                 <span className="text-blue-600">Without Scaling Your Team</span>
               </h1>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-                Expert Google Ads, Facebook Ads, and LinkedIn Ads management. AI-powered optimization and automation 
-                to scale your PPC campaigns internationally—without hiring more marketers.
+                Agentic systems monitor performance, propose actions, and execute within your guardrails—so you scale
+                international PPC campaigns faster and safer.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/register"
+                <a
+                  href={appHref("/register")}
                   className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
                 >
                   Start Free Trial
-                </Link>
+                </a>
                 <a
                   href="#features"
                   className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold border-2 border-blue-600 hover:bg-blue-50 transition-colors"
@@ -225,60 +169,21 @@ export default function VeveveIOHome() {
               Join businesses scaling their Google Ads, Facebook Ads, and LinkedIn Ads globally without scaling their teams.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/register"
+              <a
+                href={appHref("/register")}
                 className="bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
               >
                 Start Free Trial
-              </Link>
-              <Link
-                href="/login"
+              </a>
+              <a
+                href={appHref("/login")}
                 className="bg-transparent text-white px-8 py-4 rounded-lg text-lg font-semibold border-2 border-white hover:bg-white/10 transition-colors"
               >
                 Login to Your Account
-              </Link>
+              </a>
             </div>
           </div>
         </section>
-
-        {/* Footer */}
-        <footer className="bg-gray-900 text-white py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-4 gap-8">
-              <div>
-                <div className="text-2xl font-bold mb-4">veveve.io</div>
-                <p className="text-gray-400">
-                  International PPC agency specializing in scaling Google Ads, Facebook Ads, and LinkedIn Ads campaigns globally.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-4">Product</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                  <li><a href="#benefits" className="hover:text-white transition-colors">Benefits</a></li>
-                  <li><Link href="/login" className="hover:text-white transition-colors">Login</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-4">Company</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="https://veveve.dk" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">About Us</a></li>
-                  <li><a href="https://veveve.dk#contact" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Contact</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-4">Support</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="mailto:hello@veveve.dk" className="hover:text-white transition-colors">hello@veveve.dk</a></li>
-                </ul>
-              </div>
-            </div>
-            <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-              <p>&copy; {new Date().getFullYear()} Veveve. All rights reserved.</p>
-            </div>
-          </div>
-        </footer>
-      </div>
-    </>
+    </IoLayout>
   );
 }

@@ -70,6 +70,24 @@ interface UserForm extends Partial<User> {
   company_ids?: number[];
 }
 
+interface Lead {
+  id: string;
+  created_at: string;
+  status: string;
+  score: number;
+  company: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  goal?: string | null;
+  budget?: string | null;
+  timeline?: string | null;
+  channels?: string[];
+  message: string;
+  assigned_to?: string | null;
+  notes?: string | null;
+}
+
 function Modal({ open, onClose, children, title }: { open: boolean, onClose: () => void, children: React.ReactNode, title: string }) {
   if (!open) return null;
   return (
@@ -98,6 +116,12 @@ export default function AdminPage() {
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [leadStatusFilter, setLeadStatusFilter] = useState<string>('');
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [leadDraftAssignedTo, setLeadDraftAssignedTo] = useState<string>('');
+  const [leadDraftNotes, setLeadDraftNotes] = useState<string>('');
   
   // Form states
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -113,13 +137,69 @@ export default function AdminPage() {
   // Set active tab based on URL query
   useEffect(() => {
     const tab = router.query.tab as string;
-    if (tab && ['agencies', 'companies', 'users', 'accounts', 'pipelines'].includes(tab)) {
+    if (tab && ['agencies', 'companies', 'users', 'accounts', 'pipelines', 'leads'].includes(tab)) {
       setActiveTab(tab);
     } else {
       // Default to agencies if no tab parameter or invalid tab
       setActiveTab('agencies');
     }
   }, [router.query.tab]);
+
+  const fetchLeads = async (opts?: { status?: string }) => {
+    setLeadsLoading(true);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (!token) {
+        throw new Error('Missing access token (login required)');
+      }
+      const status = opts?.status ?? leadStatusFilter;
+      const qs = new URLSearchParams();
+      qs.set('limit', '100');
+      if (status) qs.set('status', status);
+      const resp = await fetch(`/api/leads?${qs.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(text || 'Failed to load leads');
+      }
+      const json = await resp.json();
+      setLeads(json.leads || []);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to load leads';
+      showError('Leads', msg);
+      setError(msg);
+    } finally {
+      setLeadsLoading(false);
+    }
+  };
+
+  const updateLead = async (payload: { id: string; status?: string; assigned_to?: string | null; notes?: string | null }) => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (!token) throw new Error('Missing access token (login required)');
+      const resp = await fetch('/api/leads', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(text || 'Failed to update lead');
+      }
+      showSuccess('Lead updated', `Saved changes`);
+      await fetchLeads();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update lead';
+      showError('Lead update failed', msg);
+      setError(msg);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -152,6 +232,18 @@ export default function AdminPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'leads') {
+      fetchLeads();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!selectedLead) return;
+    setLeadDraftAssignedTo(selectedLead.assigned_to || '');
+    setLeadDraftNotes(selectedLead.notes || '');
+  }, [selectedLead]);
 
   const handleCreate = async (data: any) => {
     try {
@@ -758,6 +850,247 @@ export default function AdminPage() {
               {/* Accounts Tab */}
               {activeTab === 'accounts' && (
                 <AccountManagement />
+              )}
+
+              {/* Leads Tab */}
+              {activeTab === 'leads' && (
+                <div className="bg-white shadow-sm rounded-custom border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-text">Leads</h3>
+                      <p className="text-sm text-gray-600">Inbound leads from veveve.dk kontaktformular</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm text-gray-600">
+                        Status
+                        <select
+                          value={leadStatusFilter}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setLeadStatusFilter(next);
+                            fetchLeads({ status: next });
+                          }}
+                          className="ml-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                        >
+                          <option value="">Alle</option>
+                          <option value="new">new</option>
+                          <option value="contacted">contacted</option>
+                          <option value="qualified">qualified</option>
+                          <option value="won">won</option>
+                          <option value="not_a_fit">not_a_fit</option>
+                        </select>
+                      </label>
+                      <button
+                        onClick={() => fetchLeads()}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+
+                  {leadsLoading ? (
+                    <div className="p-6">
+                      <LoadingSpinner size="lg" />
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {leads.map((lead) => (
+                            <tr key={lead.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {new Date(lead.created_at).toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-text">{lead.company}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                <div className="font-semibold">{lead.name}</div>
+                                <div>
+                                  <a className="text-primary hover:text-primary-dark" href={`mailto:${lead.email}`}>
+                                    {lead.email}
+                                  </a>
+                                </div>
+                                {lead.phone && (
+                                  <div>
+                                    <a className="text-primary hover:text-primary-dark" href={`tel:${lead.phone}`}>
+                                      {lead.phone}
+                                    </a>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  {lead.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {lead.assigned_to ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {lead.assigned_to}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">—</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{lead.score}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700 max-w-md">
+                                <div className="line-clamp-3">{lead.message}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <button
+                                  onClick={() => setSelectedLead(lead)}
+                                  className="inline-flex items-center px-3 py-1 rounded-md text-gray-700 hover:bg-gray-100"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => updateLead({ id: lead.id, status: 'contacted' })}
+                                  className="inline-flex items-center px-3 py-1 rounded-md text-primary hover:bg-primary/10"
+                                >
+                                  Contacted
+                                </button>
+                                <button
+                                  onClick={() => updateLead({ id: lead.id, status: 'qualified' })}
+                                  className="inline-flex items-center px-3 py-1 rounded-md text-green-700 hover:bg-green-100"
+                                >
+                                  Qualified
+                                </button>
+                                <button
+                                  onClick={() => updateLead({ id: lead.id, status: 'not_a_fit' })}
+                                  className="inline-flex items-center px-3 py-1 rounded-md text-red-600 hover:bg-red-100"
+                                >
+                                  Not a fit
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {leads.length === 0 && (
+                            <tr>
+                              <td className="px-6 py-10 text-center text-sm text-gray-500" colSpan={8}>
+                                No leads yet.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Lead detail drawer */}
+              {selectedLead && (
+                <div className="fixed inset-0 z-50">
+                  <div
+                    className="absolute inset-0 bg-black/40"
+                    onClick={() => setSelectedLead(null)}
+                  />
+                  <div className="absolute right-0 top-0 h-full w-full max-w-xl bg-white shadow-2xl overflow-y-auto">
+                    <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-gray-500">Lead</div>
+                        <div className="text-xl font-bold text-text">{selectedLead.company}</div>
+                        <div className="text-sm text-gray-600">
+                          {selectedLead.name} ·{" "}
+                          <a className="text-primary hover:text-primary-dark" href={`mailto:${selectedLead.email}`}>
+                            {selectedLead.email}
+                          </a>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSelectedLead(null)}
+                        className="px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    <div className="p-6 space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="rounded-lg bg-gray-50 p-4">
+                          <div className="text-xs font-semibold uppercase text-gray-500">Status</div>
+                          <div className="mt-1 text-sm font-semibold text-gray-900">{selectedLead.status}</div>
+                        </div>
+                        <div className="rounded-lg bg-gray-50 p-4">
+                          <div className="text-xs font-semibold uppercase text-gray-500">Score</div>
+                          <div className="mt-1 text-sm font-semibold text-gray-900">{selectedLead.score}</div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-gray-200 p-4">
+                        <div className="text-xs font-semibold uppercase text-gray-500">Besked</div>
+                        <div className="mt-2 whitespace-pre-wrap text-sm text-gray-800">
+                          {selectedLead.message}
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+                        <div className="text-xs font-semibold uppercase text-gray-500">Triage</div>
+                        <label className="block text-sm">
+                          <span className="font-semibold text-gray-900">Assigned to</span>
+                          <input
+                            value={leadDraftAssignedTo}
+                            onChange={(e) => setLeadDraftAssignedTo(e.target.value)}
+                            placeholder="andreas@veveve.dk"
+                            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                          />
+                        </label>
+                        <label className="block text-sm">
+                          <span className="font-semibold text-gray-900">Notes</span>
+                          <textarea
+                            value={leadDraftNotes}
+                            onChange={(e) => setLeadDraftNotes(e.target.value)}
+                            rows={6}
+                            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                          />
+                        </label>
+
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {['new', 'contacted', 'qualified', 'won', 'not_a_fit'].map((st) => (
+                            <button
+                              key={st}
+                              onClick={() => updateLead({ id: selectedLead.id, status: st })}
+                              className="px-3 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50"
+                            >
+                              Set {st}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-3">
+                          <div className="text-xs text-gray-500">ID: {selectedLead.id}</div>
+                          <button
+                            onClick={async () => {
+                              await updateLead({
+                                id: selectedLead.id,
+                                assigned_to: leadDraftAssignedTo ? leadDraftAssignedTo : null,
+                                notes: leadDraftNotes ? leadDraftNotes : null,
+                              });
+                              setSelectedLead(null);
+                            }}
+                            className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary-dark"
+                          >
+                            Save notes/assignment
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* Modals */}

@@ -18,7 +18,7 @@ This guide explains how to set up a staging environment for testing changes befo
 - **Frontend Port**: `3001` (production uses `3000`)
 - **Backend Port**: `8002` (production uses `8001`)
 - **Docker Images**: Tagged with `staging-latest` and `staging-<sha>`
-- **Subdomain**: `staging.veveve.io` (optional, can test via IP:port)
+- **Subdomain**: `staging.veveve.dk` (recommended for Sprint 3 review)
 
 ### Production Environment
 - **Directory**: `/var/www/vvv-frontpage`
@@ -75,11 +75,11 @@ cp /var/www/vvv-frontpage/env/frontend.env env/frontend.staging.env
 
 # Edit staging-specific values
 nano env/backend.staging.env
-# Update ALLOWED_HOSTS to include staging.veveve.io
-# Update CORS_ALLOWED_ORIGINS to include https://staging.veveve.io
+# Update ALLOWED_HOSTS to include staging.veveve.dk (and/or staging.veveve.io if you use it)
+# Update CORS_ALLOWED_ORIGINS to include https://staging.veveve.dk
 
 nano env/frontend.staging.env
-# Update NEXT_PUBLIC_APP_URL to https://staging.veveve.io
+# Update NEXT_PUBLIC_APP_URL to https://staging.veveve.dk
 # Update NEXT_PUBLIC_API_URL to /api (relative)
 ```
 
@@ -106,24 +106,24 @@ services:
 ### 6. Configure Staging Subdomain (Optional)
 
 **In DigitalOcean DNS**:
-- Add A record: `staging` → `143.198.105.78`
+- Add A record: `staging.veveve.dk` → `143.198.105.78`
 
 **In Nginx** (on server):
 ```bash
 # Create staging Nginx config
-sudo cp /var/www/vvv-frontpage-staging/deploy/veveve-io.conf /etc/nginx/sites-available/staging-veveve-io
-sudo nano /etc/nginx/sites-available/staging-veveve-io
-# Update server_name to staging.veveve.io
+sudo cp /var/www/vvv-frontpage-staging/deploy/vvv-frontpage-v02.conf /etc/nginx/sites-available/staging-veveve-dk
+sudo nano /etc/nginx/sites-available/staging-veveve-dk
+# Update server_name to staging.veveve.dk
 # Update proxy_pass ports to 3001 and 8002
 # Update SSL certificate paths if using separate cert
 
 # Enable staging site
-sudo ln -s /etc/nginx/sites-available/staging-veveve-io /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/staging-veveve-dk /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
 # Get SSL certificate for staging
-sudo certbot --nginx -d staging.veveve.io
+sudo certbot --nginx -d staging.veveve.dk
 ```
 
 ---
@@ -159,6 +159,7 @@ sudo certbot --nginx -d staging.veveve.io
    - Check GitHub Actions workflow results
    - Visit `https://staging.veveve.io` (if configured)
    - Or test via server IP:port
+ - For Sprint 3 reviews, prefer `https://staging.veveve.dk`
 
 ### Staging → Production
 

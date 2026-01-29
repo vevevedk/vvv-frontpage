@@ -73,7 +73,7 @@ services:
       - backend
       - redis
     ports:
-      - "3001:3000"  # Staging frontend on port 3001
+      - "3002:3000"  # Staging frontend on port 3002
     networks:
       - staging_network
 

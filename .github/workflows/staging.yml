@@ -27,6 +27,7 @@ env:
   BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/vvv-backend
   FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/vvv-frontend
   STAGING_TAG: staging-${{ github.sha }}
+  STAGING_URL: https://staging.veveve.dk
 
 jobs:
   build-and-push:
@@ -99,7 +100,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_STAGING || '/api' }}
-            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL_STAGING || 'https://staging.veveve.io' }}
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL_STAGING || env.STAGING_URL }}
 
   deploy-staging:
     name: Deploy to Staging
@@ -107,7 +108,7 @@ jobs:
     needs: build-and-push
     environment:
       name: staging
-      url: https://staging.veveve.io
+      url: ${{ env.STAGING_URL }}
     
     steps:
       - name: Checkout code
@@ -210,30 +211,40 @@ jobs:
       - name: Wait for services to be ready
         run: sleep 30
 
-      - name: Test Staging Frontend (veveve.io)
+      - name: Test Staging Frontend (staging.veveve.dk)
         run: |
           echo "Testing staging frontend..."
-          # Test if staging.veveve.io is configured, otherwise test via IP:port
-          if curl -sf https://staging.veveve.io > /dev/null 2>&1; then
-            status=$(curl -s -o /dev/null -w "%{http_code}" https://staging.veveve.io)
+          # Prefer staging.veveve.dk; fall back to staging.veveve.io if needed.
+          if curl -sf ${{ env.STAGING_URL }} > /dev/null 2>&1; then
+            status=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.STAGING_URL }})
             echo "Frontend status: $status"
             if [ "$status" != "200" ]; then
               echo "❌ Frontend health check failed (HTTP $status)"
               exit 1
             fi
             echo "✅ Frontend is healthy"
+          elif curl -sf https://staging.veveve.io > /dev/null 2>&1; then
+            status=$(curl -s -o /dev/null -w "%{http_code}" https://staging.veveve.io)
+            echo "Frontend status (fallback staging.veveve.io): $status"
+            if [ "$status" != "200" ]; then
+              echo "❌ Frontend health check failed (HTTP $status)"
+              exit 1
+            fi
+            echo "✅ Frontend is healthy"
           else
-            # Test via direct port (if staging subdomain not configured)
-            echo "⚠️  staging.veveve.io not configured, testing via server IP"
-            echo "   (This is expected if staging subdomain isn't set up yet)"
+            echo "⚠️  No staging domain configured/reachable; skipping domain-based frontend check"
           fi
 
       - name: Test Staging API
         run: |
           echo "Testing staging API..."
-          if curl -sf https://staging.veveve.io/api/test/ > /dev/null 2>&1; then
-            response=$(curl -s https://staging.veveve.io/api/test/)
+          if curl -sf ${{ env.STAGING_URL }}/api/test/ > /dev/null 2>&1; then
+            response=$(curl -s ${{ env.STAGING_URL }}/api/test/)
             echo "API response: $response"
+            echo "✅ API is responding"
+          elif curl -sf https://staging.veveve.io/api/test/ > /dev/null 2>&1; then
+            response=$(curl -s https://staging.veveve.io/api/test/)
+            echo "API response (fallback staging.veveve.io): $response"
             echo "✅ API is responding"
           else
             echo "⚠️  API test skipped (staging subdomain may not be configured)"
@@ -275,9 +286,13 @@ jobs:
         run: |
           echo "Testing backend health endpoint..."
           # Test via staging if available, otherwise production
-          if curl -sf https://staging.veveve.io/api/test/ > /dev/null 2>&1; then
-            response=$(curl -s https://staging.veveve.io/api/test/)
+          if curl -sf ${{ env.STAGING_URL }}/api/test/ > /dev/null 2>&1; then
+            response=$(curl -s ${{ env.STAGING_URL }}/api/test/)
             echo "Backend response: $response"
+            echo "✅ Backend is healthy"
+          elif curl -sf https://staging.veveve.io/api/test/ > /dev/null 2>&1; then
+            response=$(curl -s https://staging.veveve.io/api/test/)
+            echo "Backend response (fallback staging.veveve.io): $response"
             echo "✅ Backend is healthy"
           elif curl -sf https://veveve.io/api/test/ > /dev/null 2>&1; then
             response=$(curl -s https://veveve.io/api/test/)
