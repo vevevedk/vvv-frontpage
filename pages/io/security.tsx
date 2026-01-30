@@ -20,7 +20,7 @@ export default function IoSecurityPage() {
                 View plans
               </Link>
               <a
-                href="mailto:hello@veveve.dk?subject=Veveve%20security%20question"
+                href="mailto:hello@veveve.io?subject=Veveve%20security%20question"
                 className="bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-lg font-semibold"
               >
                 Ask a security question
@@ -72,7 +72,7 @@ export default function IoSecurityPage() {
               <ul className="space-y-2 text-gray-700">
                 <li>Data minimization principles</li>
                 <li>Clear separation between marketing site and platform data</li>
-                <li>GDPR-ready communication (final legal copy pending)</li>
+                <li>GDPR-ready communication and consent management</li>
                 <li>Documented data flows and retention guidelines (plan-dependent)</li>
               </ul>
             </div>
@@ -121,8 +121,8 @@ export default function IoSecurityPage() {
                 <div className="font-semibold mb-1">Do you have a security contact?</div>
                 <div className="text-gray-600">
                   Email{" "}
-                  <a className="text-blue-600 hover:underline" href="mailto:hello@veveve.dk">
-                    hello@veveve.dk
+                  <a className="text-blue-600 hover:underline" href="mailto:hello@veveve.io">
+                    hello@veveve.io
                   </a>{" "}
                   and we’ll route it to the right person.
                 </div>
@@ -130,8 +130,7 @@ export default function IoSecurityPage() {
               <div>
                 <div className="font-semibold mb-1">How do you handle privacy/GDPR?</div>
                 <div className="text-gray-600">
-                  We aim for data minimization and clear data flows. Formal legal copy and cookie consent details are
-                  finalized during Sprint 2/3.
+                  We aim for data minimization and clear data flows with GDPR-compliant consent management.
                 </div>
               </div>
             </div>

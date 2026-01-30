@@ -56,8 +56,7 @@ export default function IoCaseStudiesIndexPage() {
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Case studies</h1>
             <p className="text-xl text-gray-600">
-              Outcomes-first stories that show how agentic systems help performance teams scale internationally. These are
-              templates—swap with real customers, quotes, and verified metrics during Sprint 2.
+              Outcomes-first stories that show how agentic systems help performance teams scale internationally.
             </p>
           </div>
         </div>

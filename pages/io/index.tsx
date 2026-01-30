@@ -51,7 +51,7 @@ export default function VeveveIOHome() {
                 Everything You Need to Scale PPC Ads
               </h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Powerful tools to manage, optimize, and scale your Google Ads, Facebook Ads, and LinkedIn Ads campaigns
+                Powerful tools to manage, optimize, and scale your Google Ads, Meta Ads, and LinkedIn Ads campaigns
               </p>
             </div>
 
@@ -67,7 +67,7 @@ export default function VeveveIOHome() {
                   Multi-Channel PPC Management
                 </h3>
                 <p className="text-gray-600">
-                  Manage Google Ads, Facebook Ads, LinkedIn Ads, and Microsoft Ads from one unified dashboard. See all your PPC performance in real-time.
+                  Manage Google Ads, Meta Ads, LinkedIn Ads, and Microsoft Ads from one unified dashboard. See all your PPC performance in real-time.
                 </p>
               </div>
 
@@ -97,7 +97,7 @@ export default function VeveveIOHome() {
                   PPC Analytics & Reporting
                 </h3>
                 <p className="text-gray-600">
-                  Real-time ROAS tracking, conversion attribution, and automated PPC reports. Get insights on Google Ads, Facebook Ads, and LinkedIn Ads performance.
+                  Real-time ROAS tracking, conversion attribution, and automated PPC reports. Get insights on Google Ads, Meta Ads, and LinkedIn Ads performance.
                 </p>
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function VeveveIOHome() {
               Ready to Scale Your PPC Ads?
             </h2>
             <p className="text-xl mb-8 text-blue-100">
-              Join businesses scaling their Google Ads, Facebook Ads, and LinkedIn Ads globally without scaling their teams.
+              Join businesses scaling their Google Ads, Meta Ads, and LinkedIn Ads globally without scaling their teams.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a

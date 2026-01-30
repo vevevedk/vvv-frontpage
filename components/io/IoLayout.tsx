@@ -115,8 +115,8 @@ export default function IoLayout({ title, description, children }: IoLayoutProps
                 <h4 className="font-semibold mb-4">Support</h4>
                 <ul className="space-y-2 text-gray-400">
                   <li>
-                    <a href="mailto:hello@veveve.dk" className="hover:text-white transition-colors">
-                      hello@veveve.dk
+                    <a href="mailto:hello@veveve.io" className="hover:text-white transition-colors">
+                      hello@veveve.io
                     </a>
                   </li>
                 </ul>

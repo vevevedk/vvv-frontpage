@@ -12,7 +12,7 @@ export default function IoProductPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Agentic systems for PPC teams
+              Scale PPC globally without scaling your team
             </h1>
             <p className="text-xl text-gray-600 mb-8">
               Autonomous agents monitor performance, propose actions, and execute within your guardrails—so you scale
@@ -194,8 +194,7 @@ export default function IoProductPage() {
                 expand as your team standardizes workflows.
               </p>
               <div className="mt-6 text-sm text-gray-500">
-                Note: exact integration coverage depends on configuration and plan. Final list is refined during Sprint
-                2/3.
+                Note: exact integration coverage depends on configuration and plan.
               </div>
             </div>
             <div className="bg-white rounded-2xl p-8 border border-gray-200">

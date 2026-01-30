@@ -51,7 +51,7 @@ const TIERS: Tier[] = [
       "Security reviews and SLAs",
     ],
     ctaText: "Book a demo",
-    ctaHref: "mailto:hello@veveve.dk?subject=Veveve%20demo%20request",
+    ctaHref: "mailto:hello@veveve.io?subject=Veveve%20demo%20request",
   },
 ];
 
@@ -133,8 +133,8 @@ export default function IoPricingPage() {
                 {tier.name === "Enterprise" ? (
                   <div className="text-sm text-gray-500 mt-3">
                     Prefer email?{" "}
-                    <a className="text-blue-600 hover:underline" href="mailto:hello@veveve.dk">
-                      hello@veveve.dk
+                    <a className="text-blue-600 hover:underline" href="mailto:hello@veveve.io">
+                      hello@veveve.io
                     </a>
                   </div>
                 ) : null}
@@ -208,7 +208,7 @@ export default function IoPricingPage() {
                   Start Free Trial
                 </a>
                 <a
-                  href="mailto:hello@veveve.dk?subject=Veveve%20pricing%20question"
+                  href="mailto:hello@veveve.io?subject=Veveve%20pricing%20question"
                   className="border-2 border-white px-6 py-3 rounded-lg font-semibold"
                 >
                   Ask a question
