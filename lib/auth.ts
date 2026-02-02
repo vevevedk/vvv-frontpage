@@ -52,18 +52,42 @@ interface TokenPayload {
   exp?: number;
 }
 
+// Django SimpleJWT token payload structure
+interface DjangoTokenPayload {
+  token_type: string;
+  exp: number;
+  iat: number;
+  jti: string;
+  user_id: number;
+}
+
 export async function verifyToken(token: string): Promise<AuthRequest['user'] | null> {
   try {
-    // Try process.env.JWT_SECRET first
-    const envSecret = process.env.JWT_SECRET;
-    if (envSecret) {
-      const decoded = jwt.verify(token, envSecret) as AuthRequest['user'];
-      return decoded;
+    const secret = process.env.JWT_SECRET || JWT_SECRET;
+    const decoded = jwt.verify(token, secret) as TokenPayload | DjangoTokenPayload;
+
+    // Check if it's a Django SimpleJWT token (has user_id)
+    if ('user_id' in decoded) {
+      // Query the database to get user info
+      const { queryWithRetry } = await import('./db');
+      const result = await queryWithRetry<{ email: string; role: string }>(
+        'SELECT email, role FROM users WHERE id = $1',
+        [decoded.user_id]
+      );
+
+      if (result.rows.length === 0) {
+        console.error('User not found for user_id:', decoded.user_id);
+        return null;
+      }
+
+      return {
+        email: result.rows[0].email,
+        role: result.rows[0].role,
+      };
     }
-    
-    // Fallback to JWT_SECRET constant
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthRequest['user'];
-    return decoded;
+
+    // Standard token with email and role
+    return decoded as AuthRequest['user'];
   } catch (error) {
     console.error('Token verification failed:', error);
     return null;
