@@ -106,12 +106,10 @@ export default function CustomerAcquisition() {
 
   const fetchClients = async () => {
     try {
-      const response = await api.get('/api/woocommerce/configs');
+      // Fetch actual client names from orders instead of config names
+      const response = await api.get('/api/woocommerce/orders/client_names/');
       if (response.data && Array.isArray(response.data)) {
-        setClients(response.data.map((config: any) => ({
-          id: config.account?.name || config.name,
-          name: config.account?.name || config.name
-        })));
+        setClients(response.data);
       }
     } catch (err) {
       console.error('Failed to fetch clients:', err);
