@@ -113,7 +113,7 @@ export default function AnalyticsDashboard() {
   const fetchClients = async () => {
     try {
       // Fetch actual client names from orders instead of config names
-      const response = await api.get('/api/woocommerce/orders/client_names/');
+      const response = await api.get('/woocommerce/orders/client_names/');
       if (response.data && Array.isArray(response.data)) {
         setClients(response.data);
       }

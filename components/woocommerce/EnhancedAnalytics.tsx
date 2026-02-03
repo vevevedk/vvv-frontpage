@@ -146,7 +146,7 @@ export default function EnhancedAnalytics() {
         ...(clientName && { client_name: clientName })
       });
       
-      const response = await api.get(`/api/woocommerce/orders/enhanced_analytics/?${params}`);
+      const response = await api.get(`/woocommerce/orders/enhanced_analytics/?${params}`);
       setAnalytics(response.data as EnhancedAnalyticsData);
     } catch (err) {
       setError('Failed to fetch enhanced analytics');
@@ -163,7 +163,7 @@ export default function EnhancedAnalytics() {
         ...(clientName && { client_name: clientName })
       });
       
-      const response = await api.get(`/api/woocommerce/orders/customer_segmentation/?${params}`);
+      const response = await api.get(`/woocommerce/orders/customer_segmentation/?${params}`);
       setSegmentation(response.data as CustomerSegmentationData);
     } catch (err) {
       console.error('Error fetching customer segmentation:', err);

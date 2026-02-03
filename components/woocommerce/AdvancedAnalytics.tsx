@@ -104,7 +104,7 @@ export default function AdvancedAnalytics() {
   const fetchClients = async () => {
     try {
       // Fetch actual client names from orders instead of config names
-      const response = await api.get('/api/woocommerce/orders/client_names/');
+      const response = await api.get('/woocommerce/orders/client_names/');
       if (response.data && Array.isArray(response.data)) {
         setClients(response.data);
       }
@@ -122,7 +122,7 @@ export default function AdvancedAnalytics() {
       }
       
       // For now, we'll use the existing analytics endpoint and enhance the data
-      const response = await api.get(`/api/woocommerce/orders/analytics?${params}`);
+      const response = await api.get(`/woocommerce/orders/analytics?${params}`);
       if (response.data && typeof response.data === 'object') {
         const data = response.data as any;
         // Enhance the data with additional metrics
