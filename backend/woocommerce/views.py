@@ -120,7 +120,7 @@ class WooCommerceJobViewSet(viewsets.ReadOnlyModelViewSet):
         if request:
             client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
             if client_name:
-                queryset = queryset.filter(client_name=client_name)
+                queryset = queryset.filter(client_name__icontains=client_name)
         return queryset.order_by('-created_at')
     
     @action(detail=True, methods=['post'])
@@ -206,7 +206,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         if request:
             client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
             if client_name:
-                queryset = queryset.filter(client_name=client_name)
+                queryset = queryset.filter(client_name__icontains=client_name)
         return queryset.order_by('-date_created')
     
     @action(detail=False, methods=['get'])
@@ -216,7 +216,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         
         if client_name:
-            queryset = queryset.filter(client_name=client_name)
+            queryset = queryset.filter(client_name__icontains=client_name)
         
         total_orders = queryset.count()
         total_revenue = queryset.aggregate(
@@ -248,7 +248,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         
         queryset = self.get_queryset()
         if client_name:
-            queryset = queryset.filter(client_name=client_name)
+            queryset = queryset.filter(client_name__icontains=client_name)
         
         # Date range for analysis
         end_date = timezone.now()
@@ -427,7 +427,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         
         queryset = self.get_queryset()
         if client_name:
-            queryset = queryset.filter(client_name=client_name)
+            queryset = queryset.filter(client_name__icontains=client_name)
         
         # Date range for analysis
         end_date = timezone.now()
@@ -1312,7 +1312,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # Filter orders
             queryset = self.get_queryset()
             if client_name:
-                queryset = queryset.filter(client_name=client_name)
+                queryset = queryset.filter(client_name__icontains=client_name)
             
             period_orders = queryset.filter(date_created__gte=start_date)
             
@@ -1478,7 +1478,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # Filter orders
             queryset = self.get_queryset()
             if client_name:
-                queryset = queryset.filter(client_name=client_name)
+                queryset = queryset.filter(client_name__icontains=client_name)
             
             # Today's metrics
             today_orders = queryset.filter(date_created__gte=today_start)
@@ -1600,7 +1600,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # Filter orders
             queryset = self.get_queryset()
             if client_name:
-                queryset = queryset.filter(client_name=client_name)
+                queryset = queryset.filter(client_name__icontains=client_name)
             
             period_orders = queryset.filter(date_created__gte=start_date)
             
@@ -1732,7 +1732,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # Filter orders
             queryset = self.get_queryset()
             if client_name:
-                queryset = queryset.filter(client_name=client_name)
+                queryset = queryset.filter(client_name__icontains=client_name)
             
             period_orders = queryset.filter(date_created__gte=start_date)
             
@@ -1887,7 +1887,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # Filter orders
             queryset = self.get_queryset()
             if client_name:
-                queryset = queryset.filter(client_name=client_name)
+                queryset = queryset.filter(client_name__icontains=client_name)
             
             period_orders = queryset.filter(date_created__gte=start_date)
             
@@ -2005,7 +2005,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # Filter orders
             queryset = self.get_queryset()
             if client_name:
-                queryset = queryset.filter(client_name=client_name)
+                queryset = queryset.filter(client_name__icontains=client_name)
             
             historical_orders = queryset.filter(date_created__gte=start_date)
             
@@ -2252,7 +2252,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         
         queryset = self.get_queryset()
         if client_name:
-            queryset = queryset.filter(client_name=client_name)
+            queryset = queryset.filter(client_name__icontains=client_name)
         
         # Check date coverage
         date_stats = queryset.aggregate(
@@ -2337,5 +2337,5 @@ class WooCommerceSyncLogViewSet(viewsets.ReadOnlyModelViewSet):
         if request:
             client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
             if client_name:
-                queryset = queryset.filter(client_name=client_name)
+                queryset = queryset.filter(client_name__icontains=client_name)
         return queryset.order_by('-created_at')
