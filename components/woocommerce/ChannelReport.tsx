@@ -161,24 +161,22 @@ export default function ChannelReport() {
     try {
       // Get the access token from localStorage
       const accessToken = localStorage.getItem('accessToken');
-      
-      const response = await fetch('/api/woocommerce/configs', {
+
+      // Fetch actual client names from orders instead of config names
+      const response = await fetch('/api/woocommerce/orders/client_names/', {
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       if (data && Array.isArray(data)) {
-        setClients(data.map((config: any) => ({
-          id: config.account?.name || config.name,
-          name: config.account?.name || config.name
-        })));
+        setClients(data);
       }
     } catch (err) {
       console.error('Failed to fetch clients:', err);

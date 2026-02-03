@@ -208,7 +208,24 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             if client_name:
                 queryset = queryset.filter(client_name__icontains=client_name)
         return queryset.order_by('-date_created')
-    
+
+    @action(detail=False, methods=['get'])
+    def client_names(self, request):
+        """Get distinct client names from orders for dropdown filtering"""
+        queryset = self.get_queryset()
+        client_names = (
+            queryset
+            .exclude(client_name__isnull=True)
+            .exclude(client_name='')
+            .values_list('client_name', flat=True)
+            .distinct()
+            .order_by('client_name')
+        )
+        return Response([
+            {'id': name, 'name': name}
+            for name in client_names
+        ])
+
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Get order statistics"""
