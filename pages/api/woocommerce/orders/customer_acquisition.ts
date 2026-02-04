@@ -18,12 +18,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (new_customer_window) params.append('new_customer_window', new_customer_window as string);
     
     const url = `${DJANGO_API_URL}/woocommerce/orders/customer_acquisition/?${params.toString()}`;
-    
+
+    // Forward authorization header if present
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (req.headers.authorization) {
+      headers['Authorization'] = req.headers.authorization;
+    }
+
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     const data = await response.json();

@@ -10,13 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { period, client_name } = req.query;
-    const params = new URLSearchParams();
-    
-    if (period) params.append('period', period as string);
-    if (client_name) params.append('client_name', client_name as string);
-    
-    const url = `${DJANGO_API_URL}/woocommerce/orders/analytics/?${params.toString()}`;
+    const url = `${DJANGO_API_URL}/woocommerce/orders/client_names/`;
 
     // Forward authorization header if present
     const headers: Record<string, string> = {
@@ -40,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(response.status).json(data);
   } catch (error) {
-    console.error('WooCommerce analytics API error:', error);
+    console.error('WooCommerce client_names API error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-} 
+}
