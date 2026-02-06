@@ -36,8 +36,10 @@ docker run -d \
   --name staging_backend \
   --network vvv-frontpage-staging_vvv_network \
   -p 8002:8000 \
+  -w /app/backend \
   --env-file /var/www/vvv-frontpage-staging/env/backend.staging.env \
-  ghcr.io/vevevedk/vvv-backend:staging-latest
+  ghcr.io/vevevedk/vvv-backend:staging-latest \
+  gunicorn api.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 300
 
 echo "=== Starting Frontend ==="
 docker run -d \
@@ -54,7 +56,7 @@ echo "=== Container Status ==="
 docker ps --filter "name=staging"
 
 echo "=== Running migrations ==="
-docker exec staging_backend python manage.py migrate --noinput || echo "Migration failed - check backend logs"
+docker exec -w /app/backend staging_backend python manage.py migrate --noinput || echo "Migration failed - check backend logs"
 
 echo "=== Done! ==="
 echo "Test with:"
