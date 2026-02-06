@@ -15,10 +15,10 @@ docker run -d \
   --name staging_postgres \
   --network vvv-frontpage-staging_vvv_network \
   --network-alias postgres \
-  -e POSTGRES_DB=vvv_database \
+  -e POSTGRES_DB=vvv_database_staging \
   -e POSTGRES_USER=vvv_user \
-  -e POSTGRES_PASSWORD=vvv_password \
-  -v vvv-frontpage-staging_postgres_data:/var/lib/postgresql/data \
+  -e 'POSTGRES_PASSWORD=Yo6g/LhuoAvQHd24QwhhmiQ5q7TGPc1HfA7Y7RB3gUE=' \
+  -v vvv-frontpage-staging_postgres_data_v2:/var/lib/postgresql/data \
   postgres:15
 
 echo "=== Starting Redis ==="
