@@ -357,26 +357,48 @@ export default function ChannelReport() {
     'ChatGpt',
     'Referal',
     'Organic Search',
-    'Test'
+    'Referral',
+    'Test',
+    'ChannelNotFound',
+    'Unclassified'
   ];
 
-  const backendChannels = reportData.currentPeriod.channels;
+  const backendChannels = reportData.currentPeriod.channels || [];
   const backendMap = new Map(backendChannels.map(c => [c.channelType, c]));
-  const mergedChannels = showAllChannels
-    ? knownChannelTypes.map((ct) =>
-        backendMap.get(ct) || {
-          channelType: ct,
-          sessions: 0,
-          orders: 0,
-          orderTotal: 0,
-          cvr: 0,
-          aov: 0,
-        }
-      )
-    : backendChannels;
 
-  console.log('backendChannels:', backendChannels);
-  console.log('mergedChannels:', mergedChannels);
+  // When showAllChannels is true, show known channels + any additional channels from backend
+  // This ensures we never lose data from channels not in our known list
+  let mergedChannels: ChannelData[];
+  if (showAllChannels) {
+    // Start with all known channel types (with defaults for missing ones)
+    const knownChannelsData = knownChannelTypes.map((ct) =>
+      backendMap.get(ct) || {
+        channelType: ct,
+        sessions: 0,
+        orders: 0,
+        orderTotal: 0,
+        cvr: 0,
+        aov: 0,
+      }
+    );
+    // Add any backend channels that aren't in knownChannelTypes
+    const additionalChannels = backendChannels.filter(
+      c => !knownChannelTypes.includes(c.channelType)
+    );
+    mergedChannels = [...knownChannelsData, ...additionalChannels];
+  } else {
+    mergedChannels = backendChannels;
+  }
+
+  console.log('ChannelReport debug:', {
+    backendChannelsCount: backendChannels.length,
+    backendChannels: backendChannels,
+    mergedChannelsCount: mergedChannels.length,
+    mergedChannels: mergedChannels,
+    showAllChannels: showAllChannels,
+    totalOrders: reportData.currentPeriod.total?.orders,
+    totalSessions: reportData.currentPeriod.total?.sessions,
+  });
 
   const sortedChannels = [...mergedChannels].sort((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
