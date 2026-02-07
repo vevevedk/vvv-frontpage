@@ -555,6 +555,23 @@ export default function ChannelReport() {
         </div>
       )}
 
+      {/* Debug Panel - remove after debugging */}
+      {process.env.NODE_ENV === 'development' || true ? (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs">
+          <h4 className="font-bold text-blue-800 mb-2">Debug Info (remove after fix)</h4>
+          <div className="grid grid-cols-2 gap-2 text-blue-700">
+            <div>Selected Client: {selectedClient}</div>
+            <div>Total Orders: {reportData.currentPeriod.total?.orders ?? 'undefined'}</div>
+            <div>Total Sessions: {reportData.currentPeriod.total?.sessions ?? 'undefined'}</div>
+            <div>Backend Channels: {backendChannels.length}</div>
+            <div>Merged Channels: {mergedChannels.length}</div>
+            <div>Sorted Channels: {sortedChannels.length}</div>
+            <div>Non-zero channels: {sortedChannels.filter(c => c.orders > 0 || c.sessions > 0).length}</div>
+            <div>Channel Types: {backendChannels.map(c => c.channelType).join(', ') || 'none'}</div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Channel Performance Chart */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Channel Performance Overview</h3>
