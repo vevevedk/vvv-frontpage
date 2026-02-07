@@ -208,6 +208,8 @@ export default function ChannelReport() {
       }
       
       const data = await response.json();
+      console.log('ChannelReport API response:', data);
+      console.log('Channels count:', data?.currentPeriod?.channels?.length);
       if (data) {
         setReportData(data);
       }
@@ -372,6 +374,9 @@ export default function ChannelReport() {
         }
       )
     : backendChannels;
+
+  console.log('backendChannels:', backendChannels);
+  console.log('mergedChannels:', mergedChannels);
 
   const sortedChannels = [...mergedChannels].sort((a, b) => {
     const dir = sortDir === 'asc' ? 1 : -1;
