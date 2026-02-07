@@ -15,12 +15,22 @@ for n in names:
 EOF
 
 echo ""
+echo "=== Distinct client names (what API returns) ==="
+docker-compose exec -T backend python manage.py shell << 'EOF'
+from woocommerce.models import WooCommerceOrder
+names = list(WooCommerceOrder.objects.exclude(client_name__isnull=True).exclude(client_name='').values_list('client_name', flat=True).distinct())
+print(names)
+EOF
+
+echo ""
 echo "=== Account configurations ==="
 docker-compose exec -T backend python manage.py shell << 'EOF'
 from users.models import Account, AccountConfiguration
 
-for acc in Account.objects.filter(account_type='woocommerce'):
-    print(f"Account: {acc.name} (id={acc.id})")
-    for cfg in AccountConfiguration.objects.filter(account=acc):
-        print(f"  Config store_url: {cfg.store_url}")
+for acc in Account.objects.all():
+    configs = AccountConfiguration.objects.filter(account=acc)
+    if configs.exists():
+        print(f"Account: {acc.name} (id={acc.id})")
+        for cfg in configs:
+            print(f"  Config: {cfg.store_url}")
 EOF
