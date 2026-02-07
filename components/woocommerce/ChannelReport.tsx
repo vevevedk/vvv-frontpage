@@ -161,6 +161,7 @@ export default function ChannelReport() {
     try {
       // Get the access token from localStorage
       const accessToken = localStorage.getItem('accessToken');
+      console.log('Fetching clients, token present:', !!accessToken);
 
       // Fetch actual client names from orders instead of config names
       const response = await fetch('/api/woocommerce/orders/client_names/', {
@@ -170,13 +171,21 @@ export default function ChannelReport() {
         },
       });
 
+      console.log('Client names response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Client names error response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('Client names data:', data);
       if (data && Array.isArray(data)) {
         setClients(data);
+        console.log('Set clients:', data.length);
+      } else {
+        console.error('Client names data is not an array:', typeof data, data);
       }
     } catch (err) {
       console.error('Failed to fetch clients:', err);
@@ -556,21 +565,21 @@ export default function ChannelReport() {
       )}
 
       {/* Debug Panel - remove after debugging */}
-      {process.env.NODE_ENV === 'development' || true ? (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs">
-          <h4 className="font-bold text-blue-800 mb-2">Debug Info (remove after fix)</h4>
-          <div className="grid grid-cols-2 gap-2 text-blue-700">
-            <div>Selected Client: {selectedClient}</div>
-            <div>Total Orders: {reportData.currentPeriod.total?.orders ?? 'undefined'}</div>
-            <div>Total Sessions: {reportData.currentPeriod.total?.sessions ?? 'undefined'}</div>
-            <div>Backend Channels: {backendChannels.length}</div>
-            <div>Merged Channels: {mergedChannels.length}</div>
-            <div>Sorted Channels: {sortedChannels.length}</div>
-            <div>Non-zero channels: {sortedChannels.filter(c => c.orders > 0 || c.sessions > 0).length}</div>
-            <div>Channel Types: {backendChannels.map(c => c.channelType).join(', ') || 'none'}</div>
-          </div>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs">
+        <h4 className="font-bold text-blue-800 mb-2">Debug Info (remove after fix)</h4>
+        <div className="grid grid-cols-2 gap-2 text-blue-700">
+          <div>Clients in dropdown: {clients.length}</div>
+          <div>Selected Client: {selectedClient}</div>
+          <div>Total Orders: {reportData.currentPeriod.total?.orders ?? 'undefined'}</div>
+          <div>Total Sessions: {reportData.currentPeriod.total?.sessions ?? 'undefined'}</div>
+          <div>Backend Channels: {backendChannels.length}</div>
+          <div>Merged Channels: {mergedChannels.length}</div>
+          <div>Sorted Channels: {sortedChannels.length}</div>
+          <div>Non-zero channels: {sortedChannels.filter(c => c.orders > 0 || c.sessions > 0).length}</div>
+          <div className="col-span-2">Channel Types: {backendChannels.map(c => c.channelType).join(', ') || 'none'}</div>
+          <div className="col-span-2">Client names: {clients.map(c => c.name).join(', ') || 'none loaded'}</div>
         </div>
-      ) : null}
+      </div>
 
       {/* Channel Performance Chart */}
       <div className="bg-white p-6 rounded-lg shadow">
