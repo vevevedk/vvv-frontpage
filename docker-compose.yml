@@ -20,9 +20,7 @@ services:
       - vvv_network
 
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: ghcr.io/vevevedk/vvv-backend:latest
     working_dir: /app/backend
     command: gunicorn api.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300 --keep-alive 2
     env_file:
@@ -38,9 +36,7 @@ services:
       - vvv_network
 
   worker:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: ghcr.io/vevevedk/vvv-backend:latest
     working_dir: /app/backend
     command: celery -A api worker -l info
     env_file:
@@ -52,9 +48,7 @@ services:
       - vvv_network
 
   beat:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: ghcr.io/vevevedk/vvv-backend:latest
     working_dir: /app/backend
     command: celery -A api beat -l info
     env_file:
@@ -66,14 +60,12 @@ services:
       - vvv_network
 
   frontend:
-    build:
-      context: .
-      dockerfile: frontend.Dockerfile
-    command: sh -lc "npm run dev"
+    image: ghcr.io/vevevedk/vvv-frontend:latest
+    command: node server.js
     env_file:
       - ./env/frontend.env
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - DJANGO_API_URL=http://backend:8000/api
     ports:
       - "3000:3000"  # Expose frontend on port 3000 for system nginx

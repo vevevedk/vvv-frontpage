@@ -181,9 +181,16 @@ jobs:
             
             # Stop services
             docker-compose down || true
-            
-            # Start services with new images
-            docker-compose up -d
+
+            # Start services with new images (force recreate to use latest pulled images)
+            # Tag the pulled GHCR images so docker-compose uses them
+            docker tag ghcr.io/vevevedk/vvv-backend:latest vvv-frontpage_backend:latest || true
+            docker tag ghcr.io/vevevedk/vvv-backend:latest vvv-frontpage_worker:latest || true
+            docker tag ghcr.io/vevevedk/vvv-backend:latest vvv-frontpage_beat:latest || true
+            docker tag ghcr.io/vevevedk/vvv-frontend:latest vvv-frontpage_frontend:latest || true
+
+            # Start services with force-recreate to ensure new images are used
+            docker-compose up -d --force-recreate
             
             # Wait for services to be ready
             sleep 15
