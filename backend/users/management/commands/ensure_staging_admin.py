@@ -15,8 +15,16 @@ class Command(BaseCommand):
         email = options['email']
         password = options['password']
 
-        if User.objects.filter(username=username).exists():
-            self.stdout.write(self.style.SUCCESS(f'Staging admin user already exists: {username}'))
+        user = User.objects.filter(username=username).first()
+        if user:
+            # Update existing user
+            user.email = email
+            user.set_password(password)
+            user.role = 'super_admin'
+            user.is_superuser = True
+            user.is_staff = True
+            user.save()
+            self.stdout.write(self.style.SUCCESS(f'Updated staging admin user: {username} ({email})'))
             return
 
         user = User.objects.create_superuser(
@@ -27,4 +35,4 @@ class Command(BaseCommand):
         user.role = 'super_admin'
         user.save()
 
-        self.stdout.write(self.style.SUCCESS(f'Created staging admin user: {username}'))
+        self.stdout.write(self.style.SUCCESS(f'Created staging admin user: {username} ({email})'))
