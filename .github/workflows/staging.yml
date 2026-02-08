@@ -184,10 +184,15 @@ jobs:
             docker network rm staging_network 2>/dev/null || true
             docker network rm vvv-frontpage-staging_vvv_network 2>/dev/null || true
 
-            # Remove old/dangling images to free disk space
-            docker image prune -af --filter "until=24h" 2>/dev/null || true
+            # Aggressive cleanup to free disk space
+            docker image prune -af 2>/dev/null || true
             docker container prune -f 2>/dev/null || true
             docker network prune -f 2>/dev/null || true
+            docker volume prune -f 2>/dev/null || true
+            docker builder prune -af 2>/dev/null || true
+
+            # Remove old backend/frontend images
+            docker images | grep -E "vvv-backend|vvv-frontend" | grep -v staging-latest | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
 
             echo "✅ Cleanup completed"
 
