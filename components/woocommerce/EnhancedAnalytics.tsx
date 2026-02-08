@@ -147,6 +147,10 @@ export default function EnhancedAnalytics() {
   const fetchClients = async () => {
     try {
       const response = await api.get<Array<{id: string, name: string}>>('/woocommerce/orders/client_names/');
+      if (response.error) {
+        console.error('Failed to fetch clients:', response.error);
+        return;
+      }
       if (response.data && Array.isArray(response.data)) {
         setClients(response.data);
       }
@@ -158,6 +162,7 @@ export default function EnhancedAnalytics() {
   const fetchEnhancedAnalytics = async () => {
     try {
       setLoading(true);
+      setError(null);
       const params = new URLSearchParams({
         period: period.toString(),
       });
@@ -165,8 +170,13 @@ export default function EnhancedAnalytics() {
         params.append('client_name', selectedClient);
       }
 
-      const response = await api.get(`/woocommerce/orders/enhanced_analytics/?${params}`);
-      setAnalytics(response.data as EnhancedAnalyticsData);
+      const response = await api.get<EnhancedAnalyticsData>(`/woocommerce/orders/enhanced_analytics/?${params}`);
+      if (response.error) {
+        setError(response.error.message || 'Failed to fetch enhanced analytics');
+        console.error('Error fetching enhanced analytics:', response.error);
+        return;
+      }
+      setAnalytics(response.data || null);
     } catch (err) {
       setError('Failed to fetch enhanced analytics');
       console.error('Error fetching enhanced analytics:', err);
@@ -184,8 +194,12 @@ export default function EnhancedAnalytics() {
         params.append('client_name', selectedClient);
       }
 
-      const response = await api.get(`/woocommerce/orders/customer_segmentation/?${params}`);
-      setSegmentation(response.data as CustomerSegmentationData);
+      const response = await api.get<CustomerSegmentationData>(`/woocommerce/orders/customer_segmentation/?${params}`);
+      if (response.error) {
+        console.error('Error fetching customer segmentation:', response.error);
+        return;
+      }
+      setSegmentation(response.data || null);
     } catch (err) {
       console.error('Error fetching customer segmentation:', err);
     }
