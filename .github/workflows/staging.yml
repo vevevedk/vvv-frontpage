@@ -164,8 +164,8 @@ jobs:
             # Cleanup: Stop ALL staging containers and free resources
             echo "🧹 Cleaning up Docker resources..."
 
-            # Force stop staging compose project
-            docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE down --remove-orphans --volumes 2>/dev/null || true
+            # Force stop staging compose project (preserve volumes to keep DB data)
+            docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE down --remove-orphans 2>/dev/null || true
 
             # Kill any containers using staging ports
             for port in 8002 3001 3002; do
@@ -184,11 +184,11 @@ jobs:
             docker network rm staging_network 2>/dev/null || true
             docker network rm vvv-frontpage-staging_vvv_network 2>/dev/null || true
 
-            # Aggressive cleanup to free disk space
+            # Cleanup to free disk space (preserve staging volumes for DB persistence)
             docker image prune -af 2>/dev/null || true
             docker container prune -f 2>/dev/null || true
             docker network prune -f 2>/dev/null || true
-            docker volume prune -f 2>/dev/null || true
+            # Skip volume prune to preserve staging_postgres_data
             docker builder prune -af 2>/dev/null || true
 
             # Remove old backend/frontend images
