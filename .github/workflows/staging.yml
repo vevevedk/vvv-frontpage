@@ -209,23 +209,11 @@ jobs:
 
             # Create staging admin user if it doesn't exist
             echo "👤 Ensuring staging admin user exists..."
-            docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T backend python -c "
-import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api.settings.prod')
-import django
-django.setup()
-from users.models import User
-username = '${{ secrets.STAGING_ADMIN_USERNAME || 'staging_admin' }}'
-email = '${{ secrets.STAGING_ADMIN_EMAIL || 'staging@veveve.dk' }}'
-password = '${{ secrets.STAGING_ADMIN_PASSWORD || 'StagingAdmin123!' }}'
-if not User.objects.filter(username=username).exists():
-    user = User.objects.create_superuser(username=username, email=email, password=password)
-    user.role = 'super_admin'
-    user.save()
-    print(f'✅ Created staging admin user: {username}')
-else:
-    print(f'ℹ️  Staging admin user already exists: {username}')
-" || echo "⚠️  Could not create staging admin user"
+            docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T backend \
+              python manage.py ensure_staging_admin --username=staging_admin --email=staging@veveve.dk --password=StagingAdmin123! \
+              || docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T backend \
+              python manage.py createsuperuser --noinput --username=staging_admin --email=staging@veveve.dk \
+              || echo "⚠️  Could not create staging admin user (may already exist)"
 
             echo "✅ Staging deployment completed!"
 
