@@ -1604,7 +1604,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # Enhanced metrics
             total_orders = period_orders.count()
             total_revenue = period_orders.aggregate(Sum('total'))['total__sum'] or 0
-            avg_order_value = period_orders.aggregate(Avg('total'))['avg__total'] or 0
+            avg_order_value = period_orders.aggregate(Avg('total'))['total__avg'] or 0
             
             # Customer metrics
             unique_customers = period_orders.exclude(
