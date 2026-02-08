@@ -40,6 +40,7 @@ ChartJS.register(
 interface CustomerAcquisitionData {
   period: number;
   new_customer_window: number;
+  currency?: string;
   date_range: {
     start: string;
     end: string;
@@ -140,9 +141,10 @@ export default function CustomerAcquisition() {
   };
 
   const formatCurrency = (amount: number) => {
+    const currency = data?.currency || 'USD';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency,
     }).format(amount);
   };
 

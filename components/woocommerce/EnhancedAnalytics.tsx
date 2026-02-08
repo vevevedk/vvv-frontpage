@@ -40,6 +40,7 @@ ChartJS.register(
 
 interface EnhancedAnalyticsData {
   period: number;
+  currency?: string;
   date_range: {
     start: string;
     end: string;
@@ -131,21 +132,39 @@ export default function EnhancedAnalytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState(30);
-  const [clientName, setClientName] = useState('');
+  const [selectedClient, setSelectedClient] = useState<string>('all');
+  const [clients, setClients] = useState<Array<{id: string, name: string}>>([]);
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   useEffect(() => {
     fetchEnhancedAnalytics();
     fetchCustomerSegmentation();
-  }, [period, clientName]);
+  }, [period, selectedClient]);
+
+  const fetchClients = async () => {
+    try {
+      const response = await api.get<Array<{id: string, name: string}>>('/woocommerce/orders/client_names/');
+      if (response.data && Array.isArray(response.data)) {
+        setClients(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch clients:', err);
+    }
+  };
 
   const fetchEnhancedAnalytics = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         period: period.toString(),
-        ...(clientName && { client_name: clientName })
       });
-      
+      if (selectedClient !== 'all') {
+        params.append('client_name', selectedClient);
+      }
+
       const response = await api.get(`/woocommerce/orders/enhanced_analytics/?${params}`);
       setAnalytics(response.data as EnhancedAnalyticsData);
     } catch (err) {
@@ -160,9 +179,11 @@ export default function EnhancedAnalytics() {
     try {
       const params = new URLSearchParams({
         period: period.toString(),
-        ...(clientName && { client_name: clientName })
       });
-      
+      if (selectedClient !== 'all') {
+        params.append('client_name', selectedClient);
+      }
+
       const response = await api.get(`/woocommerce/orders/customer_segmentation/?${params}`);
       setSegmentation(response.data as CustomerSegmentationData);
     } catch (err) {
@@ -195,6 +216,14 @@ export default function EnhancedAnalytics() {
   if (!analytics) {
     return <div>No analytics data available</div>;
   }
+
+  const formatCurrency = (amount: number) => {
+    const currency = analytics?.currency || 'USD';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+    }).format(amount);
+  };
 
   // Prepare chart data
   const hourlyChartData = {
@@ -260,6 +289,19 @@ export default function EnhancedAnalytics() {
         {/* Controls */}
         <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
           <select
+            value={selectedClient}
+            onChange={(e) => setSelectedClient(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          >
+            <option value="all">All Clients</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </select>
+
+          <select
             value={period}
             onChange={(e) => setPeriod(Number(e.target.value))}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -269,14 +311,6 @@ export default function EnhancedAnalytics() {
             <option value={90}>Last 90 days</option>
             <option value={365}>Last year</option>
           </select>
-          
-          <input
-            type="text"
-            placeholder="Client name (optional)"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-          />
         </div>
       </div>
 
@@ -289,12 +323,12 @@ export default function EnhancedAnalytics() {
         />
         <StatsCard
           title="Total Revenue"
-          value={`$${analytics.overview.total_revenue.toLocaleString()}`}
+          value={formatCurrency(analytics.overview.total_revenue)}
           icon={<CurrencyDollarIcon className="h-6 w-6" />}
         />
         <StatsCard
           title="Avg Order Value"
-          value={`$${analytics.overview.avg_order_value.toFixed(2)}`}
+          value={formatCurrency(analytics.overview.avg_order_value)}
           icon={<ChartBarIcon className="h-6 w-6" />}
         />
         <StatsCard
@@ -323,7 +357,7 @@ export default function EnhancedAnalytics() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">CLV</span>
-              <span className="font-medium">${analytics.customer_insights.customer_lifetime_value.toFixed(2)}</span>
+              <span className="font-medium">{formatCurrency(analytics.customer_insights.customer_lifetime_value)}</span>
             </div>
           </div>
         </div>
@@ -334,7 +368,7 @@ export default function EnhancedAnalytics() {
             {analytics.geographic.top_countries.slice(0, 5).map((country, index) => (
               <div key={index} className="flex justify-between">
                 <span className="text-gray-600">{country.country}</span>
-                <span className="font-medium">${country.revenue.toLocaleString()}</span>
+                <span className="font-medium">{formatCurrency(country.revenue)}</span>
               </div>
             ))}
           </div>
@@ -346,7 +380,7 @@ export default function EnhancedAnalytics() {
             {analytics.product_performance.top_products.slice(0, 5).map((product, index) => (
               <div key={index} className="flex justify-between">
                 <span className="text-gray-600 truncate">{product.name}</span>
-                <span className="font-medium">${product.revenue.toLocaleString()}</span>
+                <span className="font-medium">{formatCurrency(product.revenue)}</span>
               </div>
             ))}
           </div>
@@ -421,7 +455,7 @@ export default function EnhancedAnalytics() {
                   {metrics.percentage}% of total
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  ${metrics.total_revenue.toLocaleString()}
+                  {formatCurrency(metrics.total_revenue)}
                 </div>
               </div>
             ))}

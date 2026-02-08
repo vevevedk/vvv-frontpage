@@ -25,6 +25,52 @@ from .tasks import sync_woocommerce_config
 import json
 
 
+def get_currency_for_client(client_name, orders_queryset=None):
+    """
+    Determine the currency code for a client.
+    Priority: 1) Company currency, 2) WooCommerce config currency, 3) First order currency, 4) USD default
+    """
+    currency_code = 'USD'
+
+    # Normalize client name
+    base_client_name = (client_name or '').split(' - ')[0].strip() if client_name else ''
+
+    # 1) Prefer company-level currency
+    if base_client_name and base_client_name != 'all':
+        try:
+            acc = Account.objects.filter(name__iexact=base_client_name).select_related('company').first()
+            if acc and acc.company and hasattr(acc.company, 'currency_code') and acc.company.currency_code:
+                return acc.company.currency_code
+        except Exception:
+            pass
+
+    # 2) Prefer client-level currency from active WooCommerce config
+    if base_client_name and base_client_name != 'all':
+        try:
+            cfg = AccountConfiguration.objects.filter(
+                account__name__iexact=base_client_name,
+                config_type='woocommerce',
+                is_active=True
+            ).first()
+            if cfg:
+                code = cfg.get_config('currency_code') or cfg.get_config('currency')
+                if code:
+                    return code
+        except Exception:
+            pass
+
+    # 3) Fallback to first order currency in the queryset
+    if orders_queryset is not None:
+        try:
+            first_currency = orders_queryset.exclude(currency__isnull=True).exclude(currency='').values_list('currency', flat=True).first()
+            if first_currency:
+                return first_currency
+        except Exception:
+            pass
+
+    return currency_code
+
+
 class WooCommerceConfigViewSet(viewsets.ReadOnlyModelViewSet):
     """API endpoint for managing WooCommerce configurations"""
     queryset = AccountConfiguration.objects.filter(config_type='woocommerce')
@@ -587,10 +633,14 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         
         # Growth metrics
         new_customer_growth = ((new_customers_count - prev_new_customers_count) / prev_new_customers_count * 100) if prev_new_customers_count > 0 else 0
-        
+
+        # Get currency for this client
+        currency_code = get_currency_for_client(client_name, period_orders)
+
         return Response({
             'period': period,
             'new_customer_window': new_customer_window,
+            'currency': currency_code,
             'date_range': {
                 'start': start_date.isoformat(),
                 'end': end_date.isoformat()
@@ -1401,9 +1451,13 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # This would ideally come from actual session data
             estimated_sessions = total_orders * 10  # Rough estimate
             conversion_rate = (total_orders / estimated_sessions * 100) if estimated_sessions > 0 else 0
-            
+
+            # Get currency for this client
+            currency_code = get_currency_for_client(client_name, period_orders)
+
             return Response({
                 'period': period,
+                'currency': currency_code,
                 'date_range': {
                     'start': start_date.isoformat(),
                     'end': end_date.isoformat()
