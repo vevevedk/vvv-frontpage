@@ -123,11 +123,12 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             set -e
-            
+
             # Staging directory (separate from production)
             STAGING_DIR="/var/www/vvv-frontpage-staging"
-            DEPLOY_DIR="/var/www/vvv-frontpage"
-            
+            COMPOSE_FILE="docker-compose.staging-standalone.yml"
+            PROJECT_NAME="staging"
+
             # Clone or update staging repository
             if [ ! -d "$STAGING_DIR/.git" ]; then
               echo "📦 Initial staging setup: Cloning repository..."
@@ -143,87 +144,69 @@ jobs:
               cd "$STAGING_DIR"
               git fetch origin
               git checkout staging 2>/dev/null || git checkout -b staging
-              git pull origin staging || git pull origin main || true
+              git reset --hard origin/staging || git reset --hard origin/main || true
             fi
-            
-            # Create staging docker-compose override
-            if [ ! -f "docker-compose.staging.yml" ]; then
-              cat > docker-compose.staging.yml << 'EOF'
-            version: '3.8'
-            services:
-              backend:
-                image: ghcr.io/${{ github.repository_owner }}/vvv-backend:staging-latest
-                ports:
-                  - "8002:8000"  # Different port for staging
-                env_file:
-                  - ./env/backend.staging.env
-              frontend:
-                image: ghcr.io/${{ github.repository_owner }}/vvv-frontend:staging-latest
-                ports:
-                  - "3001:3000"  # Different port for staging
-                env_file:
-                  - ./env/frontend.staging.env
-            EOF
-            fi
-            
+
             # Create staging env files if they don't exist
+            mkdir -p env
             if [ ! -f "env/backend.staging.env" ]; then
-              cp env/backend.env.example env/backend.staging.env || cp env/backend.env env/backend.staging.env || true
+              cp env/backend.env.example env/backend.staging.env 2>/dev/null || cp env/backend.env env/backend.staging.env 2>/dev/null || touch env/backend.staging.env
               echo "⚠️  Created env/backend.staging.env - PLEASE UPDATE WITH STAGING VALUES!"
             fi
             if [ ! -f "env/frontend.staging.env" ]; then
-              cp env/frontend.env.example env/frontend.staging.env || cp env/frontend.env env/frontend.staging.env || true
+              cp env/frontend.env.example env/frontend.staging.env 2>/dev/null || cp env/frontend.env env/frontend.staging.env 2>/dev/null || touch env/frontend.staging.env
               echo "⚠️  Created env/frontend.staging.env - PLEASE UPDATE WITH STAGING VALUES!"
             fi
-            
+
             # Login to GHCR
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin || true
 
-            # Cleanup: Free disk space and resolve port conflicts
+            # Cleanup: Stop ALL staging containers and free resources
             echo "🧹 Cleaning up Docker resources..."
 
-            # Stop and remove staging containers first
-            docker-compose -f docker-compose.yml -f docker-compose.staging.yml down --remove-orphans 2>/dev/null || true
+            # Force stop staging compose project
+            docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE down --remove-orphans --volumes 2>/dev/null || true
 
-            # Kill any containers using our staging ports (8002, 3001)
+            # Kill any containers using staging ports
             for port in 8002 3001 3002; do
               container_id=$(docker ps -q --filter "publish=$port" 2>/dev/null)
               if [ -n "$container_id" ]; then
                 echo "Stopping container using port $port..."
                 docker stop $container_id 2>/dev/null || true
-                docker rm $container_id 2>/dev/null || true
+                docker rm -f $container_id 2>/dev/null || true
               fi
             done
+
+            # Force remove any containers with staging in the name
+            docker ps -a --filter "name=staging" -q | xargs -r docker rm -f 2>/dev/null || true
+
+            # Clean up staging network if it exists
+            docker network rm staging_network 2>/dev/null || true
+            docker network rm vvv-frontpage-staging_vvv_network 2>/dev/null || true
 
             # Remove old/dangling images to free disk space
             docker image prune -af --filter "until=24h" 2>/dev/null || true
             docker container prune -f 2>/dev/null || true
-
-            # Remove old staging images before pulling new ones
-            docker rmi ${{ env.BACKEND_IMAGE }}:staging-latest 2>/dev/null || true
-            docker rmi ${{ env.FRONTEND_IMAGE }}:staging-latest 2>/dev/null || true
+            docker network prune -f 2>/dev/null || true
 
             echo "✅ Cleanup completed"
 
             # Pull staging images
-            docker pull ${{ env.BACKEND_IMAGE }}:staging-latest || true
-            docker pull ${{ env.FRONTEND_IMAGE }}:staging-latest || true
-            
-            # Stop existing staging services
-            docker-compose -f docker-compose.yml -f docker-compose.staging.yml down || true
-            
-            # Start staging services
-            docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
-            
+            docker pull ghcr.io/vevevedk/vvv-backend:staging-latest
+            docker pull ghcr.io/vevevedk/vvv-frontend:staging-latest
+
+            # Start staging services using standalone compose file
+            docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE up -d
+
             # Wait for services
             sleep 20
-            
+
             # Run migrations
-            docker-compose -f docker-compose.yml -f docker-compose.staging.yml exec -T backend python manage.py migrate --noinput || true
-            
+            docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T backend python manage.py migrate --noinput || true
+
             # Collect static files
-            docker-compose -f docker-compose.yml -f docker-compose.staging.yml exec -T backend python manage.py collectstatic --noinput || true
-            
+            docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T backend python manage.py collectstatic --noinput || true
+
             echo "✅ Staging deployment completed!"
 
   smoke-tests:
