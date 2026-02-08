@@ -108,7 +108,11 @@ export default function CustomerAcquisition() {
   const fetchClients = async () => {
     try {
       // Fetch actual client names from orders instead of config names
-      const response = await api.get('/woocommerce/orders/client_names/');
+      const response = await api.get<Array<{id: string, name: string}>>('/woocommerce/orders/client_names/');
+      if (response.error) {
+        console.error('Failed to fetch clients:', response.error);
+        return;
+      }
       if (response.data && Array.isArray(response.data)) {
         setClients(response.data);
       }
@@ -120,18 +124,22 @@ export default function CustomerAcquisition() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({ 
+      setError(null);
+      const params = new URLSearchParams({
         period: period.toString(),
         new_customer_window: newCustomerWindow.toString()
       });
       if (selectedClient !== 'all') {
         params.append('client_name', selectedClient);
       }
-      
-      const response = await api.get<CustomerAcquisitionData>(`/woocommerce/orders/customer_acquisition?${params}`);
-      if (response.data) {
-        setData(response.data);
+
+      const response = await api.get<CustomerAcquisitionData>(`/woocommerce/orders/customer_acquisition/?${params}`);
+      if (response.error) {
+        setError(response.error.message || 'Failed to fetch customer acquisition data');
+        console.error('Customer acquisition error:', response.error);
+        return;
       }
+      setData(response.data || null);
     } catch (err) {
       setError('Failed to fetch customer acquisition data');
       console.error('Customer acquisition error:', err);
