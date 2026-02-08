@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from datetime import timedelta
 from django.db import models
-from django.db.models import Count, Sum, Avg, Q, Min, Max
+from django.db.models import Count, Sum, Avg, Q, Min, Max, Subquery, OuterRef
 from django.db.models.functions import TruncDate, TruncMonth, TruncWeek, ExtractHour
 from users.models import AccountConfiguration, Account
 from users.serializers import AccountConfigurationSerializer
@@ -498,45 +498,52 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             start_date = end_date - timedelta(days=period)
             period_orders = queryset.filter(date_created__gte=start_date)
 
-            # Identify new customers
+            # Identify new customers using a single annotated query instead of N+1
             # A customer is "new" if they haven't ordered in the last {new_customer_window} days before their current order
+            prev_order_qs = WooCommerceOrder.objects.filter(
+                billing_email=OuterRef('billing_email'),
+                date_created__lt=OuterRef('date_created'),
+            )
+            if client_name:
+                prev_order_qs = prev_order_qs.filter(client_name__icontains=client_name)
+
+            annotated_orders = period_orders.exclude(
+                billing_email__isnull=True
+            ).exclude(
+                billing_email=''
+            ).annotate(
+                prev_order_date=Subquery(
+                    prev_order_qs.order_by('-date_created').values('date_created')[:1]
+                )
+            )
+
             new_customers_data = []
             returning_customers_data = []
 
-            for order in period_orders.exclude(billing_email__isnull=True):
-                customer_email = order.billing_email
-                order_date = order.date_created
+            for order in annotated_orders:
+                prev_date = order.prev_order_date
 
-                # Look for previous orders from this customer
-                previous_order_date = queryset.filter(
-                    billing_email=customer_email,
-                    date_created__lt=order_date
-                ).aggregate(Max('date_created'))['date_created__max']
-
-                # Determine if this is a new customer
-                if previous_order_date is None:
-                    # First time customer ever
+                if prev_date is None:
                     is_new = True
                     days_since_last_order = None
                 else:
-                    # Check if they haven't ordered within the window
-                    days_since_last_order = (order_date - previous_order_date).days
+                    days_since_last_order = (order.date_created - prev_date).days
                     is_new = days_since_last_order >= new_customer_window
 
                 if is_new:
                     new_customers_data.append({
                         'order_id': order.order_id,
-                        'email': customer_email,
-                        'order_date': order_date,
-                        'total': float(order.total),
-                        'previous_order_date': previous_order_date
+                        'email': order.billing_email,
+                        'order_date': order.date_created,
+                        'total': float(order.total or 0),
+                        'previous_order_date': prev_date
                     })
                 else:
                     returning_customers_data.append({
                         'order_id': order.order_id,
-                        'email': customer_email,
-                        'order_date': order_date,
-                        'total': float(order.total),
+                        'email': order.billing_email,
+                        'order_date': order.date_created,
+                        'total': float(order.total or 0),
                         'days_since_last_order': days_since_last_order
                     })
 
@@ -615,21 +622,24 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             prev_start = start_date - timedelta(days=period)
             prev_period_orders = queryset.filter(date_created__gte=prev_start, date_created__lt=start_date)
 
-            # Calculate previous period new customers (simplified)
+            # Calculate previous period new customers using annotation
+            prev_annotated = prev_period_orders.exclude(
+                billing_email__isnull=True
+            ).exclude(
+                billing_email=''
+            ).annotate(
+                prev_order_date=Subquery(
+                    prev_order_qs.order_by('-date_created').values('date_created')[:1]
+                )
+            )
+
             prev_new_customers_count = 0
-            for order in prev_period_orders.exclude(billing_email__isnull=True):
-                customer_email = order.billing_email
-                order_date = order.date_created
-
-                previous_order_date = queryset.filter(
-                    billing_email=customer_email,
-                    date_created__lt=order_date
-                ).aggregate(Max('date_created'))['date_created__max']
-
-                if previous_order_date is None:
+            for order in prev_annotated:
+                prev_date = order.prev_order_date
+                if prev_date is None:
                     prev_new_customers_count += 1
                 else:
-                    days_since_last = (order_date - previous_order_date).days
+                    days_since_last = (order.date_created - prev_date).days
                     if days_since_last >= new_customer_window:
                         prev_new_customers_count += 1
 
