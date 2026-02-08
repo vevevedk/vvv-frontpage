@@ -178,7 +178,33 @@ jobs:
             
             # Login to GHCR
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin || true
-            
+
+            # Cleanup: Free disk space and resolve port conflicts
+            echo "🧹 Cleaning up Docker resources..."
+
+            # Stop and remove staging containers first
+            docker-compose -f docker-compose.yml -f docker-compose.staging.yml down --remove-orphans 2>/dev/null || true
+
+            # Kill any containers using our staging ports (8002, 3001)
+            for port in 8002 3001 3002; do
+              container_id=$(docker ps -q --filter "publish=$port" 2>/dev/null)
+              if [ -n "$container_id" ]; then
+                echo "Stopping container using port $port..."
+                docker stop $container_id 2>/dev/null || true
+                docker rm $container_id 2>/dev/null || true
+              fi
+            done
+
+            # Remove old/dangling images to free disk space
+            docker image prune -af --filter "until=24h" 2>/dev/null || true
+            docker container prune -f 2>/dev/null || true
+
+            # Remove old staging images before pulling new ones
+            docker rmi ${{ env.BACKEND_IMAGE }}:staging-latest 2>/dev/null || true
+            docker rmi ${{ env.FRONTEND_IMAGE }}:staging-latest 2>/dev/null || true
+
+            echo "✅ Cleanup completed"
+
             # Pull staging images
             docker pull ${{ env.BACKEND_IMAGE }}:staging-latest || true
             docker pull ${{ env.FRONTEND_IMAGE }}:staging-latest || true
