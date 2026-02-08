@@ -225,11 +225,15 @@ jobs:
             # Update nginx config for staging
             echo "🔧 Updating nginx configuration..."
             if [ -f "deploy/nginx-staging.conf" ]; then
-              # Remove old conflicting configs
+              # Remove ALL old conflicting staging configs
               sudo rm -f /etc/nginx/sites-enabled/staging.veveve.dk || true
               sudo rm -f /etc/nginx/sites-enabled/staging.veveve.io || true
+              sudo rm -f /etc/nginx/sites-enabled/staging-veveve-io || true
+              sudo rm -f /etc/nginx/sites-enabled/staging-veveve-dk || true
               sudo rm -f /etc/nginx/sites-available/staging.veveve.dk || true
               sudo rm -f /etc/nginx/sites-available/staging.veveve.io || true
+              sudo rm -f /etc/nginx/sites-available/staging-veveve-io || true
+              sudo rm -f /etc/nginx/sites-available/staging-veveve-dk || true
 
               # Install new config with high priority name (00- prefix loads first)
               sudo cp deploy/nginx-staging.conf /etc/nginx/sites-available/00-staging.veveve
