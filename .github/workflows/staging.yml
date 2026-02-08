@@ -209,11 +209,18 @@ jobs:
 
             # Create staging admin user if it doesn't exist
             echo "👤 Ensuring staging admin user exists..."
-            docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T backend \
-              python manage.py ensure_staging_admin --username=staging_admin --email=staging@veveve.dk --password=StagingAdmin123! \
-              || docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T backend \
-              python manage.py createsuperuser --noinput --username=staging_admin --email=staging@veveve.dk \
-              || echo "⚠️  Could not create staging admin user (may already exist)"
+            STAGING_USER="${{ secrets.STAGING_ADMIN_USERNAME }}"
+            STAGING_PASS="${{ secrets.STAGING_ADMIN_PASSWORD }}"
+            STAGING_EMAIL="${{ secrets.STAGING_ADMIN_EMAIL }}"
+
+            # Use secrets if available, otherwise skip
+            if [ -n "$STAGING_USER" ] && [ -n "$STAGING_PASS" ]; then
+              docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE exec -T backend \
+                python manage.py ensure_staging_admin --username="$STAGING_USER" --email="${STAGING_EMAIL:-staging@veveve.dk}" --password="$STAGING_PASS" \
+                || echo "⚠️  Could not create staging admin user (may already exist)"
+            else
+              echo "⚠️  Staging admin credentials not configured in secrets"
+            fi
 
             echo "✅ Staging deployment completed!"
 
