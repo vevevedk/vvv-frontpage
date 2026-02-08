@@ -225,8 +225,17 @@ jobs:
             # Update nginx config for staging
             echo "🔧 Updating nginx configuration..."
             if [ -f "deploy/nginx-staging.conf" ]; then
-              sudo cp deploy/nginx-staging.conf /etc/nginx/sites-available/staging.veveve || true
-              sudo ln -sf /etc/nginx/sites-available/staging.veveve /etc/nginx/sites-enabled/staging.veveve || true
+              # Remove old conflicting configs
+              sudo rm -f /etc/nginx/sites-enabled/staging.veveve.dk || true
+              sudo rm -f /etc/nginx/sites-enabled/staging.veveve.io || true
+              sudo rm -f /etc/nginx/sites-available/staging.veveve.dk || true
+              sudo rm -f /etc/nginx/sites-available/staging.veveve.io || true
+
+              # Install new config
+              sudo cp deploy/nginx-staging.conf /etc/nginx/sites-available/staging.veveve
+              sudo ln -sf /etc/nginx/sites-available/staging.veveve /etc/nginx/sites-enabled/staging.veveve
+
+              # Test and reload
               sudo nginx -t && sudo systemctl reload nginx || echo "⚠️  Nginx reload failed"
               echo "✅ Nginx configuration updated"
             fi
