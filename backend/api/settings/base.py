@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'core',
     'woocommerce',
     'pipelines',
+    'google_pipelines',
 ]
 
 MIDDLEWARE = [

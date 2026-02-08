@@ -32,6 +32,7 @@ from pipelines.views import (
     DataPipelineViewSet, PipelineJobViewSet, PipelineLogViewSet,
     DataQualityCheckViewSet, PipelineAnalyticsViewSet
 )
+from google_pipelines.views import GA4DailyViewSet
 from authentication.views import (
     LoginView, RegisterView, TokenRefreshView
 )
@@ -104,6 +105,9 @@ router.register(r'pipeline-jobs', PipelineJobViewSet, basename='pipeline-job')
 router.register(r'pipeline-logs', PipelineLogViewSet, basename='pipeline-log')
 router.register(r'pipeline-quality-checks', DataQualityCheckViewSet, basename='pipeline-quality-check')
 router.register(r'pipeline-analytics', PipelineAnalyticsViewSet, basename='pipeline-analytics')
+
+# GA4
+router.register(r'ga4/daily', GA4DailyViewSet, basename='ga4-daily')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

@@ -86,7 +86,22 @@ class DataPipelineViewSet(viewsets.ModelViewSet):
                     'message': message
                 })
             
-            # Add other pipeline type tests here
+            elif pipeline.pipeline_type == 'google_analytics':
+                property_id = config.config_data.get('property_id')
+                if not property_id:
+                    return Response({
+                        'success': False,
+                        'message': 'No property_id configured'
+                    })
+
+                from google_pipelines.clients.ga4 import test_ga4_connection
+                success, message = test_ga4_connection(property_id)
+
+                return Response({
+                    'success': success,
+                    'message': message
+                })
+
             return Response({
                 'success': False,
                 'message': f'Connection testing not implemented for {pipeline.pipeline_type}'
@@ -165,7 +180,54 @@ class DataPipelineViewSet(viewsets.ModelViewSet):
                         'message': f'Failed to start sync: {str(sync_error)}',
                         'job_id': job.id
                     })
-            
+
+            elif pipeline.pipeline_type == 'google_analytics':
+                from google_pipelines.tasks import sync_ga4_config
+                config = pipeline.account_configuration
+
+                try:
+                    result = sync_ga4_config(config.id)
+
+                    if result.get('success'):
+                        job.status = 'completed'
+                        job.completed_at = timezone.now()
+                        job.processed_items = result.get('rows_processed', 0)
+                        job.created_items = result.get('rows_created', 0)
+                        job.updated_items = result.get('rows_updated', 0)
+                        job.save()
+
+                        return Response({
+                            'success': True,
+                            'message': f'GA4 sync completed! {result.get("rows_processed", 0)} rows processed',
+                            'job_id': job.id,
+                            'rows_processed': result.get('rows_processed', 0),
+                            'rows_created': result.get('rows_created', 0),
+                            'rows_updated': result.get('rows_updated', 0),
+                        })
+                    else:
+                        job.status = 'failed'
+                        job.error_message = result.get('error', 'Unknown error')
+                        job.completed_at = timezone.now()
+                        job.save()
+
+                        return Response({
+                            'success': False,
+                            'message': f'GA4 sync failed: {result.get("error", "Unknown error")}',
+                            'job_id': job.id,
+                        })
+
+                except Exception as sync_error:
+                    job.status = 'failed'
+                    job.error_message = str(sync_error)
+                    job.completed_at = timezone.now()
+                    job.save()
+
+                    return Response({
+                        'success': False,
+                        'message': f'Failed to start GA4 sync: {str(sync_error)}',
+                        'job_id': job.id,
+                    })
+
             return Response({
                 'success': True,
                 'message': 'Sync job created successfully',

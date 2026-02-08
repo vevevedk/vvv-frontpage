@@ -4,10 +4,6 @@ from celery import Celery
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api.settings.dev')
 
-# Import Django and setup
-import django
-django.setup()
-
 # Create Celery app
 app = Celery('vvv_api')
 
@@ -25,6 +21,10 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'daily-woocommerce-sync': {
         'task': 'woocommerce.tasks.sync_all_woocommerce_configs',
+        'schedule': 86400.0,  # 24 hours
+    },
+    'daily-ga4-sync': {
+        'task': 'google_pipelines.tasks.sync_all_ga4_configs',
         'schedule': 86400.0,  # 24 hours
     },
 }
