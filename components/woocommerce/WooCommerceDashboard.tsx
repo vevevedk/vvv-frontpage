@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
-import { 
-  ShoppingCartIcon, 
-  ClockIcon, 
-  ChartBarIcon, 
+import {
+  ShoppingCartIcon,
+  ClockIcon,
+  ChartBarIcon,
   CogIcon,
   PlusIcon,
   ServerIcon,
@@ -11,7 +11,8 @@ import {
   XCircleIcon,
   PlayIcon,
   ListBulletIcon,
-  UserPlusIcon
+  UserPlusIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import ClientManagement from './ClientManagement';
 import JobMonitoring from './JobMonitoring';
@@ -20,6 +21,7 @@ import AnalyticsDashboard from './AnalyticsDashboard';
 import AdvancedAnalytics from './AdvancedAnalytics';
 import EnhancedAnalytics from './EnhancedAnalytics';
 import CustomerAcquisition from './CustomerAcquisition';
+import SubscriptionAnalytics from './SubscriptionAnalytics';
 import ChannelReport from './ChannelReport';
 import SyncLogs from './SyncLogs';
 import AddClientModal from './AddClientModal';
@@ -81,6 +83,12 @@ export default function WooCommerceDashboard() {
       icon: UserPlusIcon,
       component: CustomerAcquisition,
       description: 'Customer acquisition analytics with CAC tracking'
+    },
+    {
+      name: 'Subscriptions',
+      icon: ArrowPathIcon,
+      component: SubscriptionAnalytics,
+      description: 'Recurring purchase and subscription analytics'
     },
     {
       name: 'Orders',

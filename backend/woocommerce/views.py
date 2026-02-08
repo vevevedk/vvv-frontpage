@@ -679,6 +679,224 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         })
 
     @action(detail=False, methods=['get'])
+    def subscription_analytics(self, request):
+        """
+        Analyze subscription/repeat purchase patterns.
+        Identifies customers who repeatedly purchase the same product.
+        """
+        try:
+            # Get parameters
+            client_name = request.query_params.get('client_name', '')
+            period = int(request.query_params.get('period', 90))
+            min_purchases = int(request.query_params.get('min_purchases', 2))
+            reorder_window = int(request.query_params.get('reorder_window_days', 35))
+            churn_multiplier = float(request.query_params.get('churn_multiplier', 1.5))
+            at_risk_days = int(request.query_params.get('at_risk_days', 7))
+
+            # Date ranges
+            end_date = timezone.now()
+            start_date = end_date - timedelta(days=period)
+
+            # Get currency
+            currency_code = get_currency_for_client(client_name)
+
+            # Filter orders
+            queryset = self.get_queryset()
+            if client_name:
+                queryset = queryset.filter(client_name__icontains=client_name)
+
+            # Get all orders with items (not just period orders - we need history)
+            all_orders = queryset.prefetch_related('items')
+
+            # Find subscribers: customers who purchased same product multiple times
+            # Group by email + product_id
+            from collections import defaultdict
+            customer_product_orders = defaultdict(list)
+
+            for order in all_orders.exclude(billing_email__isnull=True).exclude(billing_email=''):
+                for item in order.items.all():
+                    key = (order.billing_email.lower(), item.product_id, item.product_name)
+                    customer_product_orders[key].append({
+                        'order_id': order.order_id,
+                        'date': order.date_created or order.order_date,
+                        'quantity': item.quantity,
+                        'total': float(item.total_price),
+                        'order_total': float(order.total) if order.total else 0,
+                    })
+
+            # Identify subscribers (min_purchases of same product)
+            subscribers = []
+            for (email, product_id, product_name), orders_list in customer_product_orders.items():
+                if len(orders_list) >= min_purchases:
+                    # Sort orders by date
+                    orders_list.sort(key=lambda x: x['date'] if x['date'] else timezone.now())
+
+                    # Calculate intervals between orders
+                    intervals = []
+                    for i in range(1, len(orders_list)):
+                        if orders_list[i]['date'] and orders_list[i-1]['date']:
+                            interval = (orders_list[i]['date'] - orders_list[i-1]['date']).days
+                            if interval > 0:
+                                intervals.append(interval)
+
+                    avg_interval = sum(intervals) / len(intervals) if intervals else reorder_window
+                    last_order_date = orders_list[-1]['date']
+                    first_order_date = orders_list[0]['date']
+                    total_revenue = sum(o['total'] for o in orders_list)
+                    total_orders = len(orders_list)
+
+                    # Determine status
+                    if last_order_date:
+                        days_since_last = (end_date - last_order_date).days
+                        expected_interval = avg_interval if avg_interval > 0 else reorder_window
+
+                        if days_since_last > expected_interval * churn_multiplier:
+                            status = 'churned'
+                        elif days_since_last > expected_interval - at_risk_days:
+                            status = 'at_risk'
+                        else:
+                            status = 'active'
+                    else:
+                        status = 'unknown'
+                        days_since_last = None
+
+                    # Check if became subscriber in this period
+                    is_new_subscriber = False
+                    if len(orders_list) >= min_purchases:
+                        # The date they became a subscriber is the date of their min_purchases-th order
+                        subscription_start_date = orders_list[min_purchases - 1]['date']
+                        if subscription_start_date and subscription_start_date >= start_date:
+                            is_new_subscriber = True
+
+                    subscribers.append({
+                        'email': email,
+                        'product_id': product_id,
+                        'product_name': product_name,
+                        'total_orders': total_orders,
+                        'total_revenue': total_revenue,
+                        'first_order_date': first_order_date,
+                        'last_order_date': last_order_date,
+                        'avg_interval_days': round(avg_interval, 1),
+                        'days_since_last_order': days_since_last,
+                        'status': status,
+                        'is_new_subscriber': is_new_subscriber,
+                    })
+
+            # Calculate overview metrics
+            total_subscribers = len(subscribers)
+            active_subscribers = len([s for s in subscribers if s['status'] == 'active'])
+            at_risk_subscribers = len([s for s in subscribers if s['status'] == 'at_risk'])
+            churned_subscribers = len([s for s in subscribers if s['status'] == 'churned'])
+            new_subscribers_period = len([s for s in subscribers if s['is_new_subscriber']])
+
+            # Revenue metrics
+            total_subscriber_revenue = sum(s['total_revenue'] for s in subscribers)
+
+            # Get total revenue for period to calculate percentage
+            period_orders = queryset.filter(date_created__gte=start_date)
+            total_period_revenue = float(period_orders.aggregate(Sum('total'))['total__sum'] or 0)
+
+            subscriber_revenue_percentage = (total_subscriber_revenue / total_period_revenue * 100) if total_period_revenue > 0 else 0
+
+            # Average metrics
+            avg_subscriber_ltv = (total_subscriber_revenue / total_subscribers) if total_subscribers > 0 else 0
+            avg_orders_per_subscriber = (sum(s['total_orders'] for s in subscribers) / total_subscribers) if total_subscribers > 0 else 0
+
+            # Calculate average subscription length (months from first to last order)
+            subscription_lengths = []
+            for s in subscribers:
+                if s['first_order_date'] and s['last_order_date']:
+                    length_days = (s['last_order_date'] - s['first_order_date']).days
+                    subscription_lengths.append(length_days / 30)  # Convert to months
+            avg_subscription_length_months = (sum(subscription_lengths) / len(subscription_lengths)) if subscription_lengths else 0
+
+            # Churn rate (churned / (active + churned) in period)
+            active_plus_churned = active_subscribers + churned_subscribers
+            churn_rate = (churned_subscribers / active_plus_churned * 100) if active_plus_churned > 0 else 0
+
+            # Net subscriber growth
+            net_subscriber_growth = new_subscribers_period - churned_subscribers
+
+            # Health metrics
+            avg_days_between_orders = (sum(s['avg_interval_days'] for s in subscribers) / total_subscribers) if total_subscribers > 0 else 0
+
+            # At-risk subscriber list (sorted by days overdue)
+            at_risk_list = sorted(
+                [s for s in subscribers if s['status'] == 'at_risk'],
+                key=lambda x: x['days_since_last_order'] or 0,
+                reverse=True
+            )[:20]
+
+            # Recently churned list
+            recently_churned_list = sorted(
+                [s for s in subscribers if s['status'] == 'churned'],
+                key=lambda x: x['days_since_last_order'] or 0
+            )[:20]
+
+            # New subscribers this period
+            new_subscribers_list = sorted(
+                [s for s in subscribers if s['is_new_subscriber']],
+                key=lambda x: x['last_order_date'] or timezone.now(),
+                reverse=True
+            )[:20]
+
+            # Format dates for JSON serialization
+            def format_subscriber(s):
+                return {
+                    'email': s['email'],
+                    'product_name': s['product_name'],
+                    'total_orders': s['total_orders'],
+                    'total_revenue': s['total_revenue'],
+                    'first_order_date': s['first_order_date'].isoformat() if s['first_order_date'] else None,
+                    'last_order_date': s['last_order_date'].isoformat() if s['last_order_date'] else None,
+                    'days_since_last_order': s['days_since_last_order'],
+                    'avg_interval_days': s['avg_interval_days'],
+                    'status': s['status'],
+                }
+
+            return Response({
+                'period': period,
+                'currency': currency_code,
+                'date_range': {
+                    'start': start_date.isoformat(),
+                    'end': end_date.isoformat()
+                },
+                'params': {
+                    'min_purchases': min_purchases,
+                    'reorder_window_days': reorder_window,
+                    'churn_multiplier': churn_multiplier,
+                    'at_risk_days': at_risk_days,
+                },
+                'overview': {
+                    'total_subscribers': total_subscribers,
+                    'active_subscribers': active_subscribers,
+                    'at_risk_subscribers': at_risk_subscribers,
+                    'churned_subscribers': churned_subscribers,
+                    'new_subscribers_period': new_subscribers_period,
+                    'subscriber_revenue': round(total_subscriber_revenue, 2),
+                    'subscriber_revenue_percentage': round(subscriber_revenue_percentage, 1),
+                    'avg_subscriber_ltv': round(avg_subscriber_ltv, 2),
+                    'avg_subscription_length_months': round(avg_subscription_length_months, 1),
+                    'churn_rate': round(churn_rate, 1),
+                    'net_subscriber_growth': net_subscriber_growth,
+                },
+                'health': {
+                    'avg_orders_per_subscriber': round(avg_orders_per_subscriber, 1),
+                    'avg_days_between_orders': round(avg_days_between_orders, 1),
+                },
+                'at_risk_subscribers': [format_subscriber(s) for s in at_risk_list],
+                'recently_churned': [format_subscriber(s) for s in recently_churned_list],
+                'new_subscribers': [format_subscriber(s) for s in new_subscribers_list],
+            })
+
+        except Exception as e:
+            import traceback
+            return Response(
+                {'error': f'Failed to generate subscription analytics: {str(e)}', 'traceback': traceback.format_exc()},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'])
     def traffic_sources_discovery(self, request):
         """Discover traffic sources across all clients, optionally only unclassified."""
         try:
