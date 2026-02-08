@@ -231,9 +231,15 @@ jobs:
               sudo rm -f /etc/nginx/sites-available/staging.veveve.dk || true
               sudo rm -f /etc/nginx/sites-available/staging.veveve.io || true
 
-              # Install new config
-              sudo cp deploy/nginx-staging.conf /etc/nginx/sites-available/staging.veveve
-              sudo ln -sf /etc/nginx/sites-available/staging.veveve /etc/nginx/sites-enabled/staging.veveve
+              # Install new config with high priority name (00- prefix loads first)
+              sudo cp deploy/nginx-staging.conf /etc/nginx/sites-available/00-staging.veveve
+              sudo ln -sf /etc/nginx/sites-available/00-staging.veveve /etc/nginx/sites-enabled/00-staging.veveve
+              sudo rm -f /etc/nginx/sites-enabled/staging.veveve || true
+
+              # Remove staging.veveve.io from veveve-io config if it exists there
+              if [ -f /etc/nginx/sites-available/veveve-io ]; then
+                sudo sed -i 's/staging\.veveve\.io//g' /etc/nginx/sites-available/veveve-io || true
+              fi
 
               # Test and reload
               sudo nginx -t && sudo systemctl reload nginx || echo "⚠️  Nginx reload failed"
