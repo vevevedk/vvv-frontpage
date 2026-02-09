@@ -92,7 +92,11 @@ class WooCommerceConfigViewSet(viewsets.ReadOnlyModelViewSet):
         if user.role in ['company_admin', 'company_user']:
             if user.access_all_companies:
                 return base_qs.filter(account__company__agency=user.agency)
-            return base_qs.filter(account__company__in=user.accessible_companies.all())
+            # Include both accessible_companies M2M and the user's direct company FK
+            companies = set(user.accessible_companies.values_list('id', flat=True))
+            if user.company_id:
+                companies.add(user.company_id)
+            return base_qs.filter(account__company_id__in=companies)
         return base_qs.none()
 
     @action(detail=True, methods=['post'])
@@ -176,7 +180,11 @@ class WooCommerceJobViewSet(viewsets.ReadOnlyModelViewSet):
                 if user.access_all_companies:
                     accounts = Account.objects.filter(company__agency=user.agency)
                 else:
-                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
+                    # Include both accessible_companies M2M and the user's direct company FK
+                    companies = set(user.accessible_companies.values_list('id', flat=True))
+                    if user.company_id:
+                        companies.add(user.company_id)
+                    accounts = Account.objects.filter(company_id__in=companies)
             else:
                 accounts = Account.objects.none()
             allowed_names = list(accounts.values_list('name', flat=True))
@@ -262,7 +270,11 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
                 if user.access_all_companies:
                     accounts = Account.objects.filter(company__agency=user.agency)
                 else:
-                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
+                    # Include both accessible_companies M2M and the user's direct company FK
+                    companies = set(user.accessible_companies.values_list('id', flat=True))
+                    if user.company_id:
+                        companies.add(user.company_id)
+                    accounts = Account.objects.filter(company_id__in=companies)
             else:
                 accounts = Account.objects.none()
             allowed_names = list(accounts.values_list('name', flat=True))
@@ -2708,7 +2720,11 @@ class WooCommerceSyncLogViewSet(viewsets.ReadOnlyModelViewSet):
                 if user.access_all_companies:
                     accounts = Account.objects.filter(company__agency=user.agency)
                 else:
-                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
+                    # Include both accessible_companies M2M and the user's direct company FK
+                    companies = set(user.accessible_companies.values_list('id', flat=True))
+                    if user.company_id:
+                        companies.add(user.company_id)
+                    accounts = Account.objects.filter(company_id__in=companies)
             else:
                 accounts = Account.objects.none()
             allowed_names = list(accounts.values_list('name', flat=True))
