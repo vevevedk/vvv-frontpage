@@ -1,0 +1,427 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js';
+import { Line, Doughnut } from 'react-chartjs-2';
+import {
+  UserPlusIcon,
+  UsersIcon,
+  CurrencyDollarIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  ChartBarIcon,
+  ClockIcon
+} from '@heroicons/react/24/outline';
+import StatsCard from '../StatsCard';
+import { api } from '../../lib/api';
+import { formatCurrency } from '../../lib/formatCurrency';
+import { maskEmail } from '../../lib/emailMask';
+import { CHART_COLORS } from '../../lib/constants/chartColors';
+import { useDashboardFilter } from './DashboardFilterContext';
+
+ChartJS.register(
+  CategoryScale, LinearScale, PointElement, LineElement, BarElement,
+  Title, Tooltip, Legend, ArcElement
+);
+
+interface CustomerAcquisitionData {
+  period: number;
+  new_customer_window: number;
+  currency?: string;
+  date_range: { start: string; end: string };
+  overview: {
+    new_customers: number;
+    returning_customers: number;
+    total_unique_customers: number;
+    new_customer_percentage: number;
+    new_customer_revenue: number;
+    returning_customer_revenue: number;
+    total_revenue: number;
+    new_customer_revenue_percentage: number;
+    avg_new_customer_order_value: number;
+    avg_returning_customer_order_value: number;
+    total_new_customer_orders: number;
+    total_returning_customer_orders: number;
+  };
+  cac_metrics: {
+    total_marketing_spend: number;
+    customer_acquisition_cost: number;
+    revenue_per_new_customer: number;
+    cac_payback_ratio: number;
+    note: string;
+  };
+  growth: {
+    new_customer_growth: number;
+    previous_period: { new_customers: number };
+  };
+  trends: {
+    daily: Array<{ date: string; new_customers: number; revenue: number; orders: number }>;
+  };
+  top_new_customers: Array<{
+    email: string;
+    total_spent: number;
+    orders: number;
+    first_order_date: string;
+  }>;
+}
+
+export default function CustomersTab() {
+  const { period, selectedClient, showEmails } = useDashboardFilter();
+  const [data, setData] = useState<CustomerAcquisitionData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newCustomerWindow, setNewCustomerWindow] = useState<number>(365);
+
+  useEffect(() => {
+    fetchData();
+  }, [period, selectedClient, newCustomerWindow]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        period: period.toString(),
+        new_customer_window: newCustomerWindow.toString(),
+      });
+      if (selectedClient !== 'all') params.append('client_name', selectedClient);
+
+      const response = await api.get<CustomerAcquisitionData>(
+        `/woocommerce/orders/customer_acquisition/?${params}`
+      );
+      if (response.error) {
+        setError(response.error.message || 'Failed to fetch customer data');
+        return;
+      }
+      setData(response.data || null);
+    } catch (err) {
+      setError('Failed to fetch customer data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-500 mb-4">{error || 'No data available'}</div>
+        <button onClick={fetchData} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Retry</button>
+      </div>
+    );
+  }
+
+  const currency = data.currency || 'DKK';
+  const fmt = (amount: number) => formatCurrency(amount, currency);
+
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  // Daily new customers chart (split: customers on left, revenue on right)
+  const dailyChartData = {
+    labels: data.trends.daily.map(d => formatDate(d.date)),
+    datasets: [
+      {
+        label: 'New Customers',
+        data: data.trends.daily.map(d => d.new_customers),
+        borderColor: CHART_COLORS.success,
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        tension: 0.4,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Revenue from New Customers',
+        data: data.trends.daily.map(d => d.revenue),
+        borderColor: CHART_COLORS.primary,
+        backgroundColor: 'rgba(0, 102, 204, 0.1)',
+        tension: 0.4,
+        yAxisID: 'y1',
+      },
+    ],
+  };
+
+  const dailyChartOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'top' as const } },
+    scales: {
+      y: {
+        type: 'linear' as const,
+        display: true,
+        position: 'left' as const,
+        title: { display: true, text: 'Customers' },
+        ticks: { stepSize: 1, precision: 0 },
+      },
+      y1: {
+        type: 'linear' as const,
+        display: true,
+        position: 'right' as const,
+        title: { display: true, text: `Revenue (${currency})` },
+        grid: { drawOnChartArea: false },
+      },
+    },
+  };
+
+  // Customer type doughnut
+  const customerTypeDoughnut = {
+    labels: ['New Customers', 'Returning Customers'],
+    datasets: [{
+      data: [data.overview.new_customers, data.overview.returning_customers],
+      backgroundColor: [CHART_COLORS.success, CHART_COLORS.primary],
+      borderWidth: 1,
+    }],
+  };
+
+  // Revenue type doughnut
+  const revenueTypeDoughnut = {
+    labels: ['New Customer Revenue', 'Returning Customer Revenue'],
+    datasets: [{
+      data: [data.overview.new_customer_revenue, data.overview.returning_customer_revenue],
+      backgroundColor: [CHART_COLORS.success, CHART_COLORS.primary],
+      borderWidth: 1,
+    }],
+  };
+
+  const doughnutOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' as const } },
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Controls */}
+      <div className="flex items-center gap-4 text-sm text-gray-500">
+        <div className="flex items-center gap-2">
+          <ClockIcon className="w-4 h-4" />
+          <span>{formatDate(data.date_range.start)} - {formatDate(data.date_range.end)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-gray-600">New customer window:</label>
+          <select
+            value={newCustomerWindow}
+            onChange={(e) => setNewCustomerWindow(Number(e.target.value))}
+            className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          >
+            <option value={90}>90 days</option>
+            <option value={180}>6 months</option>
+            <option value={365}>12 months</option>
+            <option value={730}>24 months</option>
+          </select>
+        </div>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatsCard
+          title="New Customers"
+          value={data.overview.new_customers.toString()}
+          icon={<UserPlusIcon className="h-6 w-6" />}
+          color="green"
+          trend={{
+            value: Math.abs(data.growth.new_customer_growth),
+            isPositive: data.growth.new_customer_growth > 0,
+          }}
+        />
+        <StatsCard
+          title="New Customer Revenue"
+          value={fmt(data.overview.new_customer_revenue)}
+          icon={<CurrencyDollarIcon className="h-6 w-6" />}
+          color="blue"
+          description={`${data.overview.new_customer_revenue_percentage.toFixed(1)}% of total`}
+        />
+        <StatsCard
+          title="Avg New Customer Value"
+          value={fmt(data.overview.avg_new_customer_order_value)}
+          icon={<ChartBarIcon className="h-6 w-6" />}
+          color="purple"
+          description={`${data.overview.total_new_customer_orders} orders`}
+        />
+        <StatsCard
+          title="New vs Returning"
+          value={`${data.overview.new_customer_percentage.toFixed(1)}%`}
+          icon={<UsersIcon className="h-6 w-6" />}
+          color="indigo"
+          description={`${data.overview.new_customers} new / ${data.overview.returning_customers} returning`}
+        />
+      </div>
+
+      {/* CAC Metrics — only show when marketing spend data exists */}
+      {data.cac_metrics.total_marketing_spend > 0 && (
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-lg border border-purple-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Customer Acquisition Cost (CAC)</h3>
+          <p className="text-sm text-gray-600 mb-4">{data.cac_metrics.note}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-md">
+              <div className="text-sm text-gray-600">Marketing Spend</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{fmt(data.cac_metrics.total_marketing_spend)}</div>
+            </div>
+            <div className="bg-white p-4 rounded-md">
+              <div className="text-sm text-gray-600">CAC</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{fmt(data.cac_metrics.customer_acquisition_cost)}</div>
+              <div className="text-xs text-gray-500 mt-1">Per new customer</div>
+            </div>
+            <div className="bg-white p-4 rounded-md">
+              <div className="text-sm text-gray-600">Revenue per New Customer</div>
+              <div className="text-2xl font-bold text-gray-900 mt-1">{fmt(data.cac_metrics.revenue_per_new_customer)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Charts: Daily trend + Customer type split */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Daily New Customer Acquisition</h3>
+          <div style={{ height: '300px' }}>
+            <Line data={dailyChartData} options={dailyChartOpts} />
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Customer Type Distribution</h3>
+          <div style={{ height: '300px' }}>
+            <Doughnut data={customerTypeDoughnut} options={doughnutOpts} />
+          </div>
+        </div>
+      </div>
+
+      {/* Revenue breakdown + comparison */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Revenue by Customer Type</h3>
+          <div style={{ height: '300px' }}>
+            <Doughnut data={revenueTypeDoughnut} options={doughnutOpts} />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">New vs Returning Comparison</h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
+              <div>
+                <div className="text-sm text-gray-600">New Customers</div>
+                <div className="text-2xl font-bold text-gray-900">{data.overview.new_customers}</div>
+                <div className="text-sm text-gray-500">{data.overview.total_new_customer_orders} orders</div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-600">Avg Order Value</div>
+                <div className="text-xl font-semibold text-green-600">
+                  {fmt(data.overview.avg_new_customer_order_value)}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+              <div>
+                <div className="text-sm text-gray-600">Returning Customers</div>
+                <div className="text-2xl font-bold text-gray-900">{data.overview.returning_customers}</div>
+                <div className="text-sm text-gray-500">{data.overview.total_returning_customer_orders} orders</div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-600">Avg Order Value</div>
+                <div className="text-xl font-semibold text-blue-600">
+                  {fmt(data.overview.avg_returning_customer_order_value)}
+                </div>
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Total Unique Customers</span>
+                <span className="text-lg font-semibold text-gray-900">{data.overview.total_unique_customers}</span>
+              </div>
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-sm text-gray-600">Total Revenue</span>
+                <span className="text-lg font-semibold text-gray-900">{fmt(data.overview.total_revenue)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top New Customers table */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Top New Customers by Spend</h3>
+        </div>
+        <div className="p-6 overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">First Order</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orders</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Spent</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data.top_new_customers.map((customer, idx) => (
+                <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {showEmails ? customer.email : maskEmail(customer.email)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(customer.first_order_date).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{customer.orders}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {fmt(customer.total_spent)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Growth Comparison */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Period Comparison</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center p-4 bg-gray-50 rounded-lg">
+            <div className="text-sm text-gray-600 mb-2">Previous Period</div>
+            <div className="text-3xl font-bold text-gray-900">{data.growth.previous_period.new_customers}</div>
+            <div className="text-xs text-gray-500 mt-1">new customers</div>
+          </div>
+          <div className="text-center p-4 bg-indigo-50 rounded-lg">
+            <div className="text-sm text-gray-600 mb-2">Current Period</div>
+            <div className="text-3xl font-bold text-indigo-600">{data.overview.new_customers}</div>
+            <div className="text-xs text-gray-500 mt-1">new customers</div>
+          </div>
+          <div className="text-center p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg">
+            <div className="text-sm text-gray-600 mb-2">Growth Rate</div>
+            <div className={`text-3xl font-bold ${data.growth.new_customer_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {data.growth.new_customer_growth >= 0 ? '+' : ''}{data.growth.new_customer_growth.toFixed(1)}%
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              {data.growth.new_customer_growth >= 0 ? (
+                <span className="flex items-center justify-center">
+                  <ArrowTrendingUpIcon className="w-4 h-4 mr-1" /> Growing
+                </span>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <ArrowTrendingDownIcon className="w-4 h-4 mr-1" /> Declining
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

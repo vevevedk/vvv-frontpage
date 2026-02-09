@@ -30,7 +30,7 @@ def get_currency_for_client(client_name, orders_queryset=None):
     Determine the currency code for a client.
     Priority: 1) Company currency, 2) WooCommerce config currency, 3) First order currency, 4) USD default
     """
-    currency_code = 'USD'
+    currency_code = 'DKK'
 
     # Normalize client name
     base_client_name = (client_name or '').split(' - ')[0].strip() if client_name else ''
@@ -159,10 +159,29 @@ class WooCommerceJobViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = WooCommerceJob.objects.all()
     serializer_class = WooCommerceJobSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         queryset = WooCommerceJob.objects.all()
         request = getattr(self, 'request', None)
+        user = request.user if request else None
+
+        # Role-based scoping
+        if user and user.role != 'super_admin':
+            if user.role in ['agency_admin', 'agency_user']:
+                if user.access_all_companies:
+                    accounts = Account.objects.filter(company__agency=user.agency)
+                else:
+                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
+            elif user.role in ['company_admin', 'company_user']:
+                if user.access_all_companies:
+                    accounts = Account.objects.filter(company__agency=user.agency)
+                else:
+                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
+            else:
+                accounts = Account.objects.none()
+            allowed_names = list(accounts.values_list('name', flat=True))
+            queryset = queryset.filter(client_name__in=allowed_names)
+
         if request:
             client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
             if client_name:
@@ -296,10 +315,14 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             date_created__gte=timezone.now() - timedelta(days=30)
         ).count()
         
+        # Resolve currency for this client
+        currency_code = get_currency_for_client(client_name, queryset)
+
         return Response({
             'total_orders': total_orders,
             'total_revenue': float(total_revenue),
             'recent_orders': recent_orders,
+            'currency': currency_code,
             'status_breakdown': list(status_counts)
         })
     
@@ -403,8 +426,12 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             revenue=Sum('total')
         ).order_by('-count')[:10]
         
+        # Resolve currency for this client
+        currency_code = get_currency_for_client(client_name, period_orders)
+
         return Response({
             'period': period,
+            'currency': currency_code,
             'date_range': {
                 'start': start_date.isoformat(),
                 'end': end_date.isoformat()
@@ -838,37 +865,64 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # Health metrics
             avg_days_between_orders = (sum(s['avg_interval_days'] for s in subscribers) / total_subscribers) if total_subscribers > 0 else 0
 
-            # At-risk subscriber list (sorted by days overdue)
+            # --- Deduplicate subscriber lists by email ---
+            def _group_by_email(sub_list):
+                """Group subscriber rows by email, merging product info."""
+                by_email = {}
+                for s in sub_list:
+                    email = s['email']
+                    if email not in by_email:
+                        by_email[email] = {
+                            'email': email,
+                            'products': [s['product_name']],
+                            'total_orders': s['total_orders'],
+                            'total_revenue': s['total_revenue'],
+                            'first_order_date': s['first_order_date'],
+                            'last_order_date': s['last_order_date'],
+                            'days_since_last_order': s['days_since_last_order'],
+                            'avg_interval_days': s['avg_interval_days'],
+                            'status': s['status'],
+                        }
+                    else:
+                        existing = by_email[email]
+                        existing['products'].append(s['product_name'])
+                        existing['total_orders'] += s['total_orders']
+                        existing['total_revenue'] += s['total_revenue']
+                        # Keep the most recent last_order_date
+                        if s['last_order_date'] and (not existing['last_order_date'] or s['last_order_date'] > existing['last_order_date']):
+                            existing['last_order_date'] = s['last_order_date']
+                            existing['days_since_last_order'] = s['days_since_last_order']
+                return list(by_email.values())
+
             at_risk_list = sorted(
-                [s for s in subscribers if s['status'] == 'at_risk'],
+                _group_by_email([s for s in subscribers if s['status'] == 'at_risk']),
                 key=lambda x: x['days_since_last_order'] or 0,
                 reverse=True
             )[:20]
 
-            # Recently churned list
             recently_churned_list = sorted(
-                [s for s in subscribers if s['status'] == 'churned'],
+                _group_by_email([s for s in subscribers if s['status'] == 'churned']),
                 key=lambda x: x['days_since_last_order'] or 0
             )[:20]
 
-            # New subscribers this period
             new_subscribers_list = sorted(
-                [s for s in subscribers if s['is_new_subscriber']],
+                _group_by_email([s for s in subscribers if s['is_new_subscriber']]),
                 key=lambda x: x['last_order_date'] or timezone.now(),
                 reverse=True
             )[:20]
 
-            # Format dates for JSON serialization
             def format_subscriber(s):
+                product_name = ', '.join(s['products']) if isinstance(s.get('products'), list) else s.get('product_name', '')
                 return {
                     'email': s['email'],
-                    'product_name': s['product_name'],
+                    'product_name': product_name,
+                    'product_count': len(s['products']) if isinstance(s.get('products'), list) else 1,
                     'total_orders': s['total_orders'],
                     'total_revenue': s['total_revenue'],
-                    'first_order_date': s['first_order_date'].isoformat() if s['first_order_date'] else None,
-                    'last_order_date': s['last_order_date'].isoformat() if s['last_order_date'] else None,
+                    'first_order_date': s['first_order_date'].isoformat() if s.get('first_order_date') else None,
+                    'last_order_date': s['last_order_date'].isoformat() if s.get('last_order_date') else None,
                     'days_since_last_order': s['days_since_last_order'],
-                    'avg_interval_days': s['avg_interval_days'],
+                    'avg_interval_days': s.get('avg_interval_days', 0),
                     'status': s['status'],
                 }
 
@@ -1246,7 +1300,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
                         'sourceMedium': f"{source}/{medium}"
                     }
             elif source in ['chatgpt', 'openai']:
-                channel_type = 'ChatGpt'
+                channel_type = 'ChatGPT'
                 if channel_type not in channel_data:
                     channel_data[channel_type] = {
                         'channelType': channel_type,
@@ -2637,10 +2691,29 @@ class WooCommerceSyncLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = WooCommerceSyncLog.objects.all()
     serializer_class = WooCommerceSyncLogSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         queryset = WooCommerceSyncLog.objects.all()
         request = getattr(self, 'request', None)
+        user = request.user if request else None
+
+        # Role-based scoping
+        if user and user.role != 'super_admin':
+            if user.role in ['agency_admin', 'agency_user']:
+                if user.access_all_companies:
+                    accounts = Account.objects.filter(company__agency=user.agency)
+                else:
+                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
+            elif user.role in ['company_admin', 'company_user']:
+                if user.access_all_companies:
+                    accounts = Account.objects.filter(company__agency=user.agency)
+                else:
+                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
+            else:
+                accounts = Account.objects.none()
+            allowed_names = list(accounts.values_list('name', flat=True))
+            queryset = queryset.filter(client_name__in=allowed_names)
+
         if request:
             client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
             if client_name:

@@ -11,6 +11,9 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { api } from '../../lib/api';
+import { formatCurrency } from '../../lib/formatCurrency';
+import { maskEmail } from '../../lib/emailMask';
+import { useDashboardFilter } from './DashboardFilterContext';
 
 interface SubscriberData {
   email: string;
@@ -60,33 +63,16 @@ interface SubscriptionAnalyticsData {
 }
 
 export default function SubscriptionAnalytics() {
+  const { period, selectedClient, showEmails } = useDashboardFilter();
   const [data, setData] = useState<SubscriptionAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<number>(90);
-  const [selectedClient, setSelectedClient] = useState<string>('all');
-  const [clients, setClients] = useState<Array<{id: string, name: string}>>([]);
   const [minPurchases, setMinPurchases] = useState<number>(2);
   const [reorderWindow, setReorderWindow] = useState<number>(35);
 
   useEffect(() => {
-    fetchClients();
-  }, []);
-
-  useEffect(() => {
     fetchData();
   }, [period, selectedClient, minPurchases, reorderWindow]);
-
-  const fetchClients = async () => {
-    try {
-      const response = await api.get<Array<{id: string, name: string}>>('/woocommerce/orders/client_names/');
-      if (response.data && Array.isArray(response.data)) {
-        setClients(response.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch clients:', err);
-    }
-  };
 
   const fetchData = async () => {
     try {
@@ -115,13 +101,8 @@ export default function SubscriptionAnalytics() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    const currency = data?.currency || 'USD';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-    }).format(amount);
-  };
+  const currency = data?.currency || 'DKK';
+  const fmt = (amount: number) => formatCurrency(amount, currency);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
@@ -175,37 +156,7 @@ export default function SubscriptionAnalytics() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {/* Client Selector */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Client</label>
-            <select
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-              <option value="all">All Clients</option>
-              {clients.map(client => (
-                <option key={client.id} value={client.id}>{client.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Time Period */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
-            <select
-              value={period}
-              onChange={(e) => setPeriod(Number(e.target.value))}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-              <option value={30}>Last 30 days</option>
-              <option value={90}>Last 90 days</option>
-              <option value={180}>Last 6 months</option>
-              <option value={365}>Last year</option>
-            </select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Min Purchases */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Min Purchases</label>
@@ -239,7 +190,7 @@ export default function SubscriptionAnalytics() {
           </div>
 
           {/* Info */}
-          <div className="flex items-end">
+          <div className="flex items-end col-span-2">
             <div className="text-xs text-gray-500">
               <ClockIcon className="inline-block w-3 h-3 mr-1" />
               {formatDate(data.date_range.start)} - {formatDate(data.date_range.end)}
@@ -313,7 +264,7 @@ export default function SubscriptionAnalytics() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Subscriber Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.overview.subscriber_revenue)}</p>
+              <p className="text-2xl font-bold text-gray-900">{fmt(data.overview.subscriber_revenue)}</p>
               <p className="text-sm text-indigo-600 mt-1">
                 {data.overview.subscriber_revenue_percentage.toFixed(1)}% of total revenue
               </p>
@@ -325,7 +276,7 @@ export default function SubscriptionAnalytics() {
         <div className="bg-white p-6 rounded-lg shadow">
           <div>
             <p className="text-sm font-medium text-gray-600">Avg Subscriber LTV</p>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.overview.avg_subscriber_ltv)}</p>
+            <p className="text-2xl font-bold text-gray-900">{fmt(data.overview.avg_subscriber_ltv)}</p>
             <p className="text-sm text-gray-500 mt-1">
               {data.health.avg_orders_per_subscriber.toFixed(1)} orders avg
             </p>
@@ -388,13 +339,13 @@ export default function SubscriptionAnalytics() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {data.at_risk_subscribers.map((subscriber, idx) => (
                   <tr key={idx} className="hover:bg-yellow-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{subscriber.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{showEmails ? subscriber.email : maskEmail(subscriber.email)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subscriber.product_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(subscriber.last_order_date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600 font-medium">{subscriber.days_since_last_order} days</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subscriber.avg_interval_days} days</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subscriber.total_orders}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrency(subscriber.total_revenue)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{fmt(subscriber.total_revenue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -429,12 +380,12 @@ export default function SubscriptionAnalytics() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {data.recently_churned.slice(0, 10).map((subscriber, idx) => (
                   <tr key={idx} className="hover:bg-red-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{subscriber.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{showEmails ? subscriber.email : maskEmail(subscriber.email)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subscriber.product_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(subscriber.last_order_date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">{subscriber.days_since_last_order} days</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subscriber.total_orders}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrency(subscriber.total_revenue)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{fmt(subscriber.total_revenue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -469,12 +420,12 @@ export default function SubscriptionAnalytics() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {data.new_subscribers.slice(0, 10).map((subscriber, idx) => (
                   <tr key={idx} className="hover:bg-green-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{subscriber.email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{showEmails ? subscriber.email : maskEmail(subscriber.email)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subscriber.product_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(subscriber.first_order_date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(subscriber.last_order_date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subscriber.total_orders}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">{formatCurrency(subscriber.total_revenue)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">{fmt(subscriber.total_revenue)}</td>
                   </tr>
                 ))}
               </tbody>

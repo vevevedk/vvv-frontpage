@@ -5,47 +5,46 @@ import {
   ClockIcon,
   ChartBarIcon,
   CogIcon,
-  PlusIcon,
-  ServerIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  PlayIcon,
   ListBulletIcon,
   UserPlusIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from '@heroicons/react/24/outline';
 import ClientManagement from './ClientManagement';
 import JobMonitoring from './JobMonitoring';
 import OrderAnalytics from './OrderAnalytics';
-import AnalyticsDashboard from './AnalyticsDashboard';
-import AdvancedAnalytics from './AdvancedAnalytics';
-import EnhancedAnalytics from './EnhancedAnalytics';
-import CustomerAcquisition from './CustomerAcquisition';
+import OverviewTab from './OverviewTab';
+import CustomersTab from './CustomersTab';
 import SubscriptionAnalytics from './SubscriptionAnalytics';
 import ChannelReport from './ChannelReport';
 import SyncLogs from './SyncLogs';
 import AddClientModal from './AddClientModal';
 import ChannelClassificationManager from './ChannelClassificationManager';
-import StatsCard from '../StatsCard';
-
+import { DashboardFilterProvider, useDashboardFilter } from './DashboardFilterContext';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-export default function WooCommerceDashboard() {
+function DashboardInner() {
+  const {
+    period,
+    setPeriod,
+    selectedClient,
+    setSelectedClient,
+    clients,
+    isAdmin,
+    showEmails,
+    setShowEmails,
+    hideClientSelector,
+  } = useDashboardFilter();
+
   const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
   const [isChannelClassificationOpen, setIsChannelClassificationOpen] = useState(false);
-  const [stats, setStats] = useState({
-    totalPipelines: 0,
-    enabled: 0,
-    disabled: 0,
-    activeJobs: 0
-  });
-  const [loading, setLoading] = useState(true);
 
   const tabs = [
-    // Admin-only tabs (clients, jobs, logs)
+    // Admin-only tabs
     {
       name: 'Clients',
       icon: ShoppingCartIcon,
@@ -60,47 +59,36 @@ export default function WooCommerceDashboard() {
       description: 'Monitor sync jobs and schedules',
       adminOnly: true,
     },
+    // User-facing tabs (7 → 5)
     {
-      name: 'Analytics',
+      name: 'Overview',
       icon: ChartBarIcon,
-      component: AnalyticsDashboard,
-      description: 'Basic performance analytics and insights'
+      component: OverviewTab,
+      description: 'Revenue, orders, trends, and product performance',
     },
     {
-      name: 'Advanced',
-      icon: ChartBarIcon,
-      component: AdvancedAnalytics,
-      description: 'Deep analytics with customer insights and performance metrics'
-    },
-    {
-      name: 'Enhanced',
-      icon: ChartBarIcon,
-      component: EnhancedAnalytics,
-      description: 'Comprehensive analytics with customer segmentation and real-time insights'
-    },
-    {
-      name: 'New Customers',
+      name: 'Customers',
       icon: UserPlusIcon,
-      component: CustomerAcquisition,
-      description: 'Customer acquisition analytics with CAC tracking'
+      component: CustomersTab,
+      description: 'Customer acquisition, segmentation, and growth',
     },
     {
       name: 'Subscriptions',
       icon: ArrowPathIcon,
       component: SubscriptionAnalytics,
-      description: 'Recurring purchase and subscription analytics'
+      description: 'Recurring purchase and subscription analytics',
     },
     {
       name: 'Orders',
       icon: ListBulletIcon,
       component: OrderAnalytics,
-      description: 'View order data and basic statistics'
+      description: 'View order data and basic statistics',
     },
     {
       name: 'Channels',
       icon: ChartBarIcon,
       component: ChannelReport,
-      description: 'Marketing channel performance and attribution'
+      description: 'Marketing channel performance and attribution',
     },
     {
       name: 'Logs',
@@ -108,57 +96,14 @@ export default function WooCommerceDashboard() {
       component: SyncLogs,
       description: 'Review sync logs and errors',
       adminOnly: true,
-    }
+    },
   ];
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-              // Get the access token from localStorage
-        const accessToken = localStorage.getItem('accessToken');
-        
-        const [configsResponse, jobsResponse] = await Promise.all([
-          fetch('/api/woocommerce/configs', {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
-            },
-          }).then(res => res.ok ? res.json() : []),
-          fetch('/api/woocommerce/jobs', {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
-            },
-          }).then(res => res.ok ? res.json() : [])
-        ]);
-
-      const configs = Array.isArray(configsResponse) ? configsResponse : [];
-      const jobs = Array.isArray(jobsResponse) ? jobsResponse : [];
-
-      setStats({
-        totalPipelines: configs.length,
-        enabled: configs.filter((c: any) => c.enabled).length,
-        disabled: configs.filter((c: any) => !c.enabled).length,
-        activeJobs: jobs.filter((j: any) => j.status === 'running').length
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Determine user role from localStorage (quick client-side guard)
-  const role = (typeof window !== 'undefined' ? localStorage.getItem('role') : '') || '';
-  const isAdmin = ['super_admin', 'agency_admin'].includes(role);
+  const visibleTabs = tabs.filter(t => !t.adminOnly);
 
   return (
     <div className="space-y-6">
-      {/* Header with Add Client Button */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Dashboard Overview</h2>
@@ -166,15 +111,60 @@ export default function WooCommerceDashboard() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4" />
+      {/* Global filter bar */}
+      <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-lg shadow">
+        {/* Period selector */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Period</label>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(Number(e.target.value))}
+            className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          >
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={55}>Last 55 days</option>
+            <option value={90}>Last 90 days</option>
+            <option value={180}>Last 6 months</option>
+            <option value={365}>Last year</option>
+          </select>
+        </div>
+
+        {/* Client selector (hidden when ≤1 client) */}
+        {!hideClientSelector && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">Client</label>
+            <select
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            >
+              <option value="all">All Clients</option>
+              {clients.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Email toggle */}
+        <button
+          onClick={() => setShowEmails(!showEmails)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50"
+          title={showEmails ? 'Hide emails' : 'Show emails'}
+        >
+          {showEmails ? (
+            <><EyeSlashIcon className="h-4 w-4" /> Hide emails</>
+          ) : (
+            <><EyeIcon className="h-4 w-4" /> Show emails</>
+          )}
+        </button>
+      </div>
 
       {/* Tab Navigation */}
       <Tab.Group>
         <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">
-          {tabs
-            .filter(t => !t.adminOnly) // remove admin-only tabs from WC dashboard
-            .map((tab) => (
+          {visibleTabs.map((tab) => (
             <Tab
               key={tab.name}
               className={({ selected }) =>
@@ -195,9 +185,7 @@ export default function WooCommerceDashboard() {
           ))}
         </Tab.List>
         <Tab.Panels className="mt-6">
-          {tabs
-            .filter(t => !t.adminOnly)
-            .map((tab) => (
+          {visibleTabs.map((tab) => (
             <Tab.Panel
               key={tab.name}
               className={classNames(
@@ -226,10 +214,17 @@ export default function WooCommerceDashboard() {
         isOpen={isChannelClassificationOpen}
         onClose={() => setIsChannelClassificationOpen(false)}
         onClassificationsUpdated={() => {
-          // Refresh the channel report when classifications are updated
           console.log('Channel classifications updated');
         }}
       />
     </div>
   );
-} 
+}
+
+export default function WooCommerceDashboard() {
+  return (
+    <DashboardFilterProvider>
+      <DashboardInner />
+    </DashboardFilterProvider>
+  );
+}
