@@ -563,7 +563,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
             # Revenue breakdown
             new_customer_revenue = sum([c['total'] for c in new_customers_data])
             returning_customer_revenue = sum([c['total'] for c in returning_customers_data])
-            total_revenue = period_orders.aggregate(Sum('total'))['total__sum'] or 0
+            total_revenue = float(period_orders.aggregate(Sum('total'))['total__sum'] or 0)
 
             # Calculate CAC (Customer Acquisition Cost)
             # Note: We'll need marketing spend data to calculate actual CAC
