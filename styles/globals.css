@@ -4,6 +4,7 @@
 
 /* Import design tokens */
 @import './design-tokens.css';
+@import './veveve-io-tokens.css';
 
 html, body {
   margin: 0;

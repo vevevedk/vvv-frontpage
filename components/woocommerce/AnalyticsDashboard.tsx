@@ -23,6 +23,8 @@ import {
 } from '@heroicons/react/24/outline';
 import StatsCard from '../StatsCard';
 import { api } from '../../lib/api';
+import { formatCurrency } from '../../lib/formatCurrency';
+import { maskEmail } from '../../lib/emailMask';
 
 // Register ChartJS components
 ChartJS.register(
@@ -39,6 +41,7 @@ ChartJS.register(
 
 interface AnalyticsData {
   period: number;
+  currency?: string;
   date_range: {
     start: string;
     end: string;
@@ -101,6 +104,10 @@ export default function AnalyticsDashboard() {
   const [period, setPeriod] = useState<number>(30);
   const [selectedClient, setSelectedClient] = useState<string>('all');
   const [clients, setClients] = useState<Array<{id: string, name: string}>>([]);
+  const [showEmails, setShowEmails] = useState(false);
+
+  const role = typeof window !== 'undefined' ? localStorage.getItem('role') || '' : '';
+  const isAdmin = ['super_admin', 'agency_admin'].includes(role);
 
   useEffect(() => {
     fetchClients();
@@ -142,12 +149,8 @@ export default function AnalyticsDashboard() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+  const currency = analytics?.currency || 'DKK';
+  const fmt = (amount: number) => formatCurrency(amount, currency);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -252,20 +255,22 @@ export default function AnalyticsDashboard() {
             <option value={365}>Last year</option>
           </select>
           
-          <select
-            value={selectedClient}
-            onChange={(e) => setSelectedClient(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Clients</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
-          </select>
+          {clients.length > 1 && (
+            <select
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="all">All Clients</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-        
+
         <div className="text-sm text-gray-500">
           Data from {formatDate(analytics.date_range.start)} to {formatDate(analytics.date_range.end)}
         </div>
@@ -275,7 +280,7 @@ export default function AnalyticsDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <StatsCard
           title="Total Revenue"
-          value={formatCurrency(analytics.overview.total_revenue)}
+          value={fmt(analytics.overview.total_revenue)}
           icon={<CurrencyDollarIcon className="h-6 w-6" />}
           color="green"
           trend={{
@@ -295,7 +300,7 @@ export default function AnalyticsDashboard() {
         />
         <StatsCard
           title="Avg Order Value"
-          value={formatCurrency(analytics.overview.avg_order_value)}
+          value={fmt(analytics.overview.avg_order_value)}
           icon={<CurrencyDollarIcon className="h-6 w-6" />}
           color="purple"
         />
@@ -357,7 +362,7 @@ export default function AnalyticsDashboard() {
                   <div className="text-sm text-gray-500">{method.count} orders</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-medium">{formatCurrency(method.revenue)}</div>
+                  <div className="font-medium">{fmt(method.revenue)}</div>
                   <div className="text-sm text-gray-500">{method.percentage}%</div>
                 </div>
               </div>
@@ -398,17 +403,17 @@ export default function AnalyticsDashboard() {
                         <div className="text-sm font-medium text-gray-900">
                           {customer.name || 'Anonymous'}
                         </div>
-                        <div className="text-sm text-gray-500">{customer.email}</div>
+                        <div className="text-sm text-gray-500">{showEmails ? customer.email : maskEmail(customer.email)}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {customer.orders}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(customer.total_spent)}
+                      {fmt(customer.total_spent)}
                       </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(customer.total_spent / customer.orders)}
+                      {fmt(customer.total_spent / customer.orders)}
                     </td>
                   </tr>
                 ))}
@@ -457,18 +462,22 @@ export default function AnalyticsDashboard() {
             >
               📊 View Detailed Orders
             </button>
-            <button
-              onClick={() => window.open('/woocommerce/jobs/', '_blank')}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-            >
-              ⚡ Monitor Sync Jobs
-            </button>
-            <button
-              onClick={() => window.open('/woocommerce/logs/', '_blank')}
-              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
-            >
-              📝 Review Sync Logs
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => window.open('/woocommerce/jobs/', '_blank')}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+              >
+                Monitor Sync Jobs
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => window.open('/woocommerce/logs/', '_blank')}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+              >
+                Review Sync Logs
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -24,6 +24,7 @@ import {
 } from '@heroicons/react/24/outline';
 import StatsCard from '../StatsCard';
 import { api } from '../../lib/api';
+import { formatCurrency } from '../../lib/formatCurrency';
 
 // Register ChartJS components
 ChartJS.register(
@@ -231,13 +232,8 @@ export default function EnhancedAnalytics() {
     return <div>No analytics data available</div>;
   }
 
-  const formatCurrency = (amount: number) => {
-    const currency = analytics?.currency || 'USD';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-    }).format(amount);
-  };
+  const currency = analytics?.currency || 'DKK';
+  const fmt = (amount: number) => formatCurrency(amount, currency);
 
   // Prepare chart data
   const hourlyChartData = {
@@ -302,18 +298,20 @@ export default function EnhancedAnalytics() {
         
         {/* Controls */}
         <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
-          <select
-            value={selectedClient}
-            onChange={(e) => setSelectedClient(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-          >
-            <option value="all">All Clients</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
-          </select>
+          {clients.length > 1 && (
+            <select
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              <option value="all">All Clients</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+          )}
 
           <select
             value={period}
@@ -337,12 +335,12 @@ export default function EnhancedAnalytics() {
         />
         <StatsCard
           title="Total Revenue"
-          value={formatCurrency(analytics.overview.total_revenue)}
+          value={fmt(analytics.overview.total_revenue)}
           icon={<CurrencyDollarIcon className="h-6 w-6" />}
         />
         <StatsCard
           title="Avg Order Value"
-          value={formatCurrency(analytics.overview.avg_order_value)}
+          value={fmt(analytics.overview.avg_order_value)}
           icon={<ChartBarIcon className="h-6 w-6" />}
         />
         <StatsCard
@@ -371,7 +369,7 @@ export default function EnhancedAnalytics() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">CLV</span>
-              <span className="font-medium">{formatCurrency(analytics.customer_insights.customer_lifetime_value)}</span>
+              <span className="font-medium">{fmt(analytics.customer_insights.customer_lifetime_value)}</span>
             </div>
           </div>
         </div>
@@ -382,7 +380,7 @@ export default function EnhancedAnalytics() {
             {analytics.geographic.top_countries.slice(0, 5).map((country, index) => (
               <div key={index} className="flex justify-between">
                 <span className="text-gray-600">{country.country}</span>
-                <span className="font-medium">{formatCurrency(country.revenue)}</span>
+                <span className="font-medium">{fmt(country.revenue)}</span>
               </div>
             ))}
           </div>
@@ -394,7 +392,7 @@ export default function EnhancedAnalytics() {
             {analytics.product_performance.top_products.slice(0, 5).map((product, index) => (
               <div key={index} className="flex justify-between">
                 <span className="text-gray-600 truncate">{product.name}</span>
-                <span className="font-medium">{formatCurrency(product.revenue)}</span>
+                <span className="font-medium">{fmt(product.revenue)}</span>
               </div>
             ))}
           </div>
@@ -469,7 +467,7 @@ export default function EnhancedAnalytics() {
                   {metrics.percentage}% of total
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  {formatCurrency(metrics.total_revenue)}
+                  {fmt(metrics.total_revenue)}
                 </div>
               </div>
             ))}

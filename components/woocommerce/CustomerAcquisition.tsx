@@ -23,6 +23,8 @@ import {
 } from '@heroicons/react/24/outline';
 import StatsCard from '../StatsCard';
 import { api } from '../../lib/api';
+import { formatCurrency } from '../../lib/formatCurrency';
+import { maskEmail } from '../../lib/emailMask';
 
 // Register ChartJS components
 ChartJS.register(
@@ -148,13 +150,10 @@ export default function CustomerAcquisition() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    const currency = data?.currency || 'USD';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-    }).format(amount);
-  };
+  const currency = data?.currency || 'DKK';
+  const fmt = (amount: number) => formatCurrency(amount, currency);
+
+  const [showEmails, setShowEmails] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -294,23 +293,25 @@ export default function CustomerAcquisition() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Client Selector */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Client
-            </label>
-            <select
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-              <option value="all">All Clients</option>
-              {clients.map(client => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {clients.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Client
+              </label>
+              <select
+                value={selectedClient}
+                onChange={(e) => setSelectedClient(e.target.value)}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              >
+                <option value="all">All Clients</option>
+                {clients.map(client => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Time Period */}
           <div>
@@ -381,14 +382,14 @@ export default function CustomerAcquisition() {
         
         <StatsCard
           title="New Customer Revenue"
-          value={formatCurrency(data.overview.new_customer_revenue)}
+          value={fmt(data.overview.new_customer_revenue)}
           icon={<CurrencyDollarIcon className="h-6 w-6" />}
           description={`${data.overview.new_customer_revenue_percentage.toFixed(1)}% of total`}
         />
 
         <StatsCard
           title="Avg New Customer Value"
-          value={formatCurrency(data.overview.avg_new_customer_order_value)}
+          value={fmt(data.overview.avg_new_customer_order_value)}
           icon={<ChartBarIcon className="h-6 w-6" />}
           description={`${data.overview.total_new_customer_orders} orders`}
         />
@@ -401,7 +402,8 @@ export default function CustomerAcquisition() {
         />
       </div>
 
-      {/* CAC Metrics (Placeholder for future integration) */}
+      {/* CAC Metrics — only show when marketing spend data is available */}
+      {data.cac_metrics.total_marketing_spend > 0 && (
       <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-6 rounded-lg border border-purple-200">
         <div className="flex items-start">
           <div className="flex-1">
@@ -415,21 +417,21 @@ export default function CustomerAcquisition() {
               <div className="bg-white p-4 rounded-md">
                 <div className="text-sm text-gray-600">Marketing Spend</div>
                 <div className="text-2xl font-bold text-gray-900 mt-1">
-                  {formatCurrency(data.cac_metrics.total_marketing_spend)}
+                  {fmt(data.cac_metrics.total_marketing_spend)}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">To be integrated</div>
               </div>
               <div className="bg-white p-4 rounded-md">
                 <div className="text-sm text-gray-600">CAC</div>
                 <div className="text-2xl font-bold text-gray-900 mt-1">
-                  {formatCurrency(data.cac_metrics.customer_acquisition_cost)}
+                  {fmt(data.cac_metrics.customer_acquisition_cost)}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">Per new customer</div>
               </div>
               <div className="bg-white p-4 rounded-md">
                 <div className="text-sm text-gray-600">Revenue per New Customer</div>
                 <div className="text-2xl font-bold text-gray-900 mt-1">
-                  {formatCurrency(data.cac_metrics.revenue_per_new_customer)}
+                  {fmt(data.cac_metrics.revenue_per_new_customer)}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">Average in period</div>
               </div>
@@ -437,6 +439,7 @@ export default function CustomerAcquisition() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -487,7 +490,7 @@ export default function CustomerAcquisition() {
               <div className="text-right">
                 <div className="text-sm text-gray-600">Avg Order Value</div>
                 <div className="text-xl font-semibold text-green-600">
-                  {formatCurrency(data.overview.avg_new_customer_order_value)}
+                  {fmt(data.overview.avg_new_customer_order_value)}
                 </div>
               </div>
             </div>
@@ -501,7 +504,7 @@ export default function CustomerAcquisition() {
               <div className="text-right">
                 <div className="text-sm text-gray-600">Avg Order Value</div>
                 <div className="text-xl font-semibold text-blue-600">
-                  {formatCurrency(data.overview.avg_returning_customer_order_value)}
+                  {fmt(data.overview.avg_returning_customer_order_value)}
                 </div>
               </div>
             </div>
@@ -513,7 +516,7 @@ export default function CustomerAcquisition() {
               </div>
               <div className="flex justify-between items-center mt-2">
                 <span className="text-sm text-gray-600">Total Revenue</span>
-                <span className="text-lg font-semibold text-gray-900">{formatCurrency(data.overview.total_revenue)}</span>
+                <span className="text-lg font-semibold text-gray-900">{fmt(data.overview.total_revenue)}</span>
               </div>
             </div>
           </div>
@@ -547,7 +550,7 @@ export default function CustomerAcquisition() {
               {data.top_new_customers.map((customer, idx) => (
                 <tr key={idx} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {customer.email}
+                    {showEmails ? customer.email : maskEmail(customer.email)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(customer.first_order_date).toLocaleDateString()}
@@ -556,7 +559,7 @@ export default function CustomerAcquisition() {
                     {customer.orders}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {formatCurrency(customer.total_spent)}
+                    {fmt(customer.total_spent)}
                   </td>
                 </tr>
               ))}

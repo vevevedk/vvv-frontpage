@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
@@ -11,14 +11,10 @@ import {
   Legend,
   ArcElement
 } from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
-  FunnelIcon,
-  ChartBarIcon,
   ExclamationTriangleIcon,
   EyeIcon,
-  ShoppingCartIcon,
-  CurrencyDollarIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   ArrowDownTrayIcon
@@ -26,18 +22,13 @@ import {
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 import ChannelClassificationManager from './ChannelClassificationManager';
+import { formatCurrency } from '../../lib/formatCurrency';
+import { CHART_COLORS } from '../../lib/constants/chartColors';
+import { useDashboardFilter } from './DashboardFilterContext';
 
-// Register ChartJS components
 ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
+  CategoryScale, LinearScale, PointElement, LineElement, BarElement,
+  Title, Tooltip, Legend, ArcElement
 );
 
 interface ChannelData {
@@ -96,43 +87,33 @@ interface ChannelReportData {
   currency?: string;
 }
 
-interface ChannelClassification {
-  source: string;
-  medium: string;
-  sourceMedium: string;
-  channel: string;
-  channelType: string;
-}
-
-const DEFAULT_CHANNEL_CLASSIFICATIONS: ChannelClassification[] = [
+const DEFAULT_CHANNEL_CLASSIFICATIONS = [
   { source: '(direct)', medium: 'typein', sourceMedium: '(direct)/typein', channel: 'direct / none', channelType: 'Direct' },
   { source: 'google', medium: 'organic', sourceMedium: 'google/organic', channel: 'google / organic', channelType: 'SEO' },
   { source: 'l.instagram.com', medium: 'referral', sourceMedium: 'l.instagram.com/referral', channel: 'Instagram / organic', channelType: 'Organic Social' },
   { source: 'mailpoet', medium: 'utm', sourceMedium: 'mailpoet/utm', channel: 'email / organic', channelType: 'Email' },
   { source: 'Klaviyo', medium: 'utm', sourceMedium: 'Klaviyo/utm', channel: 'email / organic', channelType: 'Email' },
   { source: 'duckduckgo.com', medium: 'referral', sourceMedium: 'duckduckgo.com/referral', channel: 'duckduckgo / organic', channelType: 'SEO' },
-  { source: 'app.wonnda.com', medium: 'referral', sourceMedium: 'app.wonnda.com/referral', channel: 'wonnda / referal', channelType: 'Referal' },
-  { source: 'chatgpt.com', medium: 'referral', sourceMedium: 'chatgpt.com/referral', channel: 'chatgpt / referal', channelType: 'ChatGpt' },
+  { source: 'app.wonnda.com', medium: 'referral', sourceMedium: 'app.wonnda.com/referral', channel: 'wonnda / referral', channelType: 'Referral' },
+  { source: 'chatgpt.com', medium: 'referral', sourceMedium: 'chatgpt.com/referral', channel: 'chatgpt / referral', channelType: 'ChatGPT' },
   { source: 'fb', medium: 'utm', sourceMedium: 'fb/utm', channel: 'facebook / paid', channelType: 'Paid Social' },
   { source: 'ig', medium: 'utm', sourceMedium: 'ig/utm', channel: 'instagram / paid', channelType: 'Paid Social' },
   { source: 'tagassistant.google.com', medium: 'referral', sourceMedium: 'tagassistant.google.com/referral', channel: 'tagmanager /. test', channelType: 'Test' },
-  { source: 'chatgpt.com', medium: 'utm', sourceMedium: 'chatgpt.com/utm', channel: 'chatgpt / utm', channelType: 'ChatGpt' },
+  { source: 'chatgpt.com', medium: 'utm', sourceMedium: 'chatgpt.com/utm', channel: 'chatgpt / utm', channelType: 'ChatGPT' },
   { source: 'google', medium: 'utm', sourceMedium: 'google/utm', channel: 'google / utm', channelType: 'Paid Search' },
-  { source: 'bing.com', medium: 'referral', sourceMedium: 'bing.com/referral', channel: 'bing / referal', channelType: 'Organic Search' },
+  { source: 'bing.com', medium: 'referral', sourceMedium: 'bing.com/referral', channel: 'bing / referral', channelType: 'Organic Search' },
   { source: 'crmcredorax.lightning.force.com', medium: 'referral', sourceMedium: 'crmcredorax.lightning.force.com/referral', channel: 'test / test', channelType: 'Test' },
   { source: 'dk.search.yahoo.com', medium: 'referral', sourceMedium: 'dk.search.yahoo.com/referral', channel: 'yahoo / referral', channelType: 'Referral' },
   { source: 'trustpilot', medium: 'utm', sourceMedium: 'trustpilot/utm', channel: 'trustpilot / utm', channelType: 'Referral' },
-  { source: 'google,google', medium: 'utm', sourceMedium: 'google,google/utm', channel: 'google,google / utm', channelType: 'ChannelNotFound' }
+  { source: 'google,google', medium: 'utm', sourceMedium: 'google,google/utm', channel: 'google,google / utm', channelType: 'Paid Search' }
 ];
 
 export default function ChannelReport() {
+  const { period, selectedClient, showEmails } = useDashboardFilter();
   const [reportData, setReportData] = useState<ChannelReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<number>(55);
   const [comparisonType, setComparisonType] = useState<'MoM' | 'QoQ' | 'YoY'>('MoM');
-  const [selectedClient, setSelectedClient] = useState<string>('all');
-  const [clients, setClients] = useState<Array<{id: string, name: string}>>([]);
   const [showUnclassifiedModal, setShowUnclassifiedModal] = useState(false);
   const [showClassificationManager, setShowClassificationManager] = useState(false);
   const [showAllChannels, setShowAllChannels] = useState<boolean>(true);
@@ -150,61 +131,32 @@ export default function ChannelReport() {
   };
 
   useEffect(() => {
-    fetchClients();
-  }, []);
-
-  useEffect(() => {
     fetchChannelReport();
   }, [period, comparisonType, selectedClient]);
-
-  const fetchClients = async () => {
-    try {
-      const accessToken = localStorage.getItem('accessToken');
-
-      const response = await fetch('/api/woocommerce/orders/client_names/', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data && Array.isArray(data)) {
-        setClients(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch clients:', err);
-    }
-  };
 
   const fetchChannelReport = async () => {
     try {
       setLoading(true);
       setError(null);
-      const params = new URLSearchParams({ 
+      const params = new URLSearchParams({
         period: period.toString(),
         comparison_type: comparisonType,
         client_name: selectedClient !== 'all' ? selectedClient : ''
       });
-      
-      // Get the access token from localStorage
+
       const accessToken = localStorage.getItem('accessToken');
-      
+
       const response = await fetch(`/api/woocommerce/orders/channels_report/?${params}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       if (data) {
         setReportData(data);
@@ -217,13 +169,8 @@ export default function ChannelReport() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    const currency = reportData?.currency || 'USD';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency,
-    }).format(amount);
-  };
+  const currency = reportData?.currency || 'DKK';
+  const fmt = (amount: number) => formatCurrency(amount, currency);
 
   const formatPercentage = (value: number) => {
     if (value === 0) return '0.0%';
@@ -247,43 +194,34 @@ export default function ChannelReport() {
     if (!reportData) return;
 
     try {
-      // Fetch detailed order data from the API
       const accessToken = localStorage.getItem('accessToken');
-      const params = new URLSearchParams({ 
+      const params = new URLSearchParams({
         period: period.toString(),
         client_name: selectedClient !== 'all' ? selectedClient : '',
-        export: 'true' // Flag to get detailed order data
+        export: 'true'
       });
-      
+
       const response = await fetch(`/api/woocommerce/orders/channels_report/?${params}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const detailedData = await response.json();
-      
-      // Prepare CSV data with order details
+
       const csvData = [
-        // Header row
         [
-          'Order ID',
-          'Order Date',
-          'Order Total (DKK)',
+          'Order ID', 'Order Date', 'Order Total (DKK)',
           'UTM Source (meta:_wc_order_attribution_utm_source)',
           'Source Type (meta:_wc_order_attribution_source_type)',
-          'Classified Channel Type',
-          'Customer Email',
-          'Order Status',
-          'Currency',
-          'Client Name'
+          'Classified Channel Type', 'Customer Email',
+          'Order Status', 'Currency', 'Client Name'
         ],
-        // Order rows
         ...(detailedData.orders || []).map((order: any) => [
           order.order_id || '',
           order.order_date || '',
@@ -298,12 +236,10 @@ export default function ChannelReport() {
         ])
       ];
 
-      // Convert to CSV string
-      const csvContent = csvData.map(row => 
+      const csvContent = csvData.map(row =>
         row.map((field: any) => `"${field}"`).join(',')
       ).join('\n');
 
-      // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
@@ -313,7 +249,7 @@ export default function ChannelReport() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
     } catch (error) {
       console.error('Export failed:', error);
       alert('Failed to export data. Please try again.');
@@ -331,7 +267,7 @@ export default function ChannelReport() {
   if (error || !reportData) {
     return (
       <div className="text-center py-12">
-        <div className="text-red-500 mb-4">⚠️ {error || 'No data available'}</div>
+        <div className="text-red-500 mb-4">{error || 'No data available'}</div>
         <button
           onClick={fetchChannelReport}
           className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
@@ -342,42 +278,22 @@ export default function ChannelReport() {
     );
   }
 
-  // Build merged channel list when toggled
+  // Build merged channel list
   const knownChannelTypes = [
-    'SEO',
-    'Paid Search',
-    'Direct',
-    'Organic Social',
-    'Paid Social',
-    'Email',
-    'ChatGpt',
-    'Referal',
-    'Organic Search',
-    'Referral',
-    'Test',
-    'ChannelNotFound',
-    'Unclassified'
+    'SEO', 'Paid Search', 'Direct', 'Organic Social', 'Paid Social',
+    'Email', 'ChatGPT', 'Organic Search', 'Referral', 'Test', 'Unclassified'
   ];
 
   const backendChannels = reportData.currentPeriod.channels || [];
   const backendMap = new Map(backendChannels.map(c => [c.channelType, c]));
 
-  // When showAllChannels is true, show known channels + any additional channels from backend
-  // This ensures we never lose data from channels not in our known list
   let mergedChannels: ChannelData[];
   if (showAllChannels) {
-    // Start with all known channel types (with defaults for missing ones)
     const knownChannelsData = knownChannelTypes.map((ct) =>
       backendMap.get(ct) || {
-        channelType: ct,
-        sessions: 0,
-        orders: 0,
-        orderTotal: 0,
-        cvr: 0,
-        aov: 0,
+        channelType: ct, sessions: 0, orders: 0, orderTotal: 0, cvr: 0, aov: 0,
       }
     );
-    // Add any backend channels that aren't in knownChannelTypes
     const additionalChannels = backendChannels.filter(
       c => !knownChannelTypes.includes(c.channelType)
     );
@@ -398,22 +314,24 @@ export default function ChannelReport() {
     return ((va as number) - (vb as number)) * dir;
   });
 
-  // Chart data for channel performance
+  // Filter out zero-value channels for the chart
+  const chartChannels = sortedChannels.filter(c => c.sessions > 0 || c.orders > 0);
+
   const channelChartData = {
-    labels: sortedChannels.map(c => c.channelType),
+    labels: chartChannels.map(c => c.channelType),
     datasets: [
       {
         label: 'Sessions',
-        data: sortedChannels.map(c => c.sessions),
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: 'rgb(59, 130, 246)',
+        data: chartChannels.map(c => c.sessions),
+        backgroundColor: `${CHART_COLORS.primary}cc`,
+        borderColor: CHART_COLORS.primary,
         borderWidth: 1,
       },
       {
         label: 'Orders',
-        data: sortedChannels.map(c => c.orders),
-        backgroundColor: 'rgba(34, 197, 94, 0.8)',
-        borderColor: 'rgb(34, 197, 94)',
+        data: chartChannels.map(c => c.orders),
+        backgroundColor: `${CHART_COLORS.success}cc`,
+        borderColor: CHART_COLORS.success,
         borderWidth: 1,
       }
     ]
@@ -421,16 +339,8 @@ export default function ChannelReport() {
 
   const chartOptions = {
     responsive: true,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
+    plugins: { legend: { position: 'top' as const } },
+    scales: { y: { beginAtZero: true } },
   };
 
   return (
@@ -441,20 +351,8 @@ export default function ChannelReport() {
           <h2 className="text-2xl font-bold text-gray-900">Channel Performance Report</h2>
           <p className="text-sm text-gray-500">Marketing attribution and channel performance analysis</p>
         </div>
-        
+
         <div className="flex gap-4 items-center">
-          <select
-            value={period}
-            onChange={(e) => setPeriod(Number(e.target.value))}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value={7}>Last 7 days</option>
-            <option value={30}>Last 30 days</option>
-            <option value={55}>Last 55 days</option>
-            <option value={90}>Last 90 days</option>
-            <option value={365}>Last year</option>
-          </select>
-          
           <select
             value={comparisonType}
             onChange={(e) => setComparisonType(e.target.value as 'MoM' | 'QoQ' | 'YoY')}
@@ -463,19 +361,6 @@ export default function ChannelReport() {
             <option value="MoM">Month over Month</option>
             <option value="QoQ">Quarter over Quarter</option>
             <option value="YoY">Year over Year</option>
-          </select>
-          
-          <select
-            value={selectedClient}
-            onChange={(e) => setSelectedClient(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Clients</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
           </select>
 
           <label className="inline-flex items-center space-x-2 text-sm text-gray-700">
@@ -554,11 +439,11 @@ export default function ChannelReport() {
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">Channel Performance Report</h3>
           <p className="text-sm text-gray-500 mt-1">
-            {reportData.currentPeriod.dateStart} to {reportData.currentPeriod.dateEnd} 
+            {reportData.currentPeriod.dateStart} to {reportData.currentPeriod.dateEnd}
             ({comparisonType} comparison)
           </p>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -601,9 +486,7 @@ export default function ChannelReport() {
             <tbody className="bg-white divide-y divide-gray-200">
               {/* Total Row */}
               <tr className="bg-gray-50 font-semibold">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  Total
-                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Total</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
                   {reportData.currentPeriod.total.sessions.toLocaleString()}
                 </td>
@@ -611,13 +494,13 @@ export default function ChannelReport() {
                   {reportData.currentPeriod.total.orders.toLocaleString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
-                  {formatCurrency(reportData.currentPeriod.total.orderTotal)}
+                  {fmt(reportData.currentPeriod.total.orderTotal)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
                   {reportData.currentPeriod.total.cvr.toFixed(1)}%
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
-                  {formatCurrency(reportData.currentPeriod.total.aov)}
+                  {fmt(reportData.currentPeriod.total.aov)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                   <div className="flex items-center justify-center space-x-1">
@@ -628,7 +511,7 @@ export default function ChannelReport() {
                   </div>
                 </td>
               </tr>
-              
+
               {/* Channel Rows */}
               {sortedChannels.map((channel, index) => {
                 const popChange = reportData.popChange.channels[channel.channelType];
@@ -644,13 +527,13 @@ export default function ChannelReport() {
                       {channel.orders.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
-                      {formatCurrency(channel.orderTotal)}
+                      {fmt(channel.orderTotal)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
                       {channel.cvr.toFixed(1)}%
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
-                      {formatCurrency(channel.aov)}
+                      {fmt(channel.aov)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                       {popChange && (channel.sessions > 0 || channel.orders > 0) && (
@@ -683,52 +566,36 @@ export default function ChannelReport() {
                 <EyeIcon className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                The following traffic sources don't match your current channel classification rules. 
+                The following traffic sources don't match your current channel classification rules.
                 You can add new rules to automatically classify these sources.
               </p>
-              
+
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Source
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Medium
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Source Medium
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Sessions
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medium</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source Medium</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sessions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {reportData.unclassifiedData.examples.map((example, index) => (
                       <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {example.source}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {example.medium}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {example.sourceMedium}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {example.sessions.toLocaleString()}
-                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{example.source}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{example.medium}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{example.sourceMedium}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{example.sessions.toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              
+
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowUnclassifiedModal(false)}
