@@ -1,12 +1,19 @@
 from django.shortcuts import render
-from rest_framework import status
+from rest_framework import status, viewsets, mixins
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import LoginSerializer, RegisterSerializer
+from .serializers import (
+    LoginSerializer, RegisterSerializer,
+    LoginEventSerializer, InviteSerializer, InviteCreateSerializer,
+)
+from .models import LoginEvent, Invite
 from users.models import User, Company
 from django.utils import timezone
+from datetime import timedelta
 from .errors import (
     ErrorCode, ErrorCategory,
     authentication_error, validation_error,
@@ -20,12 +27,30 @@ from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger('authentication')
 
-# Create your views here.
+
+def _get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def _record_login_event(request, user, success):
+    try:
+        LoginEvent.objects.create(
+            user=user,
+            ip_address=_get_client_ip(request),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:1000],
+            success=success,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to record login event: {e}")
+
 
 class LoginView(APIView):
     permission_classes = []
     throttle_classes = [LoginRateThrottle]
-    
+
     def post(self, request):
         try:
             serializer = LoginSerializer(data=request.data)
@@ -41,30 +66,32 @@ class LoginView(APIView):
                     details=serializer.errors
                 )
 
+            email = serializer.validated_data['email']
             user = authenticate(
-                username=serializer.validated_data['email'],
+                username=email,
                 password=serializer.validated_data['password']
             )
-            
+
             if not user:
-                SecurityEventLogger.log_auth_attempt(
-                    serializer.validated_data['email'],
-                    False,
-                    'Invalid credentials'
-                )
+                SecurityEventLogger.log_auth_attempt(email, False, 'Invalid credentials')
+                # Record failed login for known user
+                try:
+                    known_user = User.objects.get(email=email)
+                    _record_login_event(request, known_user, success=False)
+                except User.DoesNotExist:
+                    pass
                 return authentication_error(
                     message="Invalid credentials",
                     code=ErrorCode.INVALID_CREDENTIALS
                 )
 
-            # Generate JWT tokens
+            # Successful login
             refresh = RefreshToken.for_user(user)
-            
-            SecurityEventLogger.log_auth_attempt(
-                user.email,
-                True
-            )
-            
+            SecurityEventLogger.log_auth_attempt(user.email, True)
+            _record_login_event(request, user, success=True)
+            user.last_login = timezone.now()
+            user.save(update_fields=['last_login'])
+
             return Response({
                 'access_token': str(refresh.access_token),
                 'refresh_token': str(refresh),
@@ -86,7 +113,7 @@ class LoginView(APIView):
 class RegisterView(APIView):
     permission_classes = []
     throttle_classes = [RegisterRateThrottle]
-    
+
     def post(self, request):
         try:
             serializer = RegisterSerializer(data=request.data)
@@ -102,9 +129,29 @@ class RegisterView(APIView):
                     details=serializer.errors
                 )
 
-            # Create company if provided
+            invite_token = serializer.validated_data.pop('invite_token', None)
+            invite = None
+
+            # Look up invite if token provided
+            if invite_token:
+                try:
+                    invite = Invite.objects.get(
+                        token=invite_token,
+                        email=serializer.validated_data['email'],
+                        status='pending',
+                    )
+                    if invite.is_expired:
+                        invite.status = 'expired'
+                        invite.save(update_fields=['status'])
+                        invite = None
+                except Invite.DoesNotExist:
+                    invite = None
+
+            # Create company if provided (and no invite)
             company = None
-            if 'company' in serializer.validated_data:
+            if invite and invite.company:
+                company = invite.company
+            elif 'company' in serializer.validated_data:
                 try:
                     company_data = serializer.validated_data.pop('company')
                     company = Company.objects.create(**company_data)
@@ -115,30 +162,44 @@ class RegisterView(APIView):
                         code=ErrorCode.INVALID_COMPANY_DATA,
                         details={"error": str(e)}
                     )
-            
+            else:
+                serializer.validated_data.pop('company', None)
+
             try:
-                # Create user with email as username
                 user_data = serializer.validated_data.copy()
+                role = user_data.get('role', 'company_user')
+                if invite:
+                    role = invite.role
+
                 user = User.objects.create_user(
                     username=user_data['email'],
                     email=user_data['email'],
                     password=user_data['password'],
                     first_name=user_data.get('first_name', ''),
                     last_name=user_data.get('last_name', ''),
-                    role=user_data['role'],
+                    role=role,
                     phone=user_data.get('phone', ''),
-                    company=company
+                    company=company,
+                    agency=company.agency if company and company.agency else None,
+                    email_verified=True if invite else False,
                 )
-                
+
+                # Mark invite as accepted
+                if invite:
+                    invite.status = 'accepted'
+                    invite.accepted_by = user
+                    invite.accepted_at = timezone.now()
+                    invite.save(update_fields=['status', 'accepted_by', 'accepted_at'])
+
                 # Generate JWT tokens
                 refresh = RefreshToken.for_user(user)
-                
+
                 SecurityEventLogger.log_auth_attempt(
                     user.email,
                     True,
                     'Registration successful'
                 )
-                
+
                 return Response({
                     'access_token': str(refresh.access_token),
                     'refresh_token': str(refresh),
@@ -150,8 +211,8 @@ class RegisterView(APIView):
                 }, status=status.HTTP_201_CREATED)
             except Exception as e:
                 logger.error(f"User creation error: {str(e)}", exc_info=True)
-                # Clean up company if user creation fails
-                if company:
+                # Clean up company if user creation fails (only if we created it)
+                if company and not invite:
                     company.delete()
                 return server_error(
                     message="Failed to create user",
@@ -169,7 +230,7 @@ class RegisterView(APIView):
 class TokenRefreshView(APIView):
     permission_classes = []
     throttle_classes = [TokenRefreshRateThrottle]
-    
+
     def post(self, request):
         try:
             refresh_token = request.data.get('refresh_token')
@@ -178,15 +239,15 @@ class TokenRefreshView(APIView):
                     message="Refresh token is required",
                     code=ErrorCode.INVALID_TOKEN
                 )
-            
+
             try:
                 # Verify and decode the refresh token
                 refresh = RefreshToken(refresh_token)
                 user = User.objects.get(id=refresh['user_id'])
-                
+
                 # Generate new token pair
                 new_refresh = RefreshToken.for_user(user)
-                
+
                 return Response({
                     'access_token': str(new_refresh.access_token),
                     'refresh_token': str(new_refresh),
@@ -213,7 +274,7 @@ class TokenRefreshView(APIView):
 class ResendVerificationView(APIView):
     permission_classes = []
     throttle_classes = [LoginRateThrottle]  # Use same throttle as login
-    
+
     def post(self, request):
         try:
             email = request.data.get('email')
@@ -222,7 +283,7 @@ class ResendVerificationView(APIView):
                     message="Email is required",
                     code=ErrorCode.MISSING_REQUIRED_FIELD
                 )
-            
+
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
@@ -230,30 +291,22 @@ class ResendVerificationView(APIView):
                 return Response({
                     'message': 'If an account with this email exists, a verification email has been sent.'
                 })
-            
+
             if user.email_verified:
                 return Response({
                     'message': 'Email is already verified.'
                 })
-            
-            # Here you would typically:
-            # 1. Generate a verification token
-            # 2. Send verification email
-            # 3. Log the attempt
-            
-            # For now, we'll just return a success message
-            # In a real implementation, you'd integrate with your email service
-            
+
             SecurityEventLogger.log_auth_attempt(
                 user.email,
                 True,
                 'Verification email resent'
             )
-            
+
             return Response({
                 'message': 'Verification email sent successfully.'
             })
-            
+
         except Exception as e:
             logger.error(f"Resend verification error: {str(e)}", exc_info=True)
             return server_error(
@@ -261,3 +314,70 @@ class ResendVerificationView(APIView):
                 code=ErrorCode.UNEXPECTED_ERROR,
                 details={"error": str(e)}
             )
+
+
+class LoginEventViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    serializer_class = LoginEventSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'super_admin':
+            return LoginEvent.objects.select_related('user').order_by('-timestamp')[:500]
+        return LoginEvent.objects.filter(user=user).select_related('user').order_by('-timestamp')[:100]
+
+
+class InviteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+    serializer_class = InviteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'super_admin':
+            return Invite.objects.select_related('company', 'invited_by').order_by('-created_at')
+        if user.role == 'agency_admin' and user.agency:
+            return Invite.objects.filter(
+                company__agency=user.agency
+            ).select_related('company', 'invited_by').order_by('-created_at')
+        return Invite.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        serializer = InviteCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        company = None
+        company_id = serializer.validated_data.get('company_id')
+        if company_id:
+            try:
+                company = Company.objects.get(id=company_id)
+            except Company.DoesNotExist:
+                return Response(
+                    {'error': 'Company not found'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        invite = Invite.objects.create(
+            email=serializer.validated_data['email'],
+            company=company,
+            role=serializer.validated_data.get('role', 'company_user'),
+            invited_by=request.user,
+            expires_at=timezone.now() + timedelta(hours=72),
+        )
+        return Response(InviteSerializer(invite).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        try:
+            invite = self.get_queryset().get(pk=pk)
+        except Invite.DoesNotExist:
+            return Response({'error': 'Invite not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if invite.status != 'pending':
+            return Response(
+                {'error': f'Cannot cancel invite with status {invite.status}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        invite.status = 'cancelled'
+        invite.save(update_fields=['status'])
+        return Response(InviteSerializer(invite).data)

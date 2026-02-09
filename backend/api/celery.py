@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+from celery.schedules import crontab
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api.settings.dev')
@@ -26,6 +27,14 @@ app.conf.beat_schedule = {
     'daily-ga4-sync': {
         'task': 'google_pipelines.tasks.sync_all_ga4_configs',
         'schedule': 86400.0,  # 24 hours
+    },
+    'daily-login-summary': {
+        'task': 'authentication.tasks.daily_login_summary',
+        'schedule': crontab(hour=8, minute=0),  # 8 AM UTC
+    },
+    'daily-inactive-user-alerts': {
+        'task': 'authentication.tasks.inactive_user_alerts',
+        'schedule': crontab(hour=8, minute=15),  # 8:15 AM UTC
     },
 }
 

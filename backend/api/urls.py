@@ -20,11 +20,11 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from django.http import JsonResponse
 from users.views import (
-    UserViewSet, CompanyViewSet, AgencyViewSet, AccountViewSet, 
+    UserViewSet, CompanyViewSet, AgencyViewSet, AccountViewSet,
     AccountConfigurationViewSet
 )
 from woocommerce.views import (
-    WooCommerceConfigViewSet, WooCommerceJobViewSet, 
+    WooCommerceConfigViewSet, WooCommerceJobViewSet,
     WooCommerceOrderViewSet, WooCommerceSyncLogViewSet,
     ChannelClassificationViewSet
 )
@@ -34,7 +34,8 @@ from pipelines.views import (
 )
 from google_pipelines.views import GA4DailyViewSet
 from authentication.views import (
-    LoginView, RegisterView, TokenRefreshView
+    LoginView, RegisterView, TokenRefreshView,
+    LoginEventViewSet, InviteViewSet,
 )
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -55,21 +56,34 @@ def simple_login(request):
     from django.contrib.auth import authenticate
     from rest_framework_simplejwt.tokens import RefreshToken
     from django.http import JsonResponse
+    from django.utils import timezone
+    from authentication.views import _get_client_ip, _record_login_event
+    from users.models import User
     import json
-    
+
     try:
         data = json.loads(request.body)
         email = data.get('email')
         password = data.get('password')
-        
+
         if not email or not password:
             return JsonResponse({'error': 'Email and password required'}, status=400)
-        
+
         user = authenticate(username=email, password=password)
         if not user:
+            # Record failed login for known user
+            try:
+                known_user = User.objects.get(email=email)
+                _record_login_event(request, known_user, success=False)
+            except User.DoesNotExist:
+                pass
             return JsonResponse({'error': 'Invalid credentials'}, status=401)
-        
+
         refresh = RefreshToken.for_user(user)
+        _record_login_event(request, user, success=True)
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+
         return JsonResponse({
             'access_token': str(refresh.access_token),
             'refresh_token': str(refresh),
@@ -109,20 +123,24 @@ router.register(r'pipeline-analytics', PipelineAnalyticsViewSet, basename='pipel
 # GA4
 router.register(r'ga4/daily', GA4DailyViewSet, basename='ga4-daily')
 
+# Authentication
+router.register(r'login-events', LoginEventViewSet, basename='login-event')
+router.register(r'invites', InviteViewSet, basename='invite')
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    
+
     # Health check endpoint (no auth required)
     path('api/health/', health_check, name='health-check'),
-    
+
     # Authentication endpoints
     path('api/auth/login/', csrf_exempt(LoginView.as_view()), name='auth-login'),
     path('api/auth/register/', csrf_exempt(RegisterView.as_view()), name='auth-register'),
     path('api/auth/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='auth-refresh'),
-    
+
     # Simple login endpoint (bypasses CSRF completely)
     path('api/simple-login/', simple_login, name='simple-login'),
-    
+
     path('api/test/', test_connection, name='test_connection'),
 ]

@@ -84,11 +84,12 @@ export default function Register() {
     try {
       const { confirmPassword, ...registerData } = formData;
       // If invited, default role to company_user
-      const inviteToken = router.query.invite as string | undefined;
+      const inviteToken = (router.query.invite_token || router.query.invite) as string | undefined;
       const role = inviteToken ? 'company_user' : 'user';
       await register({
         ...registerData,
         role,
+        ...(router.query.invite_token ? { invite_token: router.query.invite_token as string } : {}),
       });
       showSuccess('Account Created!', 'Your account has been successfully created. Redirecting to dashboard...');
       setTimeout(() => {

@@ -206,6 +206,9 @@ DATABASES = {
     }
 }
 
+# Slack
+SLACK_WEBHOOK_URL = config('SLACK_WEBHOOK_URL', default='')
+
 # Celery Configuration
 CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://localhost:6379/0')

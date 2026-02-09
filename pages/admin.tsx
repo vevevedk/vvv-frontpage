@@ -133,6 +133,8 @@ export default function AdminPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteCompany, setInviteCompany] = useState('');
+  const [inviteCompanyId, setInviteCompanyId] = useState<number | ''>('');
+  const [inviteRole, setInviteRole] = useState('company_user');
 
   // Set active tab based on URL query
   useEffect(() => {
@@ -499,10 +501,20 @@ export default function AdminPage() {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     try {
+                      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+                      const selectedCompany = inviteCompanyId ? companies.find(c => c.id === inviteCompanyId) : null;
                       const resp = await fetch('/api/auth/invite-client', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: inviteEmail, companyName: inviteCompany })
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        },
+                        body: JSON.stringify({
+                          email: inviteEmail,
+                          companyName: selectedCompany?.name || inviteCompany,
+                          company_id: inviteCompanyId || undefined,
+                          role: inviteRole,
+                        })
                       });
                       if (!resp.ok) throw new Error('Failed to send invite');
                       showSuccess('Invite Sent', `Invitation sent to ${inviteEmail}`);
@@ -510,6 +522,8 @@ export default function AdminPage() {
                       setInviteOpen(false);
                       setInviteEmail('');
                       setInviteCompany('');
+                      setInviteCompanyId('');
+                      setInviteRole('company_user');
                     } catch (err: any) {
                       const errorMessage = err.message || 'Failed to send invite';
                       showError('Invite Failed', errorMessage);
@@ -529,13 +543,30 @@ export default function AdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Company (optional)</label>
-                    <input
-                      type="text"
+                    <label className="block text-sm font-medium text-gray-700">Company</label>
+                    <select
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm px-3 py-2"
-                      value={inviteCompany}
-                      onChange={(e) => setInviteCompany(e.target.value)}
-                    />
+                      value={inviteCompanyId}
+                      onChange={(e) => setInviteCompanyId(e.target.value ? Number(e.target.value) : '')}
+                    >
+                      <option value="">None (user creates on registration)</option>
+                      {companies.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Role</label>
+                    <select
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm px-3 py-2"
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value)}
+                    >
+                      <option value="company_user">Company User</option>
+                      <option value="company_admin">Company Admin</option>
+                      <option value="agency_user">Agency User</option>
+                      <option value="agency_admin">Agency Admin</option>
+                    </select>
                   </div>
                   <div className="flex justify-end space-x-3 pt-4">
                     <button type="button" onClick={() => setInviteOpen(false)} className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
