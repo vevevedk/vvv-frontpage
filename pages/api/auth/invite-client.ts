@@ -5,7 +5,7 @@ import { sendEmail } from '../../../lib/email';
 // Minimal invite endpoint that sends a sign-up link to a client email.
 // Creates a Django Invite record first, then sends the email with the invite token.
 
-const DJANGO_API_URL = process.env.DJANGO_API_URL || 'http://localhost:8000';
+const DJANGO_API_URL = process.env.DJANGO_API_URL || '/api';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Create invite record in Django
     let inviteToken: string | null = null;
     try {
-      const djangoResp = await fetch(`${DJANGO_API_URL}/api/invites/`, {
+      const djangoResp = await fetch(`${DJANGO_API_URL}/invites/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,14 +53,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/register?invite=${encodeURIComponent(token)}&company=${encodeURIComponent(companyName || '')}`;
     }
 
-    await sendEmail({
-      to: email,
-      subject: 'You are invited to VVV Analytics',
-      html: `<p>You have been invited to access channel reports.</p>
-             <p><a href="${inviteUrl}">Click here to create your account</a></p>`,
-    });
+    // Try to send email, but don't fail the request if SMTP isn't configured
+    let emailSent = false;
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'You are invited to VVV Analytics',
+        html: `<p>You have been invited to access channel reports.</p>
+               <p><a href="${inviteUrl}">Click here to create your account</a></p>`,
+      });
+      emailSent = true;
+    } catch (emailErr: any) {
+      console.warn('Email send failed (SMTP may not be configured):', emailErr?.message);
+    }
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({
+      success: true,
+      invite_token: inviteToken,
+      email_sent: emailSent,
+      invite_url: inviteUrl,
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err?.message || 'Failed to send invite' });
   }
