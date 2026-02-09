@@ -163,7 +163,7 @@ function DashboardInner() {
 
       {/* Tab Navigation */}
       <Tab.Group>
-        <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">
+        <Tab.List className="flex space-x-1 rounded-xl bg-gray-800 p-1">
           {visibleTabs.map((tab) => (
             <Tab
               key={tab.name}
@@ -173,7 +173,7 @@ function DashboardInner() {
                   'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
                   selected
                     ? 'bg-white shadow text-blue-700'
-                    : 'text-blue-100 hover:bg-white/[0.12] hover:text-white'
+                    : 'text-gray-300 hover:bg-white/[0.12] hover:text-white'
                 )
               }
             >
