@@ -200,6 +200,22 @@ jobs:
             docker pull ghcr.io/vevevedk/vvv-backend:staging-latest
             docker pull ghcr.io/vevevedk/vvv-frontend:staging-latest
 
+            # Ensure email settings in backend env
+            ENV_FILE="$STAGING_DIR/env/backend.staging.env"
+            SMTP_HOST="${{ secrets.EMAIL_HOST }}"
+            if [ -n "$SMTP_HOST" ]; then
+              echo "📧 Configuring email settings..."
+              sed -i '/^EMAIL_HOST=/d; /^EMAIL_HOST_USER=/d; /^EMAIL_HOST_PASSWORD=/d; /^EMAIL_USE_TLS=/d; /^EMAIL_PORT=/d; /^DEFAULT_FROM_EMAIL=/d; /^APP_URL=/d' "$ENV_FILE"
+              echo "EMAIL_HOST=${{ secrets.EMAIL_HOST }}" >> "$ENV_FILE"
+              echo "EMAIL_PORT=587" >> "$ENV_FILE"
+              echo "EMAIL_USE_TLS=True" >> "$ENV_FILE"
+              echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}" >> "$ENV_FILE"
+              echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}" >> "$ENV_FILE"
+              echo "DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}" >> "$ENV_FILE"
+              echo "APP_URL=https://staging.veveve.dk" >> "$ENV_FILE"
+              echo "✅ Email settings configured"
+            fi
+
             # Start staging services using standalone compose file
             docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE up -d
 
