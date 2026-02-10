@@ -24,6 +24,8 @@ from core.security import SecurityEventLogger
 import logging
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import send_mail
+from django.conf import settings
 
 logger = logging.getLogger('authentication')
 
@@ -363,7 +365,34 @@ class InviteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gen
             invited_by=request.user,
             expires_at=timezone.now() + timedelta(hours=72),
         )
-        return Response(InviteSerializer(invite).data, status=status.HTTP_201_CREATED)
+
+        # Send invite email
+        email_sent = False
+        app_url = getattr(settings, 'APP_URL', 'http://localhost:3000')
+        invite_url = f"{app_url}/register?invite_token={invite.token}&company={company.name if company else ''}"
+        try:
+            if settings.EMAIL_HOST:
+                send_mail(
+                    subject='You are invited to VVV Analytics',
+                    message=f'You have been invited to access channel reports.\n\nClick here to create your account: {invite_url}',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[invite.email],
+                    html_message=(
+                        f'<p>You have been invited to access channel reports.</p>'
+                        f'<p><a href="{invite_url}">Click here to create your account</a></p>'
+                    ),
+                )
+                email_sent = True
+                logger.info(f"Invite email sent to {invite.email}")
+            else:
+                logger.warning("EMAIL_HOST not configured — skipping invite email")
+        except Exception as e:
+            logger.error(f"Failed to send invite email to {invite.email}: {e}")
+
+        response_data = InviteSerializer(invite).data
+        response_data['email_sent'] = email_sent
+        response_data['invite_url'] = invite_url
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
