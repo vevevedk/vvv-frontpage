@@ -501,31 +501,21 @@ export default function AdminPage() {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     try {
-                      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-                      const selectedCompany = inviteCompanyId ? companies.find(c => c.id === inviteCompanyId) : null;
-                      const resp = await fetch('/api/auth/invite-client', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                        },
-                        body: JSON.stringify({
-                          email: inviteEmail,
-                          companyName: selectedCompany?.name || inviteCompany,
-                          company_id: inviteCompanyId || undefined,
-                          role: inviteRole,
-                        })
+                      const response = await api.post<any>('/invites/', {
+                        email: inviteEmail,
+                        company_id: inviteCompanyId || null,
+                        role: inviteRole,
                       });
-                      if (!resp.ok) throw new Error('Failed to send invite');
-                      showSuccess('Invite Sent', `Invitation sent to ${inviteEmail}`);
-                      setSuccess('Invitation sent');
+                      if (response.error) throw new Error(response.error.message);
+                      showSuccess('Invite Created', `Invite created for ${inviteEmail} (token: ${response.data?.token?.slice(0, 8)}...)`);
+                      setSuccess('Invite created');
                       setInviteOpen(false);
                       setInviteEmail('');
                       setInviteCompany('');
                       setInviteCompanyId('');
                       setInviteRole('company_user');
                     } catch (err: any) {
-                      const errorMessage = err.message || 'Failed to send invite';
+                      const errorMessage = err.message || 'Failed to create invite';
                       showError('Invite Failed', errorMessage);
                       setError(errorMessage);
                     }
