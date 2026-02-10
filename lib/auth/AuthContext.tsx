@@ -45,6 +45,7 @@ interface RegisterData {
   last_name?: string;
   role: string;
   phone?: string;
+  invite_token?: string;
   company?: {
     name: string;
     address: string;

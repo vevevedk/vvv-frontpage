@@ -138,6 +138,9 @@ CORS_ALLOWED_ORIGINS = [
     # Production domains
     "https://veveve.dk",
     "https://www.veveve.dk",
+    "https://veveve.io",
+    "https://www.veveve.io",
+    "https://staging.veveve.io",
     "https://invest.veveve.dk",
     "https://www.invest.veveve.dk",
     "https://smagalagellerup.dk",

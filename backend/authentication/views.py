@@ -318,6 +318,36 @@ class ResendVerificationView(APIView):
             )
 
 
+class InviteValidateView(APIView):
+    """Public endpoint to validate an invite token and return basic info."""
+    permission_classes = []
+
+    def get(self, request):
+        token = request.query_params.get('token')
+        if not token:
+            return validation_error(
+                message="Token is required",
+                code=ErrorCode.MISSING_REQUIRED_FIELD,
+            )
+        try:
+            invite = Invite.objects.select_related('company').get(
+                token=token, status='pending',
+            )
+        except (Invite.DoesNotExist, ValueError):
+            return not_found_error(message="Invalid or expired invite")
+
+        if invite.is_expired:
+            invite.status = 'expired'
+            invite.save(update_fields=['status'])
+            return not_found_error(message="Invalid or expired invite")
+
+        return Response({
+            'email': invite.email,
+            'company_name': invite.company.name if invite.company else None,
+            'role': invite.role,
+        })
+
+
 class LoginEventViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = LoginEventSerializer
     permission_classes = [IsAuthenticated]

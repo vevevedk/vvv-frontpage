@@ -215,7 +215,6 @@ export default function AdminPage() {
       ]);
 
       if (agenciesResponse.data) {
-        console.log('Loaded agencies:', agenciesResponse.data);
         setAgencies(agenciesResponse.data);
       }
       if (companiesResponse.data) {
@@ -413,12 +412,7 @@ export default function AdminPage() {
     setModalType('user');
   };
   const openEditUserModal = (user: User) => {
-    console.log('Editing user:', user);
-    console.log('User agency:', user.agency);
-    console.log('User agency id:', user.agency?.id);
-    
     const agencyId = user.agency?.id ? String(user.agency.id) : '';
-    console.log('Setting agency_id to:', agencyId);
     
     setUserForm({
       ...user,
@@ -438,9 +432,6 @@ export default function AdminPage() {
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Submitting user form with data:', userForm);
-    console.log('Agency ID being sent:', userForm.agency_id);
-    
     const dataToSend = { ...userForm };
     if (userForm.agency_id) {
       dataToSend.agency_id = Number(userForm.agency_id);
@@ -456,8 +447,6 @@ export default function AdminPage() {
     }
     delete dataToSend.agency;
     delete dataToSend.company;
-    
-    console.log('Final data being sent to API:', dataToSend);
     
     if (editingItem && editingItem.type === 'user') {
       await handleUpdate(editingItem.item.id, dataToSend);
@@ -1264,10 +1253,7 @@ export default function AdminPage() {
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm px-3 py-2"
                       value={userForm.agency_id || ''}
                       onChange={e => {
-                        console.log('Agency dropdown changed to:', e.target.value);
-                        console.log('Previous userForm.agency_id:', userForm.agency_id);
                         setUserForm({ ...userForm, agency_id: e.target.value, company_ids: [] });
-                        console.log('New userForm.agency_id will be:', e.target.value);
                       }}
                       required
                     >

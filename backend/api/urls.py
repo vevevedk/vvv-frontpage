@@ -35,7 +35,7 @@ from pipelines.views import (
 from google_pipelines.views import GA4DailyViewSet
 from authentication.views import (
     LoginView, RegisterView, TokenRefreshView,
-    LoginEventViewSet, InviteViewSet,
+    LoginEventViewSet, InviteViewSet, InviteValidateView,
 )
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -138,6 +138,7 @@ urlpatterns = [
     path('api/auth/login/', csrf_exempt(LoginView.as_view()), name='auth-login'),
     path('api/auth/register/', csrf_exempt(RegisterView.as_view()), name='auth-register'),
     path('api/auth/refresh/', csrf_exempt(TokenRefreshView.as_view()), name='auth-refresh'),
+    path('api/auth/invite-validate/', InviteValidateView.as_view(), name='auth-invite-validate'),
 
     # Simple login endpoint (bypasses CSRF completely)
     path('api/simple-login/', simple_login, name='simple-login'),

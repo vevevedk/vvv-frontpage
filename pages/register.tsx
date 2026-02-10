@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useAuth } from '../lib/auth/AuthContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import { useToast } from '../components/ui/Toast';
+import { api } from '../lib/api';
 
 interface RegisterFormData {
   email: string;
@@ -19,6 +20,12 @@ interface RegisterFormData {
     phone: string;
     email: string;
   };
+}
+
+interface InviteInfo {
+  email: string;
+  company_name: string | null;
+  role: string;
 }
 
 export default function Register() {
@@ -37,9 +44,33 @@ export default function Register() {
     },
   });
   const [error, setError] = useState<string | null>(null);
+  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
   const { register, isLoading } = useAuth();
   const router = useRouter();
   const { showSuccess, showError, showWarning } = useToast();
+
+  const inviteToken = (router.query.invite_token || router.query.invite) as string | undefined;
+  const hasInvite = !!inviteToken;
+
+  // Validate invite token and pre-fill email
+  useEffect(() => {
+    if (!inviteToken) return;
+    setInviteLoading(true);
+    api.get<InviteInfo>(`/auth/invite-validate/?token=${encodeURIComponent(inviteToken)}`)
+      .then((resp) => {
+        if (resp.data) {
+          setInviteInfo(resp.data);
+          setFormData((prev) => ({ ...prev, email: resp.data!.email }));
+        } else {
+          setError('This invite link is invalid or has expired.');
+        }
+      })
+      .catch(() => {
+        setError('This invite link is invalid or has expired.');
+      })
+      .finally(() => setInviteLoading(false));
+  }, [inviteToken]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -82,14 +113,12 @@ export default function Register() {
     }
 
     try {
-      const { confirmPassword, ...registerData } = formData;
-      // If invited, default role to company_user
-      const inviteToken = (router.query.invite_token || router.query.invite) as string | undefined;
-      const role = inviteToken ? 'company_user' : 'user';
+      const { confirmPassword, company, ...userData } = formData;
+
       await register({
-        ...registerData,
-        role,
-        ...(router.query.invite_token ? { invite_token: router.query.invite_token as string } : {}),
+        ...userData,
+        role: 'company_user',
+        ...(hasInvite ? { invite_token: inviteToken } : { company }),
       });
       showSuccess('Account Created!', 'Your account has been successfully created. Redirecting to dashboard...');
       setTimeout(() => {
@@ -102,6 +131,14 @@ export default function Register() {
     }
   };
 
+  if (inviteLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -109,6 +146,11 @@ export default function Register() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Create your account
           </h2>
+          {inviteInfo?.company_name && (
+            <p className="mt-2 text-center text-sm text-gray-600">
+              You&apos;ve been invited to join <span className="font-semibold">{inviteInfo.company_name}</span>
+            </p>
+          )}
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
             <Link
@@ -139,10 +181,10 @@ export default function Register() {
                 type="email"
                 autoComplete="email"
                 required
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm disabled:bg-gray-100"
                 value={formData.email}
                 onChange={handleChange}
-                disabled={isLoading}
+                disabled={isLoading || !!inviteInfo}
               />
             </div>
 
@@ -230,74 +272,76 @@ export default function Register() {
               />
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
-              <h3 className="text-lg font-medium text-gray-900">Company Information</h3>
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label htmlFor="company.name" className="block text-sm font-medium text-gray-700">
-                    Company Name
-                  </label>
-                  <input
-                    id="company.name"
-                    name="company.name"
-                    type="text"
-                    required
-                    className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    value={formData.company.name}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                  />
-                </div>
+            {!hasInvite && (
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="text-lg font-medium text-gray-900">Company Information</h3>
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label htmlFor="company.name" className="block text-sm font-medium text-gray-700">
+                      Company Name
+                    </label>
+                    <input
+                      id="company.name"
+                      name="company.name"
+                      type="text"
+                      required
+                      className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      value={formData.company.name}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="company.address" className="block text-sm font-medium text-gray-700">
-                    Company Address
-                  </label>
-                  <input
-                    id="company.address"
-                    name="company.address"
-                    type="text"
-                    required
-                    className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    value={formData.company.address}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                  />
-                </div>
+                  <div>
+                    <label htmlFor="company.address" className="block text-sm font-medium text-gray-700">
+                      Company Address
+                    </label>
+                    <input
+                      id="company.address"
+                      name="company.address"
+                      type="text"
+                      required
+                      className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      value={formData.company.address}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="company.phone" className="block text-sm font-medium text-gray-700">
-                    Company Phone
-                  </label>
-                  <input
-                    id="company.phone"
-                    name="company.phone"
-                    type="tel"
-                    required
-                    className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    value={formData.company.phone}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                  />
-                </div>
+                  <div>
+                    <label htmlFor="company.phone" className="block text-sm font-medium text-gray-700">
+                      Company Phone
+                    </label>
+                    <input
+                      id="company.phone"
+                      name="company.phone"
+                      type="tel"
+                      required
+                      className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      value={formData.company.phone}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="company.email" className="block text-sm font-medium text-gray-700">
-                    Company Email
-                  </label>
-                  <input
-                    id="company.email"
-                    name="company.email"
-                    type="email"
-                    required
-                    className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    value={formData.company.email}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                  />
+                  <div>
+                    <label htmlFor="company.email" className="block text-sm font-medium text-gray-700">
+                      Company Email
+                    </label>
+                    <input
+                      id="company.email"
+                      name="company.email"
+                      type="email"
+                      required
+                      className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      value={formData.company.email}
+                      onChange={handleChange}
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div>
@@ -317,4 +361,4 @@ export default function Register() {
       </div>
     </div>
   );
-} 
+}
