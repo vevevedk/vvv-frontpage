@@ -106,7 +106,7 @@ function Modal({ open, onClose, children, title }: { open: boolean, onClose: () 
 export default function AdminPage() {
   const { user: authUser } = useAuth();
   const router = useRouter();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showWarning } = useToast();
   const [activeTab, setActiveTab] = useState('agencies');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -496,8 +496,12 @@ export default function AdminPage() {
                         role: inviteRole,
                       });
                       if (response.error) throw new Error(response.error.message);
-                      showSuccess('Invite Created', `Invite created for ${inviteEmail} (token: ${response.data?.token?.slice(0, 8)}...)`);
-                      setSuccess('Invite created');
+                      const emailSent = response.data?.email_sent;
+                      if (emailSent) {
+                        showSuccess('Invite Sent', `Invite email sent to ${inviteEmail}`);
+                      } else {
+                        showWarning('Invite Created', `Invite created but email could not be sent. Copy the link: ${response.data?.invite_url || '(unavailable)'}`);
+                      }
                       setInviteOpen(false);
                       setInviteEmail('');
                       setInviteCompany('');
