@@ -25,6 +25,17 @@ from .tasks import sync_woocommerce_config
 import json
 
 
+def _get_user_accounts(user):
+    """Return Account queryset scoped to the user's role/company."""
+    if user.role == 'super_admin':
+        return Account.objects.all()
+    if user.role in ['agency_admin', 'agency_user']:
+        return Account.objects.filter(company__agency=user.agency)
+    if user.role in ['company_admin', 'company_user']:
+        return Account.objects.filter(company=user.company)
+    return Account.objects.none()
+
+
 def get_currency_for_client(client_name, orders_queryset=None):
     """
     Determine the currency code for a client.
@@ -79,25 +90,12 @@ class WooCommerceConfigViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """Restrict configs to those the current user can access."""
-        user = getattr(self, 'request', None).user if hasattr(self, 'request') else None
+        user = self.request.user
         base_qs = AccountConfiguration.objects.filter(config_type='woocommerce')
-        if not user:
-            return base_qs.none()
         if user.role == 'super_admin':
             return base_qs
-        if user.role in ['agency_admin', 'agency_user']:
-            if user.access_all_companies:
-                return base_qs.filter(account__company__agency=user.agency)
-            return base_qs.filter(account__company__in=user.accessible_companies.all())
-        if user.role in ['company_admin', 'company_user']:
-            if user.access_all_companies:
-                return base_qs.filter(account__company__agency=user.agency)
-            # Include both accessible_companies M2M and the user's direct company FK
-            companies = set(user.accessible_companies.values_list('id', flat=True))
-            if user.company_id:
-                companies.add(user.company_id)
-            return base_qs.filter(account__company_id__in=companies)
-        return base_qs.none()
+        accounts = _get_user_accounts(user)
+        return base_qs.filter(account__in=accounts)
 
     @action(detail=True, methods=['post'])
     def test_connection(self, request, pk=None):
@@ -165,35 +163,16 @@ class WooCommerceJobViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        user = self.request.user
         queryset = WooCommerceJob.objects.all()
-        request = getattr(self, 'request', None)
-        user = request.user if request else None
 
-        # Role-based scoping
-        if user and user.role != 'super_admin':
-            if user.role in ['agency_admin', 'agency_user']:
-                if user.access_all_companies:
-                    accounts = Account.objects.filter(company__agency=user.agency)
-                else:
-                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
-            elif user.role in ['company_admin', 'company_user']:
-                if user.access_all_companies:
-                    accounts = Account.objects.filter(company__agency=user.agency)
-                else:
-                    # Include both accessible_companies M2M and the user's direct company FK
-                    companies = set(user.accessible_companies.values_list('id', flat=True))
-                    if user.company_id:
-                        companies.add(user.company_id)
-                    accounts = Account.objects.filter(company_id__in=companies)
-            else:
-                accounts = Account.objects.none()
-            allowed_names = list(accounts.values_list('name', flat=True))
+        if user.role != 'super_admin':
+            allowed_names = list(_get_user_accounts(user).values_list('name', flat=True))
             queryset = queryset.filter(client_name__in=allowed_names)
 
-        if request:
-            client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
-            if client_name:
-                queryset = queryset.filter(client_name__icontains=client_name)
+        client_name = self.request.query_params.get('client_name')
+        if client_name:
+            queryset = queryset.filter(client_name__icontains=client_name)
         return queryset.order_by('-created_at')
     
     @action(detail=True, methods=['post'])
@@ -256,34 +235,16 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
+        user = self.request.user
         queryset = WooCommerceOrder.objects.all()
-        request = getattr(self, 'request', None)
-        user = request.user if request else None
-        if user and user.role != 'super_admin':
-            # Build allowed client name list based on accessible accounts
-            if user.role in ['agency_admin', 'agency_user']:
-                if user.access_all_companies:
-                    accounts = Account.objects.filter(company__agency=user.agency)
-                else:
-                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
-            elif user.role in ['company_admin', 'company_user']:
-                if user.access_all_companies:
-                    accounts = Account.objects.filter(company__agency=user.agency)
-                else:
-                    # Include both accessible_companies M2M and the user's direct company FK
-                    companies = set(user.accessible_companies.values_list('id', flat=True))
-                    if user.company_id:
-                        companies.add(user.company_id)
-                    accounts = Account.objects.filter(company_id__in=companies)
-            else:
-                accounts = Account.objects.none()
-            allowed_names = list(accounts.values_list('name', flat=True))
+
+        if user.role != 'super_admin':
+            allowed_names = list(_get_user_accounts(user).values_list('name', flat=True))
             queryset = queryset.filter(client_name__in=allowed_names)
 
-        if request:
-            client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
-            if client_name:
-                queryset = queryset.filter(client_name__icontains=client_name)
+        client_name = self.request.query_params.get('client_name')
+        if client_name:
+            queryset = queryset.filter(client_name__icontains=client_name)
         return queryset.order_by('-date_created')
 
     @action(detail=False, methods=['get'])
@@ -2705,33 +2666,14 @@ class WooCommerceSyncLogViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        user = self.request.user
         queryset = WooCommerceSyncLog.objects.all()
-        request = getattr(self, 'request', None)
-        user = request.user if request else None
 
-        # Role-based scoping
-        if user and user.role != 'super_admin':
-            if user.role in ['agency_admin', 'agency_user']:
-                if user.access_all_companies:
-                    accounts = Account.objects.filter(company__agency=user.agency)
-                else:
-                    accounts = Account.objects.filter(company__in=user.accessible_companies.all())
-            elif user.role in ['company_admin', 'company_user']:
-                if user.access_all_companies:
-                    accounts = Account.objects.filter(company__agency=user.agency)
-                else:
-                    # Include both accessible_companies M2M and the user's direct company FK
-                    companies = set(user.accessible_companies.values_list('id', flat=True))
-                    if user.company_id:
-                        companies.add(user.company_id)
-                    accounts = Account.objects.filter(company_id__in=companies)
-            else:
-                accounts = Account.objects.none()
-            allowed_names = list(accounts.values_list('name', flat=True))
+        if user.role != 'super_admin':
+            allowed_names = list(_get_user_accounts(user).values_list('name', flat=True))
             queryset = queryset.filter(client_name__in=allowed_names)
 
-        if request:
-            client_name = request.GET.get('client_name') if hasattr(request, 'GET') else getattr(request, 'query_params', {}).get('client_name')
-            if client_name:
-                queryset = queryset.filter(client_name__icontains=client_name)
+        client_name = self.request.query_params.get('client_name')
+        if client_name:
+            queryset = queryset.filter(client_name__icontains=client_name)
         return queryset.order_by('-created_at')

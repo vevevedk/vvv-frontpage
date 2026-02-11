@@ -30,6 +30,16 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserUpdateSerializer
         return UserSerializer
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'super_admin':
+            return User.objects.all()
+        if user.role in ['agency_admin', 'agency_user']:
+            return User.objects.filter(agency=user.agency)
+        if user.role in ['company_admin', 'company_user']:
+            return User.objects.filter(company=user.company)
+        return User.objects.filter(pk=user.pk)
+
     @action(detail=False, methods=['get'])
     def me(self, request):
         serializer = self.get_serializer(request.user)
@@ -61,6 +71,14 @@ class AgencyViewSet(viewsets.ModelViewSet):
     serializer_class = AgencySerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'super_admin':
+            return Agency.objects.all()
+        if user.agency:
+            return Agency.objects.filter(pk=user.agency_id)
+        return Agency.objects.none()
+
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all()
     permission_classes = [permissions.IsAuthenticated]
@@ -69,6 +87,16 @@ class CompanyViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update']:
             return CompanyCreateUpdateSerializer
         return CompanySerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'super_admin':
+            return Company.objects.all()
+        if user.role in ['agency_admin', 'agency_user']:
+            return Company.objects.filter(agency=user.agency)
+        if user.role in ['company_admin', 'company_user']:
+            return Company.objects.filter(pk=user.company_id)
+        return Company.objects.none()
 
 class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
@@ -90,10 +118,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         elif user.role in ['agency_admin', 'agency_user']:
             return Account.objects.filter(company__agency=user.agency)
         elif user.role in ['company_admin', 'company_user']:
-            if user.access_all_companies:
-                return Account.objects.filter(company__agency=user.agency)
-            else:
-                return Account.objects.filter(company__in=user.accessible_companies.all())
+            return Account.objects.filter(company=user.company)
         return Account.objects.none()
 
 class AccountConfigurationViewSet(viewsets.ModelViewSet):
@@ -116,10 +141,7 @@ class AccountConfigurationViewSet(viewsets.ModelViewSet):
         elif user.role in ['agency_admin', 'agency_user']:
             return AccountConfiguration.objects.filter(account__company__agency=user.agency)
         elif user.role in ['company_admin', 'company_user']:
-            if user.access_all_companies:
-                return AccountConfiguration.objects.filter(account__company__agency=user.agency)
-            else:
-                return AccountConfiguration.objects.filter(account__company__in=user.accessible_companies.all())
+            return AccountConfiguration.objects.filter(account__company=user.company)
         return AccountConfiguration.objects.none()
 
     @action(detail=True, methods=['post'])
