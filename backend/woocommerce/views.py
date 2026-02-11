@@ -500,7 +500,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
 
             # Identify new customers using a single annotated query instead of N+1
             # A customer is "new" if they haven't ordered in the last {new_customer_window} days before their current order
-            prev_order_qs = WooCommerceOrder.objects.filter(
+            prev_order_qs = self.get_queryset().filter(
                 billing_email=OuterRef('billing_email'),
                 date_created__lt=OuterRef('date_created'),
             )
@@ -955,7 +955,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
 
             # Iterate orders and derive source/medium using the same logic as reporting
             traffic_sources = {}
-            for order in WooCommerceOrder.objects.all():
+            for order in self.get_queryset():
                 source, medium = self._extract_traffic_source(order)
                 pair = (source.lower(), medium.lower())
 
@@ -1050,15 +1050,16 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
                 )
             
             # Get current period data (use order_date to match WooCommerce reports)
+            scoped_orders = self.get_queryset()
             current_orders = (
-                WooCommerceOrder.objects
+                scoped_orders
                 .filter(order_date__gte=start_date, order_date__lte=end_date)
                 .filter(orders_q)
             )
-            
+
             # Get comparison period data
             comparison_orders = (
-                WooCommerceOrder.objects
+                scoped_orders
                 .filter(order_date__gte=comparison_start, order_date__lte=comparison_end)
                 .filter(orders_q)
             )
@@ -2516,7 +2517,7 @@ class WooCommerceOrderViewSet(viewsets.ModelViewSet):
         """Debug endpoint to see what data is available in WooCommerce orders"""
         try:
             # Get a few recent orders to examine their structure
-            orders = WooCommerceOrder.objects.all()[:5]
+            orders = self.get_queryset()[:5]
             
             debug_data = []
             for order in orders:
