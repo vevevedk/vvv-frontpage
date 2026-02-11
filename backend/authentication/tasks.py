@@ -8,6 +8,34 @@ logger = logging.getLogger('authentication')
 
 
 @shared_task
+def notify_login(user_email, ip_address=''):
+    """Send a Slack notification when a user logs in."""
+    from core.slack import send_slack_message
+    send_slack_message(f":key: *Login* — {user_email} (IP: {ip_address or 'unknown'})")
+
+
+@shared_task
+def notify_registration(user_email, company_name='', via_invite=False):
+    """Send a Slack notification when a new user registers."""
+    from core.slack import send_slack_message
+    method = "via invite" if via_invite else "self-registered"
+    company_part = f" | Company: {company_name}" if company_name else ""
+    send_slack_message(
+        f":tada: *New Registration* — {user_email} ({method}{company_part})"
+    )
+
+
+@shared_task
+def notify_invite_created(inviter_email, invitee_email, company_name=''):
+    """Send a Slack notification when an invite is created."""
+    from core.slack import send_slack_message
+    company_part = f" to {company_name}" if company_name else ""
+    send_slack_message(
+        f":envelope: *Invite Sent* — {inviter_email} invited {invitee_email}{company_part}"
+    )
+
+
+@shared_task
 def daily_login_summary():
     """Send a daily Slack summary of login activity from the previous day."""
     from authentication.models import LoginEvent

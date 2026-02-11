@@ -30,6 +30,14 @@ from django.conf import settings
 logger = logging.getLogger('authentication')
 
 
+def _notify(task, *args, **kwargs):
+    """Fire-and-forget Celery notification — never block the request."""
+    try:
+        task.delay(*args, **kwargs)
+    except Exception as e:
+        logger.warning(f"Async notification failed ({task.name}): {e}")
+
+
 def _get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if x_forwarded_for:
@@ -93,6 +101,8 @@ class LoginView(APIView):
             _record_login_event(request, user, success=True)
             user.last_login = timezone.now()
             user.save(update_fields=['last_login'])
+            from .tasks import notify_login
+            _notify(notify_login, user.email, _get_client_ip(request))
 
             return Response({
                 'access_token': str(refresh.access_token),
@@ -193,7 +203,8 @@ class RegisterView(APIView):
                     invite.accepted_at = timezone.now()
                     invite.save(update_fields=['status', 'accepted_by', 'accepted_at'])
 
-                # Generate JWT tokens
+                # Record first login event and generate JWT tokens
+                _record_login_event(request, user, success=True)
                 refresh = RefreshToken.for_user(user)
 
                 SecurityEventLogger.log_auth_attempt(
@@ -201,6 +212,8 @@ class RegisterView(APIView):
                     True,
                     'Registration successful'
                 )
+                from .tasks import notify_registration
+                _notify(notify_registration, user.email, company.name if company else '', bool(invite))
 
                 return Response({
                     'access_token': str(refresh.access_token),
@@ -418,6 +431,9 @@ class InviteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gen
                 logger.warning("EMAIL_HOST not configured — skipping invite email")
         except Exception as e:
             logger.error(f"Failed to send invite email to {invite.email}: {e}")
+
+        from .tasks import notify_invite_created
+        _notify(notify_invite_created, request.user.email, invite.email, company.name if company else '')
 
         response_data = InviteSerializer(invite).data
         response_data['email_sent'] = email_sent
