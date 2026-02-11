@@ -103,10 +103,9 @@ export default function Register() {
       return;
     }
 
-    // Validate password strength
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(formData.password)) {
-      const errorMsg = 'Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character';
+    // Validate password strength — require 8+ chars with uppercase, lowercase, and digit
+    if (formData.password.length < 8 || !/[a-z]/.test(formData.password) || !/[A-Z]/.test(formData.password) || !/\d/.test(formData.password)) {
+      const errorMsg = 'Password must be at least 8 characters long and contain uppercase, lowercase, and a number';
       setError(errorMsg);
       showWarning('Password Requirements', errorMsg);
       return;
