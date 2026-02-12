@@ -212,8 +212,15 @@ class RegisterView(APIView):
                     True,
                     'Registration successful'
                 )
-                from .tasks import notify_registration
+                from .tasks import notify_registration, notify_invite_accepted
                 _notify(notify_registration, user.email, company.name if company else '', bool(invite))
+                if invite:
+                    _notify(
+                        notify_invite_accepted,
+                        user.email,
+                        invite.invited_by.email if invite.invited_by_id else '',
+                        company.name if company else '',
+                    )
 
                 return Response({
                     'access_token': str(refresh.access_token),

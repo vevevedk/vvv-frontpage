@@ -40,6 +40,10 @@ app.conf.beat_schedule = {
         'task': 'authentication.tasks.inactive_user_alerts',
         'schedule': crontab(hour=8, minute=15),  # 8:15 AM UTC
     },
+    'daily-invite-summary': {
+        'task': 'authentication.tasks.daily_invite_summary',
+        'schedule': crontab(hour=8, minute=30),  # 8:30 AM UTC
+    },
 }
 
 @app.task(bind=True)
