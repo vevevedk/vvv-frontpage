@@ -102,6 +102,22 @@ class DataPipelineViewSet(viewsets.ModelViewSet):
                     'message': message
                 })
 
+            elif pipeline.pipeline_type == 'google_search_console':
+                site_url = config.config_data.get('site_url')
+                if not site_url:
+                    return Response({
+                        'success': False,
+                        'message': 'No site_url configured'
+                    })
+
+                from google_pipelines.clients.gsc import test_gsc_connection
+                success, message = test_gsc_connection(site_url)
+
+                return Response({
+                    'success': success,
+                    'message': message
+                })
+
             return Response({
                 'success': False,
                 'message': f'Connection testing not implemented for {pipeline.pipeline_type}'
@@ -225,6 +241,53 @@ class DataPipelineViewSet(viewsets.ModelViewSet):
                     return Response({
                         'success': False,
                         'message': f'Failed to start GA4 sync: {str(sync_error)}',
+                        'job_id': job.id,
+                    })
+
+            elif pipeline.pipeline_type == 'google_search_console':
+                from google_pipelines.tasks import sync_gsc_config
+                config = pipeline.account_configuration
+
+                try:
+                    result = sync_gsc_config(config.id)
+
+                    if result.get('success'):
+                        job.status = 'completed'
+                        job.completed_at = timezone.now()
+                        job.processed_items = result.get('rows_processed', 0)
+                        job.created_items = result.get('rows_created', 0)
+                        job.updated_items = result.get('rows_updated', 0)
+                        job.save()
+
+                        return Response({
+                            'success': True,
+                            'message': f'GSC sync completed! {result.get("rows_processed", 0)} rows processed',
+                            'job_id': job.id,
+                            'rows_processed': result.get('rows_processed', 0),
+                            'rows_created': result.get('rows_created', 0),
+                            'rows_updated': result.get('rows_updated', 0),
+                        })
+                    else:
+                        job.status = 'failed'
+                        job.error_message = result.get('error', 'Unknown error')
+                        job.completed_at = timezone.now()
+                        job.save()
+
+                        return Response({
+                            'success': False,
+                            'message': f'GSC sync failed: {result.get("error", "Unknown error")}',
+                            'job_id': job.id,
+                        })
+
+                except Exception as sync_error:
+                    job.status = 'failed'
+                    job.error_message = str(sync_error)
+                    job.completed_at = timezone.now()
+                    job.save()
+
+                    return Response({
+                        'success': False,
+                        'message': f'Failed to start GSC sync: {str(sync_error)}',
                         'job_id': job.id,
                     })
 

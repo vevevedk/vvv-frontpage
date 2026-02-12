@@ -32,7 +32,7 @@ from pipelines.views import (
     DataPipelineViewSet, PipelineJobViewSet, PipelineLogViewSet,
     DataQualityCheckViewSet, PipelineAnalyticsViewSet
 )
-from google_pipelines.views import GA4DailyViewSet
+from google_pipelines.views import GA4DailyViewSet, GSCSearchDataViewSet
 from authentication.views import (
     LoginView, RegisterView, TokenRefreshView,
     LoginEventViewSet, InviteViewSet, InviteValidateView,
@@ -122,6 +122,9 @@ router.register(r'pipeline-analytics', PipelineAnalyticsViewSet, basename='pipel
 
 # GA4
 router.register(r'ga4/daily', GA4DailyViewSet, basename='ga4-daily')
+
+# GSC
+router.register(r'gsc/search-data', GSCSearchDataViewSet, basename='gsc-search-data')
 
 # Authentication
 router.register(r'login-events', LoginEventViewSet, basename='login-event')

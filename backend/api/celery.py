@@ -28,6 +28,10 @@ app.conf.beat_schedule = {
         'task': 'google_pipelines.tasks.sync_all_ga4_configs',
         'schedule': 86400.0,  # 24 hours
     },
+    'daily-gsc-sync': {
+        'task': 'google_pipelines.tasks.sync_all_gsc_configs',
+        'schedule': 86400.0,  # 24 hours
+    },
     'daily-login-summary': {
         'task': 'authentication.tasks.daily_login_summary',
         'schedule': crontab(hour=8, minute=0),  # 8 AM UTC

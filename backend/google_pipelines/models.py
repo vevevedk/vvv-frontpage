@@ -2,6 +2,59 @@ from django.db import models
 from users.models import AccountConfiguration
 
 
+class GSCSearchData(models.Model):
+    """Google Search Console search analytics data, one row per query+page+date."""
+
+    account_configuration = models.ForeignKey(
+        AccountConfiguration,
+        on_delete=models.CASCADE,
+        related_name='gsc_search_rows',
+    )
+
+    # Dimensions
+    date = models.DateField()
+    query = models.CharField(max_length=500, default='')
+    page = models.URLField(max_length=2048, default='')
+
+    # Metrics
+    clicks = models.IntegerField(default=0)
+    impressions = models.IntegerField(default=0)
+    ctr = models.FloatField(default=0)
+    position = models.FloatField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'gsc_search_data'
+        ordering = ['-date']
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    'account_configuration',
+                    'date',
+                    'query',
+                    'page',
+                ],
+                name='gsc_search_unique_dims',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['account_configuration', 'date'], name='gsc_search_config_date'),
+            models.Index(fields=['date'], name='gsc_search_date'),
+        ]
+
+    def __str__(self):
+        return f'{self.date} | {self.query[:50]} | {self.account_configuration_id}'
+
+    def save(self, *args, **kwargs):
+        # Normalize NULLs to empty string so the unique constraint works
+        for field in ('query', 'page'):
+            if getattr(self, field) is None:
+                setattr(self, field, '')
+        super().save(*args, **kwargs)
+
+
 class GA4Daily(models.Model):
     """Daily GA4 analytics data, one row per dimension combination per day."""
 
