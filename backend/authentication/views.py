@@ -26,6 +26,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.conf import settings
+from urllib.parse import quote
 
 logger = logging.getLogger('authentication')
 
@@ -419,7 +420,8 @@ class InviteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gen
         # Send invite email
         email_sent = False
         app_url = getattr(settings, 'APP_URL', 'http://localhost:3000')
-        invite_url = f"{app_url}/register?invite_token={invite.token}&company={company.name if company else ''}"
+        company_name = company.name if company else ''
+        invite_url = f"{app_url}/register?invite_token={invite.token}&company={quote(company_name)}"
         try:
             if settings.EMAIL_HOST:
                 send_mail(
@@ -463,3 +465,49 @@ class InviteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gen
         invite.status = 'cancelled'
         invite.save(update_fields=['status'])
         return Response(InviteSerializer(invite).data)
+
+    @action(detail=True, methods=['post'])
+    def resend(self, request, pk=None):
+        try:
+            invite = self.get_queryset().get(pk=pk)
+        except Invite.DoesNotExist:
+            return Response({'error': 'Invite not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if invite.status not in ('pending', 'expired'):
+            return Response(
+                {'error': f'Cannot resend invite with status {invite.status}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Reset to pending with fresh expiry
+        invite.status = 'pending'
+        invite.expires_at = timezone.now() + timedelta(hours=72)
+        invite.save(update_fields=['status', 'expires_at'])
+
+        # Re-send email
+        email_sent = False
+        app_url = getattr(settings, 'APP_URL', 'http://localhost:3000')
+        company_name = invite.company.name if invite.company else ''
+        invite_url = f"{app_url}/register?invite_token={invite.token}&company={quote(company_name)}"
+        try:
+            if settings.EMAIL_HOST:
+                send_mail(
+                    subject='You are invited to VVV Analytics',
+                    message=f'You have been invited to access channel reports.\n\nClick here to create your account: {invite_url}',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[invite.email],
+                    html_message=(
+                        f'<p>You have been invited to access channel reports.</p>'
+                        f'<p><a href="{invite_url}">Click here to create your account</a></p>'
+                    ),
+                )
+                email_sent = True
+            else:
+                logger.warning("EMAIL_HOST not configured — skipping invite email")
+        except Exception as e:
+            logger.error(f"Failed to send invite email to {invite.email}: {e}")
+
+        response_data = InviteSerializer(invite).data
+        response_data['email_sent'] = email_sent
+        response_data['invite_url'] = invite_url
+        return Response(response_data)

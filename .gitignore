@@ -123,3 +123,18 @@ Temporary Items
 # Media files
 *.mp4
 !public/**/*.mp4
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.so
+*.sqlite3
+.pytest_cache/
+.mypy_cache/
+venv/
+
+# Screenshots
+screenshots/
+
+# Environment (production secrets)
+.env.production

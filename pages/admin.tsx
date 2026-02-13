@@ -6,7 +6,7 @@ import ErrorMessage from '../components/ErrorMessage';
 import SuccessMessage from '../components/SuccessMessage';
 import AdminLayout from '../components/layouts/AdminLayout';
 import { api } from '../lib/api';
-import { CheckCircleIcon, PencilIcon, TrashIcon, PlusIcon, XCircleIcon, BuildingOfficeIcon, UsersIcon, UserGroupIcon, ServerIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, PencilIcon, TrashIcon, PlusIcon, XCircleIcon, BuildingOfficeIcon, UsersIcon, UserGroupIcon, ServerIcon, EnvelopeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/router';
 import AccountManagement from '../components/accounts/AccountManagement';
 import PipelineDashboard from '../components/pipelines/PipelineDashboard';
@@ -68,6 +68,28 @@ interface UserForm extends Partial<User> {
   agency_id?: number | string;
   access_all_companies?: boolean;
   company_ids?: number[];
+}
+
+interface InviteRecord {
+  id: number;
+  email: string;
+  company_name: string | null;
+  role: string;
+  status: string;
+  token: string;
+  invited_by_email: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+}
+
+interface LoginEventRecord {
+  id: number;
+  user_email: string;
+  timestamp: string;
+  ip_address: string | null;
+  user_agent: string;
+  success: boolean;
 }
 
 interface Lead {
@@ -135,11 +157,15 @@ export default function AdminPage() {
   const [inviteCompany, setInviteCompany] = useState('');
   const [inviteCompanyId, setInviteCompanyId] = useState<number | ''>('');
   const [inviteRole, setInviteRole] = useState('company_user');
+  const [invites, setInvites] = useState<InviteRecord[]>([]);
+  const [invitesLoading, setInvitesLoading] = useState(false);
+  const [loginEvents, setLoginEvents] = useState<LoginEventRecord[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   // Set active tab based on URL query
   useEffect(() => {
     const tab = router.query.tab as string;
-    if (tab && ['agencies', 'companies', 'users', 'accounts', 'pipelines', 'leads'].includes(tab)) {
+    if (tab && ['agencies', 'companies', 'users', 'invites', 'activity', 'accounts', 'pipelines', 'leads'].includes(tab)) {
       setActiveTab(tab);
     } else {
       // Default to agencies if no tab parameter or invalid tab
@@ -203,6 +229,56 @@ export default function AdminPage() {
     }
   };
 
+  const fetchInvites = async () => {
+    setInvitesLoading(true);
+    try {
+      const resp = await api.get<InviteRecord[]>('/invites/');
+      if (resp.data) setInvites(resp.data);
+    } catch (err) {
+      showError('Invites', 'Failed to load invites');
+    } finally {
+      setInvitesLoading(false);
+    }
+  };
+
+  const fetchLoginEvents = async () => {
+    setActivityLoading(true);
+    try {
+      const resp = await api.get<LoginEventRecord[]>('/login-events/');
+      if (resp.data) setLoginEvents(resp.data);
+    } catch (err) {
+      showError('Activity', 'Failed to load login events');
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  const handleCancelInvite = async (id: number) => {
+    try {
+      const resp = await api.post(`/invites/${id}/cancel/`, {});
+      if (resp.error) throw new Error(resp.error.message);
+      showSuccess('Invite Cancelled', 'Invite has been cancelled');
+      fetchInvites();
+    } catch (err: any) {
+      showError('Cancel Failed', err.message || 'Failed to cancel invite');
+    }
+  };
+
+  const handleResendInvite = async (id: number) => {
+    try {
+      const resp = await api.post<any>(`/invites/${id}/resend/`, {});
+      if (resp.error) throw new Error(resp.error.message);
+      if (resp.data?.email_sent) {
+        showSuccess('Invite Resent', 'Invite email has been resent');
+      } else {
+        showWarning('Invite Reset', `Invite renewed but email not sent. Link: ${resp.data?.invite_url || '(unavailable)'}`);
+      }
+      fetchInvites();
+    } catch (err: any) {
+      showError('Resend Failed', err.message || 'Failed to resend invite');
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -235,9 +311,9 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'leads') {
-      fetchLeads();
-    }
+    if (activeTab === 'leads') fetchLeads();
+    if (activeTab === 'invites') fetchInvites();
+    if (activeTab === 'activity') fetchLoginEvents();
   }, [activeTab]);
 
   useEffect(() => {
@@ -853,6 +929,182 @@ export default function AdminPage() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+              )}
+
+              {/* Invites Tab */}
+              {activeTab === 'invites' && (
+                <div className="bg-white shadow-sm rounded-custom border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-lg font-medium text-text">Invites</h3>
+                        <p className="text-sm text-gray-600">Track and manage client invitations</p>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={fetchInvites}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                        >
+                          Refresh
+                        </button>
+                        <button
+                          onClick={() => setInviteOpen(true)}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary hover:bg-primary-dark"
+                        >
+                          <EnvelopeIcon className="h-5 w-5 mr-2" /> Send Invite
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  {invitesLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <LoadingSpinner size="lg" />
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invited By</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {invites.map((inv) => {
+                            const isExpired = inv.status === 'pending' && new Date(inv.expires_at) < new Date();
+                            const displayStatus = isExpired ? 'expired' : inv.status;
+                            return (
+                              <tr key={inv.id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-text">{inv.email}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{inv.company_name || '-'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {inv.role.replace('_', ' ')}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    displayStatus === 'accepted' ? 'bg-green-100 text-green-800' :
+                                    displayStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    displayStatus === 'expired' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {displayStatus}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{inv.invited_by_email || '-'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(inv.created_at).toLocaleDateString()}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(inv.expires_at).toLocaleDateString()}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                  {(displayStatus === 'pending' || displayStatus === 'expired') && (
+                                    <button
+                                      onClick={() => handleResendInvite(inv.id)}
+                                      className="inline-flex items-center px-3 py-1 rounded-md text-primary hover:bg-primary/10"
+                                      title="Resend invite email"
+                                    >
+                                      <ArrowPathIcon className="h-4 w-4 mr-1" /> Resend
+                                    </button>
+                                  )}
+                                  {displayStatus === 'pending' && (
+                                    <button
+                                      onClick={() => handleCancelInvite(inv.id)}
+                                      className="inline-flex items-center px-3 py-1 rounded-md text-red-600 hover:bg-red-100"
+                                    >
+                                      <XCircleIcon className="h-4 w-4 mr-1" /> Cancel
+                                    </button>
+                                  )}
+                                  {displayStatus === 'accepted' && inv.accepted_at && (
+                                    <span className="text-xs text-gray-500">
+                                      Accepted {new Date(inv.accepted_at).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {invites.length === 0 && (
+                            <tr>
+                              <td className="px-6 py-10 text-center text-sm text-gray-500" colSpan={8}>
+                                No invites yet. Click &quot;Send Invite&quot; to invite a client.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Activity Tab */}
+              {activeTab === 'activity' && (
+                <div className="bg-white shadow-sm rounded-custom border border-gray-200">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-lg font-medium text-text">Login Activity</h3>
+                        <p className="text-sm text-gray-600">Recent login events across all users</p>
+                      </div>
+                      <button
+                        onClick={fetchLoginEvents}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+                  {activityLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <LoadingSpinner size="lg" />
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {loginEvents.map((evt) => (
+                            <tr key={evt.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-text">{evt.user_email}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(evt.timestamp).toLocaleString()}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{evt.ip_address || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {evt.success ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <CheckCircleIcon className="h-4 w-4 mr-1" /> Success
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <XCircleIcon className="h-4 w-4 mr-1" /> Failed
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                          {loginEvents.length === 0 && (
+                            <tr>
+                              <td className="px-6 py-10 text-center text-sm text-gray-500" colSpan={4}>
+                                No login events recorded yet.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
 

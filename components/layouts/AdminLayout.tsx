@@ -2,7 +2,7 @@ import { useState, ReactNode } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { HiMenuAlt2, HiX } from 'react-icons/hi';
-import { BuildingOfficeIcon, UsersIcon, ServerIcon, InboxIcon } from '@heroicons/react/24/outline';
+import { BuildingOfficeIcon, UsersIcon, ServerIcon, InboxIcon, EnvelopeIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 const ADMIN_SECTIONS = [
   {
@@ -22,6 +22,18 @@ const ADMIN_SECTIONS = [
     title: 'Users',
     path: '/admin?tab=users',
     icon: UsersIcon
+  },
+  {
+    id: 'invites',
+    title: 'Invites',
+    path: '/admin?tab=invites',
+    icon: EnvelopeIcon
+  },
+  {
+    id: 'activity',
+    title: 'Activity',
+    path: '/admin?tab=activity',
+    icon: ClockIcon
   },
   {
     id: 'pipelines',
