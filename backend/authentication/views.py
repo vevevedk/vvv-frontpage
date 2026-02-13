@@ -30,6 +30,51 @@ from urllib.parse import quote
 
 logger = logging.getLogger('authentication')
 
+INVITE_FROM_EMAIL = 'ai@veveve.io'
+
+
+def _build_invite_email(invite_url, invitee_email, inviter_name):
+    """Return (subject, plain_text, html) for the invite email."""
+    first_name = invitee_email.split('@')[0].capitalize()
+
+    subject = f'{inviter_name} invited you to Veveve'
+
+    plain = (
+        f'Hi {first_name},\n\n'
+        f'{inviter_name} has invited you to collaborate on Veveve.\n\n'
+        f'Get started by creating your account:\n{invite_url}\n\n'
+        f'Once you\'re in, you\'ll have access to:\n'
+        f'  - Automated channel reporting\n'
+        f'  - Real-time performance insights\n'
+        f'  - Campaign anomaly alerts\n\n'
+        f'This invite expires in 7 days.\n\n'
+        f'— vvv-agent\nai@veveve.io'
+    )
+
+    html = (
+        f'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;'
+        f'max-width:520px;margin:0 auto;color:#1a1a1a;line-height:1.6">'
+        f'<p style="font-size:16px">Hi {first_name},</p>'
+        f'<p>{inviter_name} has invited you to collaborate on <strong>Veveve</strong>.</p>'
+        f'<p>Get started by creating your account:</p>'
+        f'<p style="text-align:center;margin:28px 0">'
+        f'<a href="{invite_url}" style="display:inline-block;background:#4f46e5;color:#fff;'
+        f'text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:600;font-size:15px">'
+        f'Create Account</a></p>'
+        f'<p>Once you\'re in, you\'ll have access to:</p>'
+        f'<ul style="padding-left:20px">'
+        f'<li>Automated channel reporting</li>'
+        f'<li>Real-time performance insights</li>'
+        f'<li>Campaign anomaly alerts</li>'
+        f'</ul>'
+        f'<p style="color:#6b7280;font-size:14px;margin-top:24px">This invite expires in 7 days.</p>'
+        f'<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">'
+        f'<p style="color:#9ca3af;font-size:13px">— vvv-agent<br>ai@veveve.io</p>'
+        f'</div>'
+    )
+
+    return subject, plain, html
+
 
 def _notify(task, *args, **kwargs):
     """Fire-and-forget Celery notification — never block the request."""
@@ -414,7 +459,7 @@ class InviteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gen
             company=company,
             role=serializer.validated_data.get('role', 'company_user'),
             invited_by=request.user,
-            expires_at=timezone.now() + timedelta(hours=72),
+            expires_at=timezone.now() + timedelta(days=7),
         )
 
         # Send invite email
@@ -422,17 +467,16 @@ class InviteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gen
         app_url = getattr(settings, 'APP_URL', 'http://localhost:3000')
         company_name = company.name if company else ''
         invite_url = f"{app_url}/register?invite_token={invite.token}&company={quote(company_name)}"
+        inviter_name = request.user.get_full_name() or request.user.email
         try:
             if settings.EMAIL_HOST:
+                subject, plain, html = _build_invite_email(invite_url, invite.email, inviter_name)
                 send_mail(
-                    subject='You are invited to VVV Analytics',
-                    message=f'You have been invited to access channel reports.\n\nClick here to create your account: {invite_url}',
-                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    subject=subject,
+                    message=plain,
+                    from_email=INVITE_FROM_EMAIL,
                     recipient_list=[invite.email],
-                    html_message=(
-                        f'<p>You have been invited to access channel reports.</p>'
-                        f'<p><a href="{invite_url}">Click here to create your account</a></p>'
-                    ),
+                    html_message=html,
                 )
                 email_sent = True
                 logger.info(f"Invite email sent to {invite.email}")
@@ -481,7 +525,7 @@ class InviteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gen
 
         # Reset to pending with fresh expiry
         invite.status = 'pending'
-        invite.expires_at = timezone.now() + timedelta(hours=72)
+        invite.expires_at = timezone.now() + timedelta(days=7)
         invite.save(update_fields=['status', 'expires_at'])
 
         # Re-send email
@@ -489,17 +533,18 @@ class InviteViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.Gen
         app_url = getattr(settings, 'APP_URL', 'http://localhost:3000')
         company_name = invite.company.name if invite.company else ''
         invite_url = f"{app_url}/register?invite_token={invite.token}&company={quote(company_name)}"
+        inviter_name = (
+            invite.invited_by.get_full_name() or invite.invited_by.email
+        ) if invite.invited_by else 'Veveve'
         try:
             if settings.EMAIL_HOST:
+                subject, plain, html = _build_invite_email(invite_url, invite.email, inviter_name)
                 send_mail(
-                    subject='You are invited to VVV Analytics',
-                    message=f'You have been invited to access channel reports.\n\nClick here to create your account: {invite_url}',
-                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    subject=subject,
+                    message=plain,
+                    from_email=INVITE_FROM_EMAIL,
                     recipient_list=[invite.email],
-                    html_message=(
-                        f'<p>You have been invited to access channel reports.</p>'
-                        f'<p><a href="{invite_url}">Click here to create your account</a></p>'
-                    ),
+                    html_message=html,
                 )
                 email_sent = True
             else:
