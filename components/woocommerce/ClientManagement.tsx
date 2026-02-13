@@ -39,7 +39,7 @@ export default function ClientManagement() {
       // Get the access token from localStorage
       const accessToken = localStorage.getItem('accessToken');
       
-      const response = await fetch('/api/woocommerce/configs', {
+      const response = await fetch('/api/woocommerce/configs/', {
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),

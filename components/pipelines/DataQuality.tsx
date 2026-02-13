@@ -20,7 +20,7 @@ export default function DataQuality() {
       setLoading(true);
       setError(null);
       const accessToken = localStorage.getItem('accessToken');
-      const res = await fetch('/api/pipelines/quality_checks', {
+      const res = await fetch('/api/pipeline-quality-checks/', {
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken && { Authorization: `Bearer ${accessToken}` }),

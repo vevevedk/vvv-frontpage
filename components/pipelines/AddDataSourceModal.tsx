@@ -118,7 +118,7 @@ export default function AddDataSourceModal({ isOpen, onClose }: AddDataSourceMod
       setLoading(true);
       const accessToken = localStorage.getItem('accessToken');
       
-      const response = await fetch('/api/pipelines/available_accounts', {
+      const response = await fetch('/api/pipelines/available_accounts/', {
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),

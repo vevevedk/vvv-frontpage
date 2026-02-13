@@ -21,7 +21,7 @@ export default function PipelineAnalytics() {
       setLoading(true);
       setError(null);
       const accessToken = localStorage.getItem('accessToken');
-      const res = await fetch('/api/pipelines/analytics', {
+      const res = await fetch('/api/pipeline-analytics/', {
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
