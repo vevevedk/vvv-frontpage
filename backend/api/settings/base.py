@@ -222,6 +222,9 @@ APP_URL = config('APP_URL', default='http://localhost:3000')
 # Slack
 SLACK_WEBHOOK_URL = config('SLACK_WEBHOOK_URL', default='')
 
+# Environment label — prefixed to all Slack messages (e.g. "STAGING", "PROD")
+ENV_LABEL = config('ENV_LABEL', default='')
+
 # Celery Configuration
 CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://localhost:6379/0')

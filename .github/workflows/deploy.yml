@@ -174,6 +174,34 @@ jobs:
               exit 1
             fi
             
+            # Inject runtime settings into backend env
+            PROD_ENV="$DEPLOY_DIR/env/backend.env"
+            if [ -f "$PROD_ENV" ]; then
+              # Slack
+              SLACK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
+              if [ -n "$SLACK_URL" ]; then
+                sed -i '/^SLACK_WEBHOOK_URL=/d' "$PROD_ENV"
+                echo "SLACK_WEBHOOK_URL=$SLACK_URL" >> "$PROD_ENV"
+              fi
+
+              # Email
+              SMTP_HOST="${{ secrets.EMAIL_HOST }}"
+              if [ -n "$SMTP_HOST" ]; then
+                sed -i '/^EMAIL_HOST=/d; /^EMAIL_HOST_USER=/d; /^EMAIL_HOST_PASSWORD=/d; /^EMAIL_USE_TLS=/d; /^EMAIL_PORT=/d; /^DEFAULT_FROM_EMAIL=/d; /^APP_URL=/d' "$PROD_ENV"
+                echo "EMAIL_HOST=${{ secrets.EMAIL_HOST }}" >> "$PROD_ENV"
+                echo "EMAIL_PORT=587" >> "$PROD_ENV"
+                echo "EMAIL_USE_TLS=True" >> "$PROD_ENV"
+                echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}" >> "$PROD_ENV"
+                echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}" >> "$PROD_ENV"
+                echo "DEFAULT_FROM_EMAIL=${{ secrets.DEFAULT_FROM_EMAIL }}" >> "$PROD_ENV"
+                echo "APP_URL=https://veveve.io" >> "$PROD_ENV"
+              fi
+
+              # Environment label
+              sed -i '/^ENV_LABEL=/d' "$PROD_ENV"
+              echo "ENV_LABEL=PROD" >> "$PROD_ENV"
+            fi
+
             # Pull latest Docker images from GitHub Container Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin || true
             docker pull ${{ env.BACKEND_IMAGE }}:latest || true

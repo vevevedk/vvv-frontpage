@@ -216,13 +216,9 @@ jobs:
               echo "✅ Email settings configured"
             fi
 
-            # Ensure Slack webhook in backend env
-            SLACK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
-            if [ -n "$SLACK_URL" ]; then
-              sed -i '/^SLACK_WEBHOOK_URL=/d' "$ENV_FILE"
-              echo "SLACK_WEBHOOK_URL=$SLACK_URL" >> "$ENV_FILE"
-              echo "✅ Slack webhook configured"
-            fi
+            # Remove Slack webhook on staging (notifications only on production)
+            sed -i '/^SLACK_WEBHOOK_URL=/d' "$ENV_FILE"
+            echo "SLACK_WEBHOOK_URL=" >> "$ENV_FILE"
 
             # Start staging services using standalone compose file
             docker-compose -p $PROJECT_NAME -f $COMPOSE_FILE up -d
