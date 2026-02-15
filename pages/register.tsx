@@ -14,12 +14,6 @@ interface RegisterFormData {
   first_name: string;
   last_name: string;
   phone: string;
-  company: {
-    name: string;
-    address: string;
-    phone: string;
-    email: string;
-  };
 }
 
 interface InviteInfo {
@@ -36,12 +30,6 @@ export default function Register() {
     first_name: '',
     last_name: '',
     phone: '',
-    company: {
-      name: '',
-      address: '',
-      phone: '',
-      email: '',
-    },
   });
   const [error, setError] = useState<string | null>(null);
   const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
@@ -74,21 +62,10 @@ export default function Register() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    if (name.startsWith('company.')) {
-      const companyField = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        company: {
-          ...prev.company,
-          [companyField]: value,
-        },
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,12 +89,12 @@ export default function Register() {
     }
 
     try {
-      const { confirmPassword, company, ...userData } = formData;
+      const { confirmPassword, ...userData } = formData;
 
       await register({
         ...userData,
         role: 'company_user',
-        ...(hasInvite ? { invite_token: inviteToken } : { company }),
+        invite_token: inviteToken,
       });
       showSuccess('Account Created!', 'Your account has been successfully created. Redirecting to dashboard...');
       setTimeout(() => {
@@ -134,6 +111,27 @@ export default function Register() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!hasInvite) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-6 text-center">
+          <h2 className="text-3xl font-extrabold text-gray-900">
+            Invitation Required
+          </h2>
+          <p className="text-gray-600">
+            Registration is by invitation only. If you&apos;ve received an invite, please use the link in your email.
+          </p>
+          <Link
+            href="/login"
+            className="inline-block font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            Sign in to your existing account
+          </Link>
+        </div>
       </div>
     );
   }
@@ -271,76 +269,6 @@ export default function Register() {
               />
             </div>
 
-            {!hasInvite && (
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-lg font-medium text-gray-900">Company Information</h3>
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <label htmlFor="company.name" className="block text-sm font-medium text-gray-700">
-                      Company Name
-                    </label>
-                    <input
-                      id="company.name"
-                      name="company.name"
-                      type="text"
-                      required
-                      className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      value={formData.company.name}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="company.address" className="block text-sm font-medium text-gray-700">
-                      Company Address
-                    </label>
-                    <input
-                      id="company.address"
-                      name="company.address"
-                      type="text"
-                      required
-                      className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      value={formData.company.address}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="company.phone" className="block text-sm font-medium text-gray-700">
-                      Company Phone
-                    </label>
-                    <input
-                      id="company.phone"
-                      name="company.phone"
-                      type="tel"
-                      required
-                      className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      value={formData.company.phone}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="company.email" className="block text-sm font-medium text-gray-700">
-                      Company Email
-                    </label>
-                    <input
-                      id="company.email"
-                      name="company.email"
-                      type="email"
-                      required
-                      className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      value={formData.company.email}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           <div>

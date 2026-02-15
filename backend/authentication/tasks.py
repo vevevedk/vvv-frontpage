@@ -15,13 +15,12 @@ def notify_login(user_email, ip_address=''):
 
 
 @shared_task
-def notify_registration(user_email, company_name='', via_invite=False):
+def notify_registration(user_email, company_name=''):
     """Send a Slack notification when a new user registers."""
     from core.slack import send_slack_message
-    method = "via invite" if via_invite else "self-registered"
     company_part = f" | Company: {company_name}" if company_name else ""
     send_slack_message(
-        f":tada: *New Registration* — {user_email} ({method}{company_part})"
+        f":tada: *New Registration* — {user_email}{company_part}"
     )
 
 

@@ -190,38 +190,28 @@ class RegisterView(APIView):
             invite_token = serializer.validated_data.pop('invite_token', None)
             invite = None
 
-            # Look up invite if token provided
-            if invite_token:
-                try:
-                    invite = Invite.objects.get(
-                        token=invite_token,
-                        email=serializer.validated_data['email'],
-                        status='pending',
-                    )
-                    if invite.is_expired:
-                        invite.status = 'expired'
-                        invite.save(update_fields=['status'])
-                        invite = None
-                except Invite.DoesNotExist:
-                    invite = None
+            if not invite_token:
+                return authorization_error(
+                    message="Registration requires an invite. Please contact your administrator.",
+                    code=ErrorCode.INVITE_REQUIRED,
+                )
 
-            # Create company if provided (and no invite)
-            company = None
-            if invite and invite.company:
-                company = invite.company
-            elif 'company' in serializer.validated_data:
-                try:
-                    company_data = serializer.validated_data.pop('company')
-                    company = Company.objects.create(**company_data)
-                except Exception as e:
-                    logger.error(f"Company creation error: {str(e)}", exc_info=True)
-                    return validation_error(
-                        message="Failed to create company",
-                        code=ErrorCode.INVALID_COMPANY_DATA,
-                        details={"error": str(e)}
-                    )
-            else:
-                serializer.validated_data.pop('company', None)
+            # Look up invite
+            try:
+                invite = Invite.objects.get(
+                    token=invite_token,
+                    email=serializer.validated_data['email'],
+                    status='pending',
+                )
+                if invite.is_expired:
+                    invite.status = 'expired'
+                    invite.save(update_fields=['status'])
+                    invite = None
+            except Invite.DoesNotExist:
+                invite = None
+
+            company = invite.company if invite else None
+            serializer.validated_data.pop('company', None)
 
             try:
                 user_data = serializer.validated_data.copy()
@@ -259,7 +249,7 @@ class RegisterView(APIView):
                     'Registration successful'
                 )
                 from .tasks import notify_registration, notify_invite_accepted
-                _notify(notify_registration, user.email, company.name if company else '', bool(invite))
+                _notify(notify_registration, user.email, company.name if company else '')
                 if invite:
                     _notify(
                         notify_invite_accepted,
@@ -279,9 +269,6 @@ class RegisterView(APIView):
                 }, status=status.HTTP_201_CREATED)
             except Exception as e:
                 logger.error(f"User creation error: {str(e)}", exc_info=True)
-                # Clean up company if user creation fails (only if we created it)
-                if company and not invite:
-                    company.delete()
                 return server_error(
                     message="Failed to create user",
                     code=ErrorCode.DATABASE_ERROR,
